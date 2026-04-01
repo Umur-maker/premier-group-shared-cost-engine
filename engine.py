@@ -1,0 +1,134 @@
+"""Pure allocation engine. No Streamlit, no file I/O. Input -> calculation -> output."""
+
+
+def _distribute(amount, eligible_companies, sqm_weight, headcount_weight, headcount_overrides=None):
+    """Distribute an amount across companies based on weighted sqm + headcount formula.
+
+    Guarantees: sum of returned values == round(amount, 2).
+    Rounding difference is applied to the largest share.
+
+    Returns dict of {company_id: share}.
+    """
+    if not eligible_companies or amount <= 0:
+        return {}
+
+    amount = round(amount, 2)
+    w_sqm = sqm_weight / 100.0
+    w_hc = headcount_weight / 100.0
+
+    total_sqm = sum(c["area_m2"] for c in eligible_companies)
+    overrides = headcount_overrides or {}
+    total_hc = sum(overrides.get(c["id"], c["headcount_default"]) for c in eligible_companies)
+
+    result = {}
+    for c in eligible_companies:
+        sqm_ratio = c["area_m2"] / total_sqm if total_sqm > 0 else 0
+        hc = overrides.get(c["id"], c["headcount_default"])
+        hc_ratio = hc / total_hc if total_hc > 0 else 0
+        result[c["id"]] = round(amount * (w_sqm * sqm_ratio + w_hc * hc_ratio), 2)
+
+    # Reconcile rounding: adjust largest share so sum matches exactly
+    distributed = sum(result.values())
+    diff = round(amount - distributed, 2)
+    if diff != 0 and result:
+        largest_id = max(result, key=result.get)
+        result[largest_id] = round(result[largest_id] + diff, 2)
+
+    return result
+
+
+def allocate_costs(companies, ratios, monthly_input, defaults, headcount_overrides=None):
+    """Main allocation function. Pure function: no I/O, no side effects.
+
+    Args:
+        companies: list of company dicts
+        ratios: dict with keys electricity/gas/water/garbage,
+                each having sqm_weight/headcount_weight
+        monthly_input: dict with electricity_total, garbage_total, water_total,
+                       hotel_gas_total, ground_floor_gas_total, first_floor_gas_total,
+                       external_water_deduction, external_electricity_contribution
+        defaults: dict with elevator_cost
+        headcount_overrides: optional dict of {company_id: headcount} for this month
+
+    Returns:
+        list of dicts, one per active company, with per-expense and total amounts.
+        For each expense type, sum of all company shares == net allocable amount.
+    """
+    active = [c for c in companies if c["active"]]
+    overrides = headcount_overrides or {}
+
+    # Electricity: all eligible, subtract external contribution
+    elec_eligible = [c for c in active if c["electricity_eligible"]]
+    elec_amount = monthly_input["electricity_total"] - monthly_input.get("external_electricity_contribution", 0)
+    elec_shares = _distribute(
+        elec_amount, elec_eligible,
+        ratios["electricity"]["sqm_weight"], ratios["electricity"]["headcount_weight"],
+        overrides,
+    )
+
+    # Water: all eligible, subtract external deduction
+    water_eligible = [c for c in active if c["water_eligible"]]
+    water_amount = monthly_input["water_total"] - monthly_input.get("external_water_deduction", 0)
+    water_shares = _distribute(
+        water_amount, water_eligible,
+        ratios["water"]["sqm_weight"], ratios["water"]["headcount_weight"],
+        overrides,
+    )
+
+    # Garbage: all eligible, full amount
+    garbage_eligible = [c for c in active if c["garbage_eligible"]]
+    garbage_shares = _distribute(
+        monthly_input["garbage_total"], garbage_eligible,
+        ratios["garbage"]["sqm_weight"], ratios["garbage"]["headcount_weight"],
+        overrides,
+    )
+
+    # Gas Hotel: only hotel companies
+    hotel_gas_eligible = [c for c in active if c["floor"] == "hotel" and c["has_heating"]]
+    hotel_gas_shares = _distribute(
+        monthly_input["hotel_gas_total"], hotel_gas_eligible,
+        ratios["gas"]["sqm_weight"], ratios["gas"]["headcount_weight"],
+        overrides,
+    )
+
+    # Gas Ground Floor: ground floor with heating
+    gf_gas_eligible = [c for c in active if c["floor"] == "ground_floor" and c["has_heating"]]
+    gf_gas_shares = _distribute(
+        monthly_input["ground_floor_gas_total"], gf_gas_eligible,
+        ratios["gas"]["sqm_weight"], ratios["gas"]["headcount_weight"],
+        overrides,
+    )
+
+    # Gas First Floor: first floor with heating
+    ff_gas_eligible = [c for c in active if c["floor"] == "first_floor" and c["has_heating"]]
+    ff_gas_shares = _distribute(
+        monthly_input["first_floor_gas_total"], ff_gas_eligible,
+        ratios["gas"]["sqm_weight"], ratios["gas"]["headcount_weight"],
+        overrides,
+    )
+
+    # Build result
+    results = []
+    for c in active:
+        cid = c["id"]
+        electricity = elec_shares.get(cid, 0.0)
+        water = water_shares.get(cid, 0.0)
+        garbage = garbage_shares.get(cid, 0.0)
+        gas_hotel = hotel_gas_shares.get(cid, 0.0)
+        gas_gf = gf_gas_shares.get(cid, 0.0)
+        gas_ff = ff_gas_shares.get(cid, 0.0)
+        total = round(electricity + water + garbage + gas_hotel + gas_gf + gas_ff, 2)
+
+        results.append({
+            "company_id": cid,
+            "company_name": c["name"],
+            "electricity": electricity,
+            "water": water,
+            "garbage": garbage,
+            "gas_hotel": gas_hotel,
+            "gas_ground_floor": gas_gf,
+            "gas_first_floor": gas_ff,
+            "total": total,
+        })
+
+    return results
