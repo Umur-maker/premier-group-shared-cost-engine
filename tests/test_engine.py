@@ -72,20 +72,20 @@ def test_electricity_sums_to_total_minus_external(companies, ratios, monthly_inp
     result = allocate_costs(companies, ratios, monthly_input, defaults)
     elec_sum = sum(r["electricity"] for r in result)
     expected = monthly_input["electricity_total"] - monthly_input["external_electricity_contribution"]
-    assert abs(elec_sum - expected) < 0.01
+    assert elec_sum == expected
 
 
 def test_water_sums_to_total_minus_external(companies, ratios, monthly_input, defaults):
     result = allocate_costs(companies, ratios, monthly_input, defaults)
     water_sum = sum(r["water"] for r in result)
     expected = monthly_input["water_total"] - monthly_input["external_water_deduction"]
-    assert abs(water_sum - expected) < 0.01
+    assert water_sum == expected
 
 
 def test_garbage_sums_to_total(companies, ratios, monthly_input, defaults):
     result = allocate_costs(companies, ratios, monthly_input, defaults)
     garbage_sum = sum(r["garbage"] for r in result)
-    assert abs(garbage_sum - monthly_input["garbage_total"]) < 0.01
+    assert garbage_sum == monthly_input["garbage_total"]
 
 
 def test_hotel_gas_only_to_hotel(companies, ratios, monthly_input, defaults):
@@ -117,11 +117,11 @@ def test_first_floor_gas_only_to_first_floor(companies, ratios, monthly_input, d
 def test_total_is_sum_of_all_expenses(companies, ratios, monthly_input, defaults):
     result = allocate_costs(companies, ratios, monthly_input, defaults)
     for r in result:
-        expected_total = (
+        expected_total = round(
             r["electricity"] + r["water"] + r["garbage"]
-            + r["gas_hotel"] + r["gas_ground_floor"] + r["gas_first_floor"]
+            + r["gas_hotel"] + r["gas_ground_floor"] + r["gas_first_floor"], 2
         )
-        assert abs(r["total"] - expected_total) < 0.01
+        assert r["total"] == expected_total
 
 
 def test_inactive_companies_excluded(companies, ratios, monthly_input, defaults):
@@ -244,3 +244,64 @@ def test_distribute_zero_both_with_indivisible_amount():
     ]
     result = _distribute(100.0, companies, 50, 50)
     assert sum(result.values()) == 100.0
+
+
+# --- Negative net amount tests (CRITICAL #1) ---
+
+def test_negative_electricity_raises_error(companies, ratios, defaults):
+    """Engine must reject negative net electricity amount."""
+    bad_input = {
+        "electricity_total": 40.0,
+        "garbage_total": 0.0,
+        "water_total": 0.0,
+        "hotel_gas_total": 0.0,
+        "ground_floor_gas_total": 0.0,
+        "first_floor_gas_total": 0.0,
+        "external_water_deduction": 0.0,
+        "external_electricity_contribution": 50.0,  # exceeds total
+    }
+    with pytest.raises(ValueError, match="Net electricity amount is negative"):
+        allocate_costs(companies, ratios, bad_input, defaults)
+
+
+def test_negative_water_raises_error(companies, ratios, defaults):
+    """Engine must reject negative net water amount."""
+    bad_input = {
+        "electricity_total": 0.0,
+        "garbage_total": 0.0,
+        "water_total": 100.0,
+        "hotel_gas_total": 0.0,
+        "ground_floor_gas_total": 0.0,
+        "first_floor_gas_total": 0.0,
+        "external_water_deduction": 150.0,  # exceeds total
+        "external_electricity_contribution": 0.0,
+    }
+    with pytest.raises(ValueError, match="Net water amount is negative"):
+        allocate_costs(companies, ratios, bad_input, defaults)
+
+
+def test_zero_net_amount_is_valid(companies, ratios, defaults):
+    """Net amount of exactly 0 should be fine (nothing to allocate)."""
+    input_data = {
+        "electricity_total": 50.0,
+        "garbage_total": 0.0,
+        "water_total": 100.0,
+        "hotel_gas_total": 0.0,
+        "ground_floor_gas_total": 0.0,
+        "first_floor_gas_total": 0.0,
+        "external_water_deduction": 100.0,  # equals total
+        "external_electricity_contribution": 50.0,  # equals total
+    }
+    result = allocate_costs(companies, ratios, input_data, defaults)
+    assert all(r["electricity"] == 0.0 for r in result)
+    assert all(r["water"] == 0.0 for r in result)
+
+
+# --- All inactive companies test (CRITICAL #2) ---
+
+def test_all_inactive_returns_empty(companies, ratios, monthly_input, defaults):
+    """If all companies are inactive, engine returns empty list."""
+    for c in companies:
+        c["active"] = False
+    result = allocate_costs(companies, ratios, monthly_input, defaults)
+    assert result == []

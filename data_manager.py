@@ -11,9 +11,15 @@ def load_companies():
         return json.load(f)
 
 
+def _atomic_write(filepath, data):
+    tmp = filepath + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+    os.replace(tmp, filepath)
+
+
 def save_companies(companies):
-    with open(COMPANIES_FILE, "w", encoding="utf-8") as f:
-        json.dump(companies, f, indent=2, ensure_ascii=False)
+    _atomic_write(COMPANIES_FILE, companies)
 
 
 def load_settings():
@@ -22,8 +28,7 @@ def load_settings():
 
 
 def save_settings(settings):
-    with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
-        json.dump(settings, f, indent=2, ensure_ascii=False)
+    _atomic_write(SETTINGS_FILE, settings)
 
 
 def add_company(company):

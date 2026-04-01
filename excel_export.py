@@ -96,7 +96,7 @@ def _write_calculation_sheet(wb, results, monthly_input, ratios, companies, defa
         ("First Floor Gas Total (RON)", monthly_input["first_floor_gas_total"]),
         ("External Water Deduction (RON)", monthly_input.get("external_water_deduction", 0)),
         ("External Electricity Contribution (RON)", monthly_input.get("external_electricity_contribution", 0)),
-        ("Elevator Cost - informational (RON)", defaults.get("elevator_cost", 400)),
+        ("Elevator Cost (RON) - reference only, not added to any bill", defaults.get("elevator_cost", 400)),
     ]
     for label, value in inputs:
         ws.cell(row=row, column=1, value=label)
@@ -181,9 +181,9 @@ def _write_calculation_sheet(wb, results, monthly_input, ratios, companies, defa
     row += 1
 
     expense_groups = [
-        ("Electricity", [c for c in active if c.get("electricity_eligible", True)]),
-        ("Water", [c for c in active if c.get("water_eligible", True)]),
-        ("Garbage", [c for c in active if c.get("garbage_eligible", True)]),
+        ("Electricity", [c for c in active if c["electricity_eligible"]]),
+        ("Water", [c for c in active if c["water_eligible"]]),
+        ("Garbage", [c for c in active if c["garbage_eligible"]]),
         ("Gas - Hotel", [c for c in active if c["floor"] == "hotel" and c["has_heating"]]),
         ("Gas - Ground Floor", [c for c in active if c["floor"] == "ground_floor" and c["has_heating"]]),
         ("Gas - First Floor", [c for c in active if c["floor"] == "first_floor" and c["has_heating"]]),
