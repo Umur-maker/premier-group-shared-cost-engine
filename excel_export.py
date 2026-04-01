@@ -78,7 +78,7 @@ def _write_detailed_sheet(wb, results):
         ws.column_dimensions[get_column_letter(col)].width = 18
 
 
-def _write_calculation_sheet(wb, results, monthly_input, ratios, companies, defaults,
+def _write_calculation_sheet(wb, results, monthly_input, ratios, companies,
                               headcount_overrides=None):
     ws = wb.create_sheet("Calculation Details")
     overrides = headcount_overrides or {}
@@ -96,7 +96,6 @@ def _write_calculation_sheet(wb, results, monthly_input, ratios, companies, defa
         ("First Floor Gas Total (RON)", monthly_input["first_floor_gas_total"]),
         ("External Water Deduction (RON)", monthly_input.get("external_water_deduction", 0)),
         ("External Electricity Contribution (RON)", monthly_input.get("external_electricity_contribution", 0)),
-        ("Elevator Cost (RON) - reference only, not added to any bill", defaults.get("elevator_cost", 400)),
     ]
     for label, value in inputs:
         ws.cell(row=row, column=1, value=label)
@@ -137,12 +136,12 @@ def _write_calculation_sheet(wb, results, monthly_input, ratios, companies, defa
 
     row += 1
 
-    # --- Section 4: Company Details with actual headcounts used ---
+    # --- Section 4: Company Details ---
     active = [c for c in companies if c["active"]]
-    ws.cell(row=row, column=1, value="COMPANY DATA (VALUES USED THIS MONTH)").font = SECTION_FONT
+    ws.cell(row=row, column=1, value="COMPANY DATA").font = SECTION_FONT
     row += 1
 
-    headers = ["Company", "Area (m2)", "Headcount (used)", "Headcount (default)",
+    headers = ["Company", "Area (m2)", "Headcount",
                "Floor", "Has Heating", "sqm % of total", "HC % of total"]
     for col, h in enumerate(headers, 1):
         ws.cell(row=row, column=col, value=h)
@@ -150,25 +149,20 @@ def _write_calculation_sheet(wb, results, monthly_input, ratios, companies, defa
     row += 1
 
     total_sqm = sum(c["area_m2"] for c in active)
-    total_hc = sum(overrides.get(c["id"], c["headcount_default"]) for c in active)
+    total_hc = sum(c["headcount_default"] for c in active)
 
     for c in active:
-        hc_used = overrides.get(c["id"], c["headcount_default"])
         ws.cell(row=row, column=1, value=c["name"])
         ws.cell(row=row, column=2, value=c["area_m2"])
-        ws.cell(row=row, column=3, value=hc_used)
-        ws.cell(row=row, column=4, value=c["headcount_default"])
-        ws.cell(row=row, column=5, value=c["floor"].replace("_", " ").title())
-        ws.cell(row=row, column=6, value="Yes" if c["has_heating"] else "No")
+        ws.cell(row=row, column=3, value=c["headcount_default"])
+        ws.cell(row=row, column=4, value=c["floor"].replace("_", " ").title())
+        ws.cell(row=row, column=5, value="Yes" if c["has_heating"] else "No")
         sqm_pct = c["area_m2"] / total_sqm if total_sqm else 0
-        hc_pct = hc_used / total_hc if total_hc else 0
-        ws.cell(row=row, column=7, value=round(sqm_pct * 100, 2))
+        hc_pct = c["headcount_default"] / total_hc if total_hc else 0
+        ws.cell(row=row, column=6, value=round(sqm_pct * 100, 2))
+        ws.cell(row=row, column=6).number_format = '0.00"%"'
+        ws.cell(row=row, column=7, value=round(hc_pct * 100, 2))
         ws.cell(row=row, column=7).number_format = '0.00"%"'
-        ws.cell(row=row, column=8, value=round(hc_pct * 100, 2))
-        ws.cell(row=row, column=8).number_format = '0.00"%"'
-        # Highlight overridden headcounts
-        if c["id"] in overrides:
-            ws.cell(row=row, column=3).font = Font(bold=True, color="FF0000")
         row += 1
 
     ws.cell(row=row, column=1, value="TOTAL").font = Font(bold=True)
@@ -193,20 +187,19 @@ def _write_calculation_sheet(wb, results, monthly_input, ratios, companies, defa
         ws.cell(row=row, column=1, value=expense_name).font = Font(bold=True)
         ws.cell(row=row, column=1).fill = SUBSECTION_FILL
         eligible_sqm = sum(c["area_m2"] for c in eligible)
-        eligible_hc = sum(overrides.get(c["id"], c["headcount_default"]) for c in eligible)
+        eligible_hc = sum(c["headcount_default"] for c in eligible)
         ws.cell(row=row, column=2, value=f"{len(eligible)} companies").fill = SUBSECTION_FILL
         ws.cell(row=row, column=3, value=f"Total sqm: {eligible_sqm:.2f}").fill = SUBSECTION_FILL
         ws.cell(row=row, column=4, value=f"Total HC: {eligible_hc}").fill = SUBSECTION_FILL
         row += 1
 
         for c in eligible:
-            hc_used = overrides.get(c["id"], c["headcount_default"])
+            hc = c["headcount_default"]
             sqm_ratio = c["area_m2"] / eligible_sqm if eligible_sqm > 0 else 0
-            hc_ratio = hc_used / eligible_hc if eligible_hc > 0 else 0
+            hc_ratio = hc / eligible_hc if eligible_hc > 0 else 0
             ws.cell(row=row, column=1, value=f"  {c['name']}")
             ws.cell(row=row, column=2, value=f"{c['area_m2']} m2 ({sqm_ratio*100:.2f}%)")
-            ws.cell(row=row, column=3, value=f"{hc_used} HC ({hc_ratio*100:.2f}%)")
-            # Find this company's allocation for this expense
+            ws.cell(row=row, column=3, value=f"{hc} HC ({hc_ratio*100:.2f}%)")
             result_row = next((r for r in results if r["company_id"] == c["id"]), None)
             if result_row:
                 key_map = {
@@ -223,11 +216,11 @@ def _write_calculation_sheet(wb, results, monthly_input, ratios, companies, defa
 
     # Column widths
     ws.column_dimensions["A"].width = 30
-    for col in range(2, 9):
+    for col in range(2, 8):
         ws.column_dimensions[get_column_letter(col)].width = 22
 
 
-def generate_excel(filepath, results, monthly_input, ratios, companies, defaults,
+def generate_excel(filepath, results, monthly_input, ratios, companies,
                    headcount_overrides=None):
     """Generate a 3-sheet Excel workbook with cost allocation results."""
     wb = openpyxl.Workbook()
@@ -235,7 +228,7 @@ def generate_excel(filepath, results, monthly_input, ratios, companies, defaults
 
     _write_summary_sheet(wb, results)
     _write_detailed_sheet(wb, results)
-    _write_calculation_sheet(wb, results, monthly_input, ratios, companies, defaults,
+    _write_calculation_sheet(wb, results, monthly_input, ratios, companies,
                              headcount_overrides)
 
     wb.save(filepath)
