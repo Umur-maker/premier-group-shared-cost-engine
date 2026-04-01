@@ -76,6 +76,11 @@ def allocate_costs(companies, ratios, monthly_input, defaults, headcount_overrid
     # Electricity: all eligible, subtract external contribution
     elec_eligible = [c for c in active if c["electricity_eligible"]]
     elec_amount = monthly_input["electricity_total"] - monthly_input.get("external_electricity_contribution", 0)
+    if elec_amount < 0:
+        raise ValueError(
+            f"Net electricity amount is negative ({elec_amount:.2f}). "
+            "External contribution exceeds total."
+        )
     elec_shares = _distribute(
         elec_amount, elec_eligible,
         ratios["electricity"]["sqm_weight"], ratios["electricity"]["headcount_weight"],
@@ -85,6 +90,11 @@ def allocate_costs(companies, ratios, monthly_input, defaults, headcount_overrid
     # Water: all eligible, subtract external deduction
     water_eligible = [c for c in active if c["water_eligible"]]
     water_amount = monthly_input["water_total"] - monthly_input.get("external_water_deduction", 0)
+    if water_amount < 0:
+        raise ValueError(
+            f"Net water amount is negative ({water_amount:.2f}). "
+            "External deduction exceeds total."
+        )
     water_shares = _distribute(
         water_amount, water_eligible,
         ratios["water"]["sqm_weight"], ratios["water"]["headcount_weight"],

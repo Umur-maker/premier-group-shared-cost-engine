@@ -1,3 +1,4 @@
+import re
 import streamlit as st
 import tempfile
 import os
@@ -5,7 +6,7 @@ import pandas as pd
 from datetime import datetime
 from data_manager import (
     load_companies, save_companies, load_settings, save_settings,
-    add_company, update_company, get_active_companies,
+    add_company, update_company,
 )
 from engine import allocate_costs
 from excel_export import generate_excel
@@ -38,10 +39,10 @@ with tab1:
         month = st.selectbox(
             "Month", range(1, 13),
             index=datetime.now().month - 1,
-            format_func=lambda m: datetime(2026, m, 1).strftime("%B"),
+            format_func=lambda m: datetime(2000, m, 1).strftime("%B"),
         )
     with col_date2:
-        year = st.number_input("Year", min_value=2020, max_value=2030, value=datetime.now().year)
+        year = st.number_input("Year", min_value=2020, max_value=datetime.now().year + 5, value=datetime.now().year)
 
     st.subheader("Invoice Totals (RON)")
     col1, col2, col3 = st.columns(3)
@@ -70,9 +71,9 @@ with tab1:
         external_electricity = st.number_input(
             "External Electricity Contribution", min_value=0.0, value=0.0, step=0.01, format="%.2f")
 
-    # Headcount overrides
+    # Headcount overrides - use session state companies (same source as engine)
     st.subheader("Headcount (this month)")
-    active_companies = get_active_companies()
+    active_companies = [c for c in st.session_state.companies if c["active"]]
     headcount_overrides = {}
     cols = st.columns(4)
     for i, c in enumerate(active_companies):
@@ -94,6 +95,9 @@ with tab1:
             has_error = True
         if external_electricity > electricity_total:
             st.error(f"External electricity contribution ({external_electricity:.2f}) cannot exceed electricity total ({electricity_total:.2f}).")
+            has_error = True
+        if not active_companies:
+            st.error("No active companies found. Go to Company Management to activate at least one company.")
             has_error = True
 
         if not has_error:
@@ -118,43 +122,54 @@ with tab1:
                 hc_overrides,
             )
 
-            # Preview table
-            st.subheader("Allocation Preview")
-            df = pd.DataFrame(results)
-            df = df.rename(columns={
-                "company_name": "Company",
-                "electricity": "Electricity",
-                "water": "Water",
-                "garbage": "Garbage",
-                "gas_hotel": "Gas (Hotel)",
-                "gas_ground_floor": "Gas (GF)",
-                "gas_first_floor": "Gas (1F)",
-                "total": "Total",
-            })
-            display_cols = ["Company", "Electricity", "Water", "Garbage",
-                            "Gas (Hotel)", "Gas (GF)", "Gas (1F)", "Total"]
-            st.dataframe(df[display_cols], use_container_width=True, hide_index=True)
+            if not results:
+                st.warning("No allocatable results. All companies may be inactive or ineligible.")
+            else:
+                # Check if all headcounts are zero (allocation fell back to sqm-only)
+                effective_hcs = [
+                    (hc_overrides or {}).get(c["id"], c["headcount_default"])
+                    for c in active_companies
+                ]
+                if all(h == 0 for h in effective_hcs):
+                    st.info("All headcounts are 0 this month. Allocation is based on area (sqm) only.")
 
-            # Generate Excel
-            month_name = datetime(year, month, 1).strftime("%B")
-            filename = f"Premier_Group_Cost_Allocation_{year}_{month:02d}_{month_name}.xlsx"
-            tmp_path = os.path.join(tempfile.gettempdir(), filename)
+                # Preview table
+                st.subheader("Allocation Preview")
+                df = pd.DataFrame(results)
+                df = df.rename(columns={
+                    "company_name": "Company",
+                    "electricity": "Electricity",
+                    "water": "Water",
+                    "garbage": "Garbage",
+                    "gas_hotel": "Gas (Hotel)",
+                    "gas_ground_floor": "Gas (GF)",
+                    "gas_first_floor": "Gas (1F)",
+                    "total": "Total",
+                })
+                display_cols = ["Company", "Electricity", "Water", "Garbage",
+                                "Gas (Hotel)", "Gas (GF)", "Gas (1F)", "Total"]
+                st.dataframe(df[display_cols], use_container_width=True, hide_index=True)
 
-            generate_excel(
-                tmp_path, results, monthly_input,
-                settings["ratios"], active_companies, settings["defaults"],
-                hc_overrides,
-            )
+                # Generate Excel
+                month_name = datetime(2000, month, 1).strftime("%B")
+                filename = f"Premier_Group_Cost_Allocation_{year}_{month:02d}_{month_name}.xlsx"
+                tmp_path = os.path.join(tempfile.gettempdir(), filename)
 
-            with open(tmp_path, "rb") as f:
-                st.download_button(
-                    label=f"Download {filename}",
-                    data=f,
-                    file_name=filename,
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    type="primary",
-                    use_container_width=True,
+                generate_excel(
+                    tmp_path, results, monthly_input,
+                    settings["ratios"], active_companies, settings["defaults"],
+                    hc_overrides,
                 )
+
+                with open(tmp_path, "rb") as f:
+                    st.download_button(
+                        label=f"Download {filename}",
+                        data=f,
+                        file_name=filename,
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        type="primary",
+                        use_container_width=True,
+                    )
 
 # =============================================================================
 # TAB 2: Company Management
@@ -186,7 +201,6 @@ with tab2:
                 new_active = st.checkbox("Active", value=c["active"], key=f"ed_act_{c['id']}")
 
             if st.button("Save Changes", key=f"save_{c['id']}"):
-                # Validate name uniqueness (allow same name for self)
                 other_names = [x["name"].strip().lower() for x in companies if x["id"] != c["id"]]
                 if new_name.strip().lower() in other_names:
                     st.error(f"Company name '{new_name}' already exists.")
@@ -235,7 +249,8 @@ with tab2:
         if submitted:
             existing_names = [x["name"].strip().lower() for x in companies]
             existing_ids = [x["id"] for x in companies]
-            company_id = add_name.strip().lower().replace(" ", "-").replace("&", "and")
+            # Safe ID: lowercase, replace non-alphanumeric with dash, collapse
+            company_id = re.sub(r"[^a-z0-9]+", "-", add_name.strip().lower()).strip("-")
 
             if not add_name.strip():
                 st.error("Company name is required.")
@@ -301,7 +316,7 @@ with tab3:
     st.divider()
     st.subheader("Default Values")
     new_elevator = st.number_input(
-        "Elevator Cost (RON) - informational",
+        "Elevator Cost (RON) - this value is not added to any bill, it is shown for reference only",
         min_value=0.0,
         value=float(saved_settings["defaults"]["elevator_cost"]),
         step=10.0,
@@ -316,5 +331,5 @@ with tab3:
             saved_settings["defaults"]["elevator_cost"] = new_elevator
             save_settings(saved_settings)
             st.session_state._reload = True
-            st.success("Settings saved!")
+            st.success("Settings saved successfully!")
             st.rerun()
