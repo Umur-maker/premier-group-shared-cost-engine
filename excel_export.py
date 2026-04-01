@@ -1,7 +1,7 @@
 import openpyxl
 from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
 from openpyxl.utils import get_column_letter
-
+from translations import t, floor_name
 
 HEADER_FILL = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
 HEADER_FONT = Font(bold=True, size=11, color="FFFFFF")
@@ -33,9 +33,9 @@ def _write_cell(ws, row, col, value, is_currency=False, bold=False):
     return cell
 
 
-def _write_summary_sheet(wb, results):
-    ws = wb.create_sheet("Summary")
-    headers = ["Company", "Total Payment (RON)"]
+def _write_summary_sheet(wb, results, lang):
+    ws = wb.create_sheet(t("excel_summary", lang))
+    headers = [t("excel_company", lang), t("excel_total_payment", lang)]
     for col, h in enumerate(headers, 1):
         ws.cell(row=1, column=col, value=h)
     _style_header(ws, 1, len(headers))
@@ -45,17 +45,18 @@ def _write_summary_sheet(wb, results):
         _write_cell(ws, i, 2, r["total"], is_currency=True)
 
     total_row = len(results) + 2
-    _write_cell(ws, total_row, 1, "TOTAL", bold=True)
+    _write_cell(ws, total_row, 1, t("excel_total", lang), bold=True)
     _write_cell(ws, total_row, 2, round(sum(r["total"] for r in results), 2), is_currency=True, bold=True)
 
     ws.column_dimensions["A"].width = 25
     ws.column_dimensions["B"].width = 22
 
 
-def _write_detailed_sheet(wb, results):
-    ws = wb.create_sheet("Detailed Breakdown")
-    headers = ["Company", "Electricity", "Water", "Garbage",
-               "Gas (Hotel)", "Gas (Ground Floor)", "Gas (First Floor)", "Total"]
+def _write_detailed_sheet(wb, results, lang):
+    ws = wb.create_sheet(t("excel_detail", lang))
+    headers = [t("excel_company", lang), t("electricity", lang), t("water", lang),
+               t("garbage", lang), t("excel_gas_hotel", lang),
+               t("excel_gas_gf", lang), t("excel_gas_ff", lang), t("excel_total", lang)]
     for col, h in enumerate(headers, 1):
         ws.cell(row=1, column=col, value=h)
     _style_header(ws, 1, len(headers))
@@ -69,7 +70,7 @@ def _write_detailed_sheet(wb, results):
             _write_cell(ws, i, j, r[key], is_currency=True)
 
     total_row = len(results) + 2
-    _write_cell(ws, total_row, 1, "TOTAL", bold=True)
+    _write_cell(ws, total_row, 1, t("excel_total", lang), bold=True)
     for j, key in enumerate(keys, 2):
         _write_cell(ws, total_row, j, round(sum(r[key] for r in results), 2), is_currency=True, bold=True)
 
@@ -78,71 +79,93 @@ def _write_detailed_sheet(wb, results):
         ws.column_dimensions[get_column_letter(col)].width = 18
 
 
-def _write_calculation_sheet(wb, results, monthly_input, ratios, companies,
-                              headcount_overrides=None):
-    ws = wb.create_sheet("Calculation Details")
-    overrides = headcount_overrides or {}
+def _write_calculation_sheet(wb, results, monthly_input, ratios, companies, lang):
+    ws = wb.create_sheet(t("excel_calc", lang))
     row = 1
 
-    # --- Section 1: Input Values ---
-    ws.cell(row=row, column=1, value="INPUT VALUES").font = SECTION_FONT
+    # Section 1: Input Values
+    ws.cell(row=row, column=1, value=t("excel_input_values", lang)).font = SECTION_FONT
     row += 1
-    inputs = [
-        ("Electricity Total (RON)", monthly_input["electricity_total"]),
-        ("Garbage Total (RON)", monthly_input["garbage_total"]),
-        ("Water Total (RON)", monthly_input["water_total"]),
-        ("Hotel Gas Total (RON)", monthly_input["hotel_gas_total"]),
-        ("Ground Floor Gas Total (RON)", monthly_input["ground_floor_gas_total"]),
-        ("First Floor Gas Total (RON)", monthly_input["first_floor_gas_total"]),
-        ("External Water Deduction (RON)", monthly_input.get("external_water_deduction", 0)),
-        ("External Electricity Contribution (RON)", monthly_input.get("external_electricity_contribution", 0)),
+
+    bill_labels = [
+        (t("electricity", lang), "electricity_total"),
+        (t("water", lang), "water_total"),
+        (t("garbage", lang), "garbage_total"),
+        (t("hotel_gas", lang), "hotel_gas_total"),
+        (t("ground_floor_gas", lang), "ground_floor_gas_total"),
+        (t("first_floor_gas", lang), "first_floor_gas_total"),
     ]
-    for label, value in inputs:
-        ws.cell(row=row, column=1, value=label)
-        c = ws.cell(row=row, column=2, value=value)
-        c.number_format = "#,##0.00"
+    for label, key in bill_labels:
+        ws.cell(row=row, column=1, value=f"{label} (RON)")
+        ws.cell(row=row, column=2, value=monthly_input[key]).number_format = "#,##0.00"
         row += 1
 
     row += 1
 
-    # --- Section 2: Net Allocable Amounts ---
-    ws.cell(row=row, column=1, value="NET ALLOCABLE AMOUNTS").font = SECTION_FONT
-    row += 1
-    net_elec = monthly_input["electricity_total"] - monthly_input.get("external_electricity_contribution", 0)
-    net_water = monthly_input["water_total"] - monthly_input.get("external_water_deduction", 0)
-    net_amounts = [
-        ("Electricity (after external deduction)", net_elec),
-        ("Water (after external deduction)", net_water),
-        ("Garbage", monthly_input["garbage_total"]),
-        ("Hotel Gas", monthly_input["hotel_gas_total"]),
-        ("Ground Floor Gas", monthly_input["ground_floor_gas_total"]),
-        ("First Floor Gas", monthly_input["first_floor_gas_total"]),
+    # External usage
+    ext_labels = [
+        (t("excel_external_electricity", lang), "external_electricity"),
+        (t("excel_external_water", lang), "external_water"),
+        (t("excel_external_garbage", lang), "external_garbage"),
+        (t("excel_external_hotel_gas", lang), "external_hotel_gas"),
+        (t("excel_external_gf_gas", lang), "external_gf_gas"),
+        (t("excel_external_ff_gas", lang), "external_ff_gas"),
     ]
-    for label, value in net_amounts:
+    for label, key in ext_labels:
+        val = monthly_input.get(key, 0)
+        if val > 0:
+            ws.cell(row=row, column=1, value=label)
+            ws.cell(row=row, column=2, value=val).number_format = "#,##0.00"
+            row += 1
+
+    row += 1
+
+    # Section 2: Net Allocable
+    ws.cell(row=row, column=1, value=t("excel_net_amounts", lang)).font = SECTION_FONT
+    row += 1
+
+    net_pairs = [
+        ("electricity", "electricity_total", "external_electricity"),
+        ("water", "water_total", "external_water"),
+        ("garbage", "garbage_total", "external_garbage"),
+        ("hotel_gas", "hotel_gas_total", "external_hotel_gas"),
+        ("ground_floor_gas", "ground_floor_gas_total", "external_gf_gas"),
+        ("first_floor_gas", "first_floor_gas_total", "external_ff_gas"),
+    ]
+    for type_key, total_key, ext_key in net_pairs:
+        ext = monthly_input.get(ext_key, 0)
+        net = monthly_input[total_key] - ext
+        label_type = t(type_key, lang) if type_key in ("electricity", "water", "garbage") else t(type_key, lang)
+        if ext > 0:
+            label = t("excel_after_external", lang, type=label_type)
+        else:
+            label = label_type
         ws.cell(row=row, column=1, value=label)
-        c = ws.cell(row=row, column=2, value=round(value, 2))
-        c.number_format = "#,##0.00"
+        ws.cell(row=row, column=2, value=round(net, 2)).number_format = "#,##0.00"
         row += 1
 
     row += 1
 
-    # --- Section 3: Allocation Ratios ---
-    ws.cell(row=row, column=1, value="ALLOCATION RATIOS").font = SECTION_FONT
+    # Section 3: Ratios
+    ws.cell(row=row, column=1, value=t("excel_ratios", lang)).font = SECTION_FONT
     row += 1
     for expense_type, weights in ratios.items():
-        ws.cell(row=row, column=1, value=expense_type.capitalize())
-        ws.cell(row=row, column=2, value=f"{weights['sqm_weight']}% sqm + {weights['headcount_weight']}% headcount")
+        label = expense_type.capitalize()
+        ws.cell(row=row, column=1, value=label)
+        ws.cell(row=row, column=2, value=t("excel_ratio_format", lang,
+                                            sqm=weights["sqm_weight"], hc=weights["headcount_weight"]))
         row += 1
 
     row += 1
 
-    # --- Section 4: Company Details ---
+    # Section 4: Company Data
     active = [c for c in companies if c["active"]]
-    ws.cell(row=row, column=1, value="COMPANY DATA").font = SECTION_FONT
+    ws.cell(row=row, column=1, value=t("excel_company_data", lang)).font = SECTION_FONT
     row += 1
 
-    headers = ["Company", "Area (m2)", "Headcount",
-               "Floor", "Has Heating", "sqm % of total", "HC % of total"]
+    headers = [t("excel_company", lang), t("area_m2", lang), t("excel_persons", lang),
+               t("floor", lang), t("excel_has_heating", lang),
+               t("excel_sqm_pct", lang), t("excel_person_pct", lang)]
     for col, h in enumerate(headers, 1):
         ws.cell(row=row, column=col, value=h)
     _style_header(ws, row, len(headers))
@@ -155,8 +178,8 @@ def _write_calculation_sheet(wb, results, monthly_input, ratios, companies,
         ws.cell(row=row, column=1, value=c["name"])
         ws.cell(row=row, column=2, value=c["area_m2"])
         ws.cell(row=row, column=3, value=c["headcount_default"])
-        ws.cell(row=row, column=4, value=c["floor"].replace("_", " ").title())
-        ws.cell(row=row, column=5, value="Yes" if c["has_heating"] else "No")
+        ws.cell(row=row, column=4, value=floor_name(c["floor"], lang))
+        ws.cell(row=row, column=5, value=t("excel_yes", lang) if c["has_heating"] else t("excel_no", lang))
         sqm_pct = c["area_m2"] / total_sqm if total_sqm else 0
         hc_pct = c["headcount_default"] / total_hc if total_hc else 0
         ws.cell(row=row, column=6, value=round(sqm_pct * 100, 2))
@@ -165,22 +188,22 @@ def _write_calculation_sheet(wb, results, monthly_input, ratios, companies,
         ws.cell(row=row, column=7).number_format = '0.00"%"'
         row += 1
 
-    ws.cell(row=row, column=1, value="TOTAL").font = Font(bold=True)
+    ws.cell(row=row, column=1, value=t("excel_total", lang)).font = Font(bold=True)
     ws.cell(row=row, column=2, value=total_sqm).font = Font(bold=True)
     ws.cell(row=row, column=3, value=total_hc).font = Font(bold=True)
     row += 2
 
-    # --- Section 5: Eligible Groups Per Expense Type ---
-    ws.cell(row=row, column=1, value="ELIGIBLE COMPANIES PER EXPENSE TYPE").font = SECTION_FONT
+    # Section 5: Eligible Groups
+    ws.cell(row=row, column=1, value=t("excel_eligible", lang)).font = SECTION_FONT
     row += 1
 
     expense_groups = [
-        ("Electricity", [c for c in active if c["electricity_eligible"]]),
-        ("Water", [c for c in active if c["water_eligible"]]),
-        ("Garbage", [c for c in active if c["garbage_eligible"]]),
-        ("Gas - Hotel", [c for c in active if c["floor"] == "hotel" and c["has_heating"]]),
-        ("Gas - Ground Floor", [c for c in active if c["floor"] == "ground_floor" and c["has_heating"]]),
-        ("Gas - First Floor", [c for c in active if c["floor"] == "first_floor" and c["has_heating"]]),
+        (t("electricity", lang), [c for c in active if c["electricity_eligible"]]),
+        (t("water", lang), [c for c in active if c["water_eligible"]]),
+        (t("garbage", lang), [c for c in active if c["garbage_eligible"]]),
+        (t("excel_gas_hotel", lang), [c for c in active if c["floor"] == "hotel" and c["has_heating"]]),
+        (t("excel_gas_gf", lang), [c for c in active if c["floor"] == "ground_floor" and c["has_heating"]]),
+        (t("excel_gas_ff", lang), [c for c in active if c["floor"] == "first_floor" and c["has_heating"]]),
     ]
 
     for expense_name, eligible in expense_groups:
@@ -188,9 +211,9 @@ def _write_calculation_sheet(wb, results, monthly_input, ratios, companies,
         ws.cell(row=row, column=1).fill = SUBSECTION_FILL
         eligible_sqm = sum(c["area_m2"] for c in eligible)
         eligible_hc = sum(c["headcount_default"] for c in eligible)
-        ws.cell(row=row, column=2, value=f"{len(eligible)} companies").fill = SUBSECTION_FILL
-        ws.cell(row=row, column=3, value=f"Total sqm: {eligible_sqm:.2f}").fill = SUBSECTION_FILL
-        ws.cell(row=row, column=4, value=f"Total HC: {eligible_hc}").fill = SUBSECTION_FILL
+        ws.cell(row=row, column=2, value=t("excel_n_companies", lang, n=len(eligible))).fill = SUBSECTION_FILL
+        ws.cell(row=row, column=3, value=t("excel_total_sqm", lang, v=eligible_sqm)).fill = SUBSECTION_FILL
+        ws.cell(row=row, column=4, value=t("excel_total_persons", lang, v=eligible_hc)).fill = SUBSECTION_FILL
         row += 1
 
         for c in eligible:
@@ -198,14 +221,17 @@ def _write_calculation_sheet(wb, results, monthly_input, ratios, companies,
             sqm_ratio = c["area_m2"] / eligible_sqm if eligible_sqm > 0 else 0
             hc_ratio = hc / eligible_hc if eligible_hc > 0 else 0
             ws.cell(row=row, column=1, value=f"  {c['name']}")
-            ws.cell(row=row, column=2, value=f"{c['area_m2']} m2 ({sqm_ratio*100:.2f}%)")
-            ws.cell(row=row, column=3, value=f"{hc} HC ({hc_ratio*100:.2f}%)")
+            ws.cell(row=row, column=2, value=f"{c['area_m2']} m\u00b2 ({sqm_ratio*100:.2f}%)")
+            ws.cell(row=row, column=3, value=f"{hc} ({hc_ratio*100:.2f}%)")
             result_row = next((r for r in results if r["company_id"] == c["id"]), None)
             if result_row:
                 key_map = {
-                    "Electricity": "electricity", "Water": "water", "Garbage": "garbage",
-                    "Gas - Hotel": "gas_hotel", "Gas - Ground Floor": "gas_ground_floor",
-                    "Gas - First Floor": "gas_first_floor",
+                    t("electricity", lang): "electricity",
+                    t("water", lang): "water",
+                    t("garbage", lang): "garbage",
+                    t("excel_gas_hotel", lang): "gas_hotel",
+                    t("excel_gas_gf", lang): "gas_ground_floor",
+                    t("excel_gas_ff", lang): "gas_first_floor",
                 }
                 key = key_map.get(expense_name)
                 if key:
@@ -214,22 +240,19 @@ def _write_calculation_sheet(wb, results, monthly_input, ratios, companies,
             row += 1
         row += 1
 
-    # Column widths
-    ws.column_dimensions["A"].width = 30
+    ws.column_dimensions["A"].width = 35
     for col in range(2, 8):
         ws.column_dimensions[get_column_letter(col)].width = 22
 
 
-def generate_excel(filepath, results, monthly_input, ratios, companies,
-                   headcount_overrides=None):
+def generate_excel(filepath, results, monthly_input, ratios, companies, lang="en"):
     """Generate a 3-sheet Excel workbook with cost allocation results."""
     wb = openpyxl.Workbook()
     wb.remove(wb.active)
 
-    _write_summary_sheet(wb, results)
-    _write_detailed_sheet(wb, results)
-    _write_calculation_sheet(wb, results, monthly_input, ratios, companies,
-                             headcount_overrides)
+    _write_summary_sheet(wb, results, lang)
+    _write_detailed_sheet(wb, results, lang)
+    _write_calculation_sheet(wb, results, monthly_input, ratios, companies, lang)
 
     wb.save(filepath)
     return filepath
