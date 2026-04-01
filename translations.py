@@ -1,0 +1,233 @@
+"""UI and Excel translations for English and Romanian."""
+
+TRANSLATIONS = {
+    "en": {
+        # App
+        "app_title": "Premier Business Center - Shared Cost Engine",
+        "tab_monthly": "Monthly Input",
+        "tab_companies": "Companies",
+        "tab_settings": "Settings",
+        "tab_history": "History",
+
+        # Monthly Input
+        "month": "Month",
+        "year": "Year",
+        "invoice_totals": "Invoice Totals (RON)",
+        "electricity": "Electricity",
+        "water": "Water",
+        "garbage": "Garbage",
+        "hotel_gas": "Hotel Gas",
+        "ground_floor_gas": "Ground Floor Gas",
+        "first_floor_gas": "First Floor Gas",
+        "external_usage": "External Usage (RON)",
+        "external_electricity": "External Electricity Usage",
+        "external_water": "External Water Usage",
+        "external_garbage": "External Garbage Usage",
+        "external_hotel_gas": "External Hotel Gas Usage",
+        "external_gf_gas": "External Ground Floor Gas Usage",
+        "external_ff_gas": "External First Floor Gas Usage",
+        "generate": "Generate Excel Report",
+        "preview": "Allocation Preview",
+        "download": "Download",
+        "no_active": "No active companies. Go to Companies tab to activate at least one.",
+        "external_exceeds": "{field} external usage ({ext:.2f}) cannot exceed total ({total:.2f}).",
+        "invalid_number": "Invalid number in: {fields}. Use digits and decimal point only.",
+        "no_results": "No allocatable results. All companies may be inactive or ineligible.",
+
+        # Companies
+        "company_name": "Company Name",
+        "area_m2": "Area (m\u00b2)",
+        "persons": "Number of Persons",
+        "floor": "Floor",
+        "building": "Building",
+        "has_heating": "Has Heating (Gas)",
+        "active": "Active",
+        "save": "Save",
+        "saved_ok": "'{name}' saved successfully.",
+        "add_company": "Add New Company",
+        "added_ok": "'{name}' added successfully.",
+        "name_exists": "Company name '{name}' already exists.",
+        "name_empty": "Company name cannot be empty.",
+        "area_zero": "Area must be greater than 0.",
+        "persons_negative": "Number of persons cannot be negative.",
+        "id_exists": "A company with this ID already exists. Choose a different name.",
+
+        # Settings
+        "ratios_title": "Allocation Ratios",
+        "ratios_help": "When one value changes, the other adjusts automatically to keep total at 100%.",
+        "sqm_pct": "{type} \u2014 sqm %",
+        "person_pct": "{type} \u2014 person %",
+        "save_settings": "Save Settings",
+        "settings_saved": "Settings saved successfully.",
+        "unsaved_warning": "You have unsaved changes. Save before switching tabs or your changes will be lost.",
+
+        # History
+        "history_title": "Run History",
+        "history_empty": "No past runs yet. Generate a report from the Monthly Input tab.",
+        "history_run": "{month} {year}",
+        "history_generated": "Generated: {date}",
+        "history_download": "Download Excel",
+        "history_delete": "Delete",
+        "history_deleted": "Run deleted.",
+
+        # Excel
+        "excel_summary": "Summary",
+        "excel_detail": "Detailed Breakdown",
+        "excel_calc": "Calculation Details",
+        "excel_company": "Company",
+        "excel_total_payment": "Total Payment (RON)",
+        "excel_total": "TOTAL",
+        "excel_gas_hotel": "Gas (Hotel)",
+        "excel_gas_gf": "Gas (Ground Floor)",
+        "excel_gas_ff": "Gas (First Floor)",
+        "excel_input_values": "INPUT VALUES",
+        "excel_net_amounts": "NET ALLOCABLE AMOUNTS",
+        "excel_after_external": "{type} (after external usage deduction)",
+        "excel_ratios": "ALLOCATION RATIOS",
+        "excel_ratio_format": "{sqm}% sqm + {hc}% persons",
+        "excel_company_data": "COMPANY DATA",
+        "excel_persons": "Persons",
+        "excel_has_heating": "Has Heating",
+        "excel_yes": "Yes",
+        "excel_no": "No",
+        "excel_sqm_pct": "sqm % of total",
+        "excel_person_pct": "Person % of total",
+        "excel_eligible": "ELIGIBLE COMPANIES PER EXPENSE TYPE",
+        "excel_n_companies": "{n} companies",
+        "excel_total_sqm": "Total sqm: {v:.2f}",
+        "excel_total_persons": "Total persons: {v}",
+        "excel_external_electricity": "External Electricity Usage (RON)",
+        "excel_external_water": "External Water Usage (RON)",
+        "excel_external_garbage": "External Garbage Usage (RON)",
+        "excel_external_hotel_gas": "External Hotel Gas Usage (RON)",
+        "excel_external_gf_gas": "External Ground Floor Gas Usage (RON)",
+        "excel_external_ff_gas": "External First Floor Gas Usage (RON)",
+
+        # Floor names
+        "floor_ground_floor": "Ground Floor",
+        "floor_first_floor": "First Floor",
+        "floor_mezzanine": "Mezzanine",
+        "floor_hotel": "Hotel",
+    },
+    "ro": {
+        # App
+        "app_title": "Premier Business Center - Motor de Costuri Comune",
+        "tab_monthly": "Date Lunare",
+        "tab_companies": "Companii",
+        "tab_settings": "Setari",
+        "tab_history": "Istoric",
+
+        # Monthly Input
+        "month": "Luna",
+        "year": "An",
+        "invoice_totals": "Totaluri Facturi (RON)",
+        "electricity": "Electricitate",
+        "water": "Apa",
+        "garbage": "Gunoi",
+        "hotel_gas": "Gaz Hotel",
+        "ground_floor_gas": "Gaz Parter",
+        "first_floor_gas": "Gaz Etaj 1",
+        "external_usage": "Consum Extern (RON)",
+        "external_electricity": "Consum Extern Electricitate",
+        "external_water": "Consum Extern Apa",
+        "external_garbage": "Consum Extern Gunoi",
+        "external_hotel_gas": "Consum Extern Gaz Hotel",
+        "external_gf_gas": "Consum Extern Gaz Parter",
+        "external_ff_gas": "Consum Extern Gaz Etaj 1",
+        "generate": "Genereaza Raport Excel",
+        "preview": "Previzualizare Alocare",
+        "download": "Descarca",
+        "no_active": "Nu exista companii active. Activati cel putin una din tab-ul Companii.",
+        "external_exceeds": "Consumul extern {field} ({ext:.2f}) nu poate depasi totalul ({total:.2f}).",
+        "invalid_number": "Numar invalid in: {fields}. Folositi cifre si punct zecimal.",
+        "no_results": "Nu exista rezultate. Toate companiile pot fi inactive sau neeligibile.",
+
+        # Companies
+        "company_name": "Numele Companiei",
+        "area_m2": "Suprafata (m\u00b2)",
+        "persons": "Numar de Persoane",
+        "floor": "Etaj",
+        "building": "Cladire",
+        "has_heating": "Are Incalzire (Gaz)",
+        "active": "Activ",
+        "save": "Salveaza",
+        "saved_ok": "'{name}' salvat cu succes.",
+        "add_company": "Adauga Companie Noua",
+        "added_ok": "'{name}' adaugat cu succes.",
+        "name_exists": "Numele '{name}' exista deja.",
+        "name_empty": "Numele companiei nu poate fi gol.",
+        "area_zero": "Suprafata trebuie sa fie mai mare decat 0.",
+        "persons_negative": "Numarul de persoane nu poate fi negativ.",
+        "id_exists": "O companie cu acest ID exista deja. Alegeti un alt nume.",
+
+        # Settings
+        "ratios_title": "Proportii de Alocare",
+        "ratios_help": "Cand o valoare se schimba, cealalta se ajusteaza automat pentru a pastra totalul la 100%.",
+        "sqm_pct": "{type} \u2014 mp %",
+        "person_pct": "{type} \u2014 persoane %",
+        "save_settings": "Salveaza Setarile",
+        "settings_saved": "Setarile au fost salvate cu succes.",
+        "unsaved_warning": "Aveti modificari nesalvate. Salvati inainte de a schimba tab-ul, altfel modificarile se vor pierde.",
+
+        # History
+        "history_title": "Istoric Rapoarte",
+        "history_empty": "Nu exista rapoarte anterioare. Generati un raport din tab-ul Date Lunare.",
+        "history_run": "{month} {year}",
+        "history_generated": "Generat: {date}",
+        "history_download": "Descarca Excel",
+        "history_delete": "Sterge",
+        "history_deleted": "Raport sters.",
+
+        # Excel
+        "excel_summary": "Sumar",
+        "excel_detail": "Detalii pe Categorii",
+        "excel_calc": "Detalii Calcul",
+        "excel_company": "Companie",
+        "excel_total_payment": "Total de Plata (RON)",
+        "excel_total": "TOTAL",
+        "excel_gas_hotel": "Gaz (Hotel)",
+        "excel_gas_gf": "Gaz (Parter)",
+        "excel_gas_ff": "Gaz (Etaj 1)",
+        "excel_input_values": "VALORI INTRODUSE",
+        "excel_net_amounts": "SUME NETE ALOCABILE",
+        "excel_after_external": "{type} (dupa deducerea consumului extern)",
+        "excel_ratios": "PROPORTII DE ALOCARE",
+        "excel_ratio_format": "{sqm}% mp + {hc}% persoane",
+        "excel_company_data": "DATE COMPANII",
+        "excel_persons": "Persoane",
+        "excel_has_heating": "Are Incalzire",
+        "excel_yes": "Da",
+        "excel_no": "Nu",
+        "excel_sqm_pct": "% mp din total",
+        "excel_person_pct": "% persoane din total",
+        "excel_eligible": "COMPANII ELIGIBILE PE TIP DE CHELTUIALA",
+        "excel_n_companies": "{n} companii",
+        "excel_total_sqm": "Total mp: {v:.2f}",
+        "excel_total_persons": "Total persoane: {v}",
+        "excel_external_electricity": "Consum Extern Electricitate (RON)",
+        "excel_external_water": "Consum Extern Apa (RON)",
+        "excel_external_garbage": "Consum Extern Gunoi (RON)",
+        "excel_external_hotel_gas": "Consum Extern Gaz Hotel (RON)",
+        "excel_external_gf_gas": "Consum Extern Gaz Parter (RON)",
+        "excel_external_ff_gas": "Consum Extern Gaz Etaj 1 (RON)",
+
+        # Floor names
+        "floor_ground_floor": "Parter",
+        "floor_first_floor": "Etaj 1",
+        "floor_mezzanine": "Mezanin",
+        "floor_hotel": "Hotel",
+    },
+}
+
+
+def t(key, lang="en", **kwargs):
+    """Get translation for key in given language."""
+    text = TRANSLATIONS.get(lang, TRANSLATIONS["en"]).get(key, key)
+    if kwargs:
+        return text.format(**kwargs)
+    return text
+
+
+def floor_name(floor_id, lang="en"):
+    """Translate floor ID to display name."""
+    return t(f"floor_{floor_id}", lang)
