@@ -53,7 +53,6 @@ def tmp_data_dir(sample_companies):
                     "water": {"sqm_weight": 30, "headcount_weight": 70},
                     "garbage": {"sqm_weight": 30, "headcount_weight": 70},
                 },
-                "defaults": {"elevator_cost": 400},
             }, f)
         with patch.object(data_manager, "COMPANIES_FILE", companies_file), \
              patch.object(data_manager, "SETTINGS_FILE", settings_file):
