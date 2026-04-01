@@ -41,7 +41,7 @@ TRANSLATIONS = {
         "external_exceeds": "{field} external usage ({ext:.2f} RON) cannot exceed total ({total:.2f} RON).",
         "invalid_number": "Invalid number in: {fields}. Use digits and decimal point only.",
         "no_results": "No allocatable results. All companies may be inactive or ineligible.",
-        "input_placeholder": "e.g. 3598.89",
+        "input_placeholder": "e.g. 5.325,54",
         "ext_placeholder": "0",
 
         # Companies
@@ -53,6 +53,14 @@ TRANSLATIONS = {
         "has_heating": "Has Heating (Gas)",
         "active": "Active",
         "save": "Save",
+        "office_location": "Office Location",
+        "contact_person": "Contact Person",
+        "phone": "Phone",
+        "email": "Email",
+        "beginning_date": "Beginning Date",
+        "expiration_date": "Expiration Date",
+        "notes": "Notes",
+        "company_info": "Company Information",
         "saved_ok": "'{name}' saved successfully.",
         "add_company": "Add New Company",
         "added_ok": "'{name}' added successfully.",
@@ -62,8 +70,6 @@ TRANSLATIONS = {
         "persons_negative": "Number of persons cannot be negative.",
         "id_exists": "A company with this ID already exists. Choose a different name.",
         "company_no": "No.",
-        "chart_persons": "Persons by Company",
-        "chart_area": "Area (m\u00b2) by Company",
 
         # Settings
         "ratios_title": "Allocation Ratios",
@@ -158,7 +164,7 @@ TRANSLATIONS = {
         "external_exceeds": "Consumul extern {field} ({ext:.2f} RON) nu poate depasi totalul ({total:.2f} RON).",
         "invalid_number": "Numar invalid in: {fields}. Folositi cifre si punct zecimal.",
         "no_results": "Nu exista rezultate. Toate companiile pot fi inactive sau neeligibile.",
-        "input_placeholder": "ex. 3598.89",
+        "input_placeholder": "ex. 5.325,54",
         "ext_placeholder": "0",
 
         # Companies
@@ -179,8 +185,14 @@ TRANSLATIONS = {
         "persons_negative": "Numarul de persoane nu poate fi negativ.",
         "id_exists": "O companie cu acest ID exista deja. Alegeti un alt nume.",
         "company_no": "Nr.",
-        "chart_persons": "Persoane pe Companie",
-        "chart_area": "Suprafata (m\u00b2) pe Companie",
+        "office_location": "Locatie Birou",
+        "contact_person": "Persoana de Contact",
+        "phone": "Telefon",
+        "email": "Email",
+        "beginning_date": "Data Inceput",
+        "expiration_date": "Data Expirare",
+        "notes": "Notite",
+        "company_info": "Informatii Companie",
 
         # Settings
         "ratios_title": "Proportii de Alocare",

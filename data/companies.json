@@ -10,7 +10,14 @@
     "electricity_eligible": true,
     "water_eligible": true,
     "garbage_eligible": true,
-    "active": true
+    "active": true,
+    "office_location": "",
+    "contact_person": "",
+    "phone": "",
+    "email": "",
+    "beginning_date": "",
+    "expiration_date": "",
+    "notes": ""
   },
   {
     "id": "mikazen",
@@ -23,7 +30,14 @@
     "electricity_eligible": true,
     "water_eligible": true,
     "garbage_eligible": true,
-    "active": true
+    "active": true,
+    "office_location": "",
+    "contact_person": "",
+    "phone": "",
+    "email": "",
+    "beginning_date": "",
+    "expiration_date": "",
+    "notes": ""
   },
   {
     "id": "vendor",
@@ -36,12 +50,19 @@
     "electricity_eligible": true,
     "water_eligible": true,
     "garbage_eligible": true,
-    "active": true
+    "active": true,
+    "office_location": "",
+    "contact_person": "",
+    "phone": "",
+    "email": "",
+    "beginning_date": "",
+    "expiration_date": "",
+    "notes": ""
   },
   {
     "id": "balkan",
     "name": "Balkan",
-    "area_m2": 25.50,
+    "area_m2": 25.5,
     "headcount_default": 2,
     "building": "C4",
     "floor": "ground_floor",
@@ -49,7 +70,14 @@
     "electricity_eligible": true,
     "water_eligible": true,
     "garbage_eligible": true,
-    "active": true
+    "active": true,
+    "office_location": "",
+    "contact_person": "",
+    "phone": "",
+    "email": "",
+    "beginning_date": "",
+    "expiration_date": "",
+    "notes": ""
   },
   {
     "id": "altay",
@@ -62,7 +90,14 @@
     "electricity_eligible": true,
     "water_eligible": true,
     "garbage_eligible": true,
-    "active": true
+    "active": true,
+    "office_location": "",
+    "contact_person": "",
+    "phone": "",
+    "email": "",
+    "beginning_date": "",
+    "expiration_date": "",
+    "notes": ""
   },
   {
     "id": "windoor",
@@ -75,12 +110,19 @@
     "electricity_eligible": true,
     "water_eligible": true,
     "garbage_eligible": true,
-    "active": true
+    "active": true,
+    "office_location": "",
+    "contact_person": "",
+    "phone": "",
+    "email": "",
+    "beginning_date": "",
+    "expiration_date": "",
+    "notes": ""
   },
   {
     "id": "kolnberg",
     "name": "Kolnberg",
-    "area_m2": 10.00,
+    "area_m2": 10.0,
     "headcount_default": 1,
     "building": "C4",
     "floor": "ground_floor",
@@ -88,7 +130,14 @@
     "electricity_eligible": true,
     "water_eligible": true,
     "garbage_eligible": true,
-    "active": true
+    "active": true,
+    "office_location": "",
+    "contact_person": "",
+    "phone": "",
+    "email": "",
+    "beginning_date": "",
+    "expiration_date": "",
+    "notes": ""
   },
   {
     "id": "gbcs",
@@ -101,7 +150,14 @@
     "electricity_eligible": true,
     "water_eligible": true,
     "garbage_eligible": true,
-    "active": true
+    "active": true,
+    "office_location": "",
+    "contact_person": "",
+    "phone": "",
+    "email": "",
+    "beginning_date": "",
+    "expiration_date": "",
+    "notes": ""
   },
   {
     "id": "premier-capital",
@@ -114,7 +170,14 @@
     "electricity_eligible": true,
     "water_eligible": true,
     "garbage_eligible": true,
-    "active": true
+    "active": true,
+    "office_location": "",
+    "contact_person": "",
+    "phone": "",
+    "email": "",
+    "beginning_date": "",
+    "expiration_date": "",
+    "notes": ""
   },
   {
     "id": "premier-rise",
@@ -127,12 +190,19 @@
     "electricity_eligible": true,
     "water_eligible": true,
     "garbage_eligible": true,
-    "active": true
+    "active": true,
+    "office_location": "",
+    "contact_person": "",
+    "phone": "",
+    "email": "",
+    "beginning_date": "",
+    "expiration_date": "",
+    "notes": ""
   },
   {
     "id": "premier-vision",
     "name": "Premier Vision",
-    "area_m2": 30.00,
+    "area_m2": 30.0,
     "headcount_default": 3,
     "building": "C4",
     "floor": "first_floor",
@@ -140,12 +210,19 @@
     "electricity_eligible": true,
     "water_eligible": true,
     "garbage_eligible": true,
-    "active": true
+    "active": true,
+    "office_location": "",
+    "contact_person": "",
+    "phone": "",
+    "email": "",
+    "beginning_date": "",
+    "expiration_date": "",
+    "notes": ""
   },
   {
     "id": "paul-george-cata",
     "name": "Paul George Cata",
-    "area_m2": 10.00,
+    "area_m2": 10.0,
     "headcount_default": 2,
     "building": "C4",
     "floor": "mezzanine",
@@ -153,12 +230,19 @@
     "electricity_eligible": true,
     "water_eligible": true,
     "garbage_eligible": true,
-    "active": true
+    "active": true,
+    "office_location": "",
+    "contact_person": "",
+    "phone": "",
+    "email": "",
+    "beginning_date": "",
+    "expiration_date": "",
+    "notes": ""
   },
   {
     "id": "hotel",
-    "name": "Hotel",
-    "area_m2": 277.00,
+    "name": "Arghezi Boutique Hotel",
+    "area_m2": 277.0,
     "headcount_default": 8,
     "building": "C1",
     "floor": "hotel",
@@ -166,6 +250,13 @@
     "electricity_eligible": true,
     "water_eligible": true,
     "garbage_eligible": true,
-    "active": true
+    "active": true,
+    "office_location": "",
+    "contact_person": "",
+    "phone": "",
+    "email": "",
+    "beginning_date": "",
+    "expiration_date": "",
+    "notes": ""
   }
 ]

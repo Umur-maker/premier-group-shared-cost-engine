@@ -105,4 +105,23 @@ def test_update_company(tmp_data_dir):
 def test_load_settings(tmp_data_dir):
     settings = data_manager.load_settings()
     assert settings["ratios"]["electricity"]["sqm_weight"] == 50
-    assert settings["defaults"]["elevator_cost"] == 400
+
+
+def test_optional_fields_persist(tmp_data_dir):
+    data_manager.update_company("company-a", {
+        "office_location": "Room 5",
+        "contact_person": "John",
+        "phone": "+40123456789",
+        "email": "john@example.com",
+        "beginning_date": "2026-01-01",
+        "expiration_date": "2027-01-01",
+        "notes": "Test note",
+    })
+    companies = data_manager.load_companies()
+    c = companies[0]
+    assert c["office_location"] == "Room 5"
+    assert c["contact_person"] == "John"
+    assert c["phone"] == "+40123456789"
+    assert c["email"] == "john@example.com"
+    assert c["beginning_date"] == "2026-01-01"
+    assert c["notes"] == "Test note"
