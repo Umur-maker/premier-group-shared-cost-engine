@@ -6,7 +6,7 @@ from datetime import datetime
 from data_manager import load_companies, load_settings, save_settings, add_company, update_company
 from engine import allocate_costs
 from excel_export import generate_excel
-from translations import t, floor_name, month_name, MONTH_NAMES
+from translations import t, floor_name, month_name
 from history import save_run, list_runs, get_excel_path, delete_run
 
 st.set_page_config(page_title="Premier Business Center - Shared Cost Engine", layout="centered")
@@ -29,7 +29,6 @@ def _load_data():
 
 _load_data()
 
-# --- Language selector ---
 lang_options = {"English": "en", "Romana": "ro"}
 lang_label = st.sidebar.selectbox("Language / Limba", list(lang_options.keys()))
 lang = lang_options[lang_label]
@@ -52,6 +51,11 @@ def _parse_amount(val):
     return f
 
 
+def _ron(key):
+    """Get translated label with (RON) suffix."""
+    return f"{t(key, lang)} (RON)"
+
+
 # =============================================================================
 # TAB 1: Monthly Input
 # =============================================================================
@@ -71,13 +75,13 @@ with tab1:
     st.markdown(f"#### {t('invoice_totals', lang)}")
     col1, col2 = st.columns(2)
     with col1:
-        inp_elec = st.text_input(t("electricity_ron", lang), value="", placeholder=ph, key="inp_elec")
-        inp_water = st.text_input(t("water_ron", lang), value="", placeholder=ph, key="inp_water")
-        inp_garbage = st.text_input(t("garbage_ron", lang), value="", placeholder=ph, key="inp_garbage")
+        inp_elec = st.text_input(_ron("electricity"), value="", placeholder=ph, key="inp_elec")
+        inp_water = st.text_input(_ron("water"), value="", placeholder=ph, key="inp_water")
+        inp_garbage = st.text_input(_ron("garbage"), value="", placeholder=ph, key="inp_garbage")
     with col2:
-        inp_hgas = st.text_input(t("hotel_gas_ron", lang), value="", placeholder=ph, key="inp_hgas")
-        inp_gfgas = st.text_input(t("ground_floor_gas_ron", lang), value="", placeholder=ph, key="inp_gfgas")
-        inp_ffgas = st.text_input(t("first_floor_gas_ron", lang), value="", placeholder=ph, key="inp_ffgas")
+        inp_hgas = st.text_input(_ron("hotel_gas"), value="", placeholder=ph, key="inp_hgas")
+        inp_gfgas = st.text_input(_ron("ground_floor_gas"), value="", placeholder=ph, key="inp_gfgas")
+        inp_ffgas = st.text_input(_ron("first_floor_gas"), value="", placeholder=ph, key="inp_ffgas")
 
     st.markdown(f"#### {t('external_usage', lang)}")
     ecol1, ecol2 = st.columns(2)
@@ -94,12 +98,12 @@ with tab1:
 
     if st.button(t("generate", lang), type="primary", use_container_width=True):
         field_map = {
-            t("electricity", lang): inp_elec,
-            t("water", lang): inp_water,
-            t("garbage", lang): inp_garbage,
-            t("hotel_gas", lang): inp_hgas,
-            t("ground_floor_gas", lang): inp_gfgas,
-            t("first_floor_gas", lang): inp_ffgas,
+            _ron("electricity"): inp_elec,
+            _ron("water"): inp_water,
+            _ron("garbage"): inp_garbage,
+            _ron("hotel_gas"): inp_hgas,
+            _ron("ground_floor_gas"): inp_gfgas,
+            _ron("first_floor_gas"): inp_ffgas,
             t("external_electricity", lang): ext_elec,
             t("external_water", lang): ext_water,
             t("external_garbage", lang): ext_garbage,
@@ -192,75 +196,14 @@ with tab1:
                                 type="primary", use_container_width=True)
 
 # =============================================================================
-# TAB 2: Companies
+# TAB 2: Companies - Add New first, then list
 # =============================================================================
 with tab2:
     companies = st.session_state.companies
-    active_companies = [c for c in companies if c["active"]]
+    floor_opts = ["ground_floor", "first_floor", "mezzanine", "hotel"]
+    floor_labels = [floor_name(f, lang) for f in floor_opts]
 
-    # Mini charts
-    if active_companies:
-        chart_col1, chart_col2 = st.columns(2)
-        chart_data_persons = {c["name"]: c["headcount_default"] for c in active_companies}
-        chart_data_area = {c["name"]: c["area_m2"] for c in active_companies}
-
-        with chart_col1:
-            st.caption(t("chart_persons", lang))
-            st.bar_chart(chart_data_persons, height=200)
-        with chart_col2:
-            st.caption(t("chart_area", lang))
-            st.bar_chart(chart_data_area, height=200)
-
-        st.divider()
-
-    for idx, c in enumerate(companies, 1):
-        icon = "🟢" if c["active"] else "🔴"
-        floor_opts = ["ground_floor", "first_floor", "mezzanine", "hotel"]
-        floor_labels = [floor_name(f, lang) for f in floor_opts]
-        label = f'{t("company_no", lang)} {idx} {icon} {c["name"]} \u2014 {c["area_m2"]} m\u00b2, {c["headcount_default"]} {t("excel_persons", lang).lower()}, {floor_name(c["floor"], lang)}'
-
-        with st.expander(label):
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                new_name = st.text_input(t("company_name", lang), value=c["name"], key=f"ed_name_{c['id']}")
-                new_area = st.number_input(t("area_m2", lang), value=c["area_m2"], key=f"ed_area_{c['id']}", step=0.01)
-                new_hc = st.number_input(t("persons", lang), value=c["headcount_default"], min_value=0, key=f"ed_hc_{c['id']}", step=1)
-            with col2:
-                new_floor_idx = st.selectbox(t("floor", lang), range(len(floor_opts)),
-                    index=floor_opts.index(c["floor"]),
-                    format_func=lambda i: floor_labels[i], key=f"ed_floor_{c['id']}")
-                new_floor = floor_opts[new_floor_idx]
-                new_building = st.text_input(t("building", lang), value=c["building"], key=f"ed_bld_{c['id']}")
-                new_heating = st.checkbox(t("has_heating", lang), value=c["has_heating"], key=f"ed_heat_{c['id']}")
-            with col3:
-                new_elec = st.checkbox(t("electricity", lang), value=c["electricity_eligible"], key=f"ed_elec_{c['id']}")
-                new_water = st.checkbox(t("water", lang), value=c["water_eligible"], key=f"ed_water_{c['id']}")
-                new_garbage = st.checkbox(t("garbage", lang), value=c["garbage_eligible"], key=f"ed_garb_{c['id']}")
-                new_active = st.checkbox(t("active", lang), value=c["active"], key=f"ed_act_{c['id']}")
-
-            if st.button(t("save", lang), key=f"save_{c['id']}"):
-                other_names = [x["name"].strip().lower() for x in companies if x["id"] != c["id"]]
-                if new_name.strip().lower() in other_names:
-                    st.error(t("name_exists", lang, name=new_name))
-                elif not new_name.strip():
-                    st.error(t("name_empty", lang))
-                elif new_area <= 0:
-                    st.error(t("area_zero", lang))
-                elif new_hc < 0:
-                    st.error(t("persons_negative", lang))
-                else:
-                    update_company(c["id"], {
-                        "name": new_name.strip(), "area_m2": new_area,
-                        "headcount_default": new_hc, "floor": new_floor,
-                        "building": new_building, "has_heating": new_heating,
-                        "electricity_eligible": new_elec, "water_eligible": new_water,
-                        "garbage_eligible": new_garbage, "active": new_active,
-                    })
-                    st.session_state._reload = True
-                    st.success(t("saved_ok", lang, name=new_name))
-                    st.rerun()
-
-    st.divider()
+    # --- Add New Company (top) ---
     st.markdown(f"#### {t('add_company', lang)}")
     with st.form("add_company_form"):
         col1, col2, col3 = st.columns(3)
@@ -304,8 +247,56 @@ with tab2:
                 st.success(t("added_ok", lang, name=add_name))
                 st.rerun()
 
+    st.divider()
+
+    # --- Company List ---
+    for idx, c in enumerate(companies, 1):
+        icon = "🟢" if c["active"] else "🔴"
+        label = f'{t("company_no", lang)} {idx} {icon} {c["name"]} \u2014 {c["area_m2"]} m\u00b2, {c["headcount_default"]} {t("excel_persons", lang).lower()}, {floor_name(c["floor"], lang)}'
+
+        with st.expander(label):
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                new_name = st.text_input(t("company_name", lang), value=c["name"], key=f"ed_name_{c['id']}")
+                new_area = st.number_input(t("area_m2", lang), value=c["area_m2"], key=f"ed_area_{c['id']}", step=0.01)
+                new_hc = st.number_input(t("persons", lang), value=c["headcount_default"], min_value=0, key=f"ed_hc_{c['id']}", step=1)
+            with col2:
+                new_floor_idx = st.selectbox(t("floor", lang), range(len(floor_opts)),
+                    index=floor_opts.index(c["floor"]),
+                    format_func=lambda i: floor_labels[i], key=f"ed_floor_{c['id']}")
+                new_floor = floor_opts[new_floor_idx]
+                new_building = st.text_input(t("building", lang), value=c["building"], key=f"ed_bld_{c['id']}")
+                new_heating = st.checkbox(t("has_heating", lang), value=c["has_heating"], key=f"ed_heat_{c['id']}")
+            with col3:
+                new_elec = st.checkbox(t("electricity", lang), value=c["electricity_eligible"], key=f"ed_elec_{c['id']}")
+                new_water = st.checkbox(t("water", lang), value=c["water_eligible"], key=f"ed_water_{c['id']}")
+                new_garbage = st.checkbox(t("garbage", lang), value=c["garbage_eligible"], key=f"ed_garb_{c['id']}")
+                new_active = st.checkbox(t("active", lang), value=c["active"], key=f"ed_act_{c['id']}")
+
+            if st.button(t("save", lang), key=f"save_{c['id']}"):
+                other_names = [x["name"].strip().lower() for x in companies if x["id"] != c["id"]]
+                if new_name.strip().lower() in other_names:
+                    st.error(t("name_exists", lang, name=new_name))
+                elif not new_name.strip():
+                    st.error(t("name_empty", lang))
+                elif new_area <= 0:
+                    st.error(t("area_zero", lang))
+                elif new_hc < 0:
+                    st.error(t("persons_negative", lang))
+                else:
+                    update_company(c["id"], {
+                        "name": new_name.strip(), "area_m2": new_area,
+                        "headcount_default": new_hc, "floor": new_floor,
+                        "building": new_building, "has_heating": new_heating,
+                        "electricity_eligible": new_elec, "water_eligible": new_water,
+                        "garbage_eligible": new_garbage, "active": new_active,
+                    })
+                    st.session_state._reload = True
+                    st.success(t("saved_ok", lang, name=new_name))
+                    st.rerun()
+
 # =============================================================================
-# TAB 3: Settings - True auto-balance ratios
+# TAB 3: Settings
 # =============================================================================
 with tab3:
     saved_settings = st.session_state.settings
@@ -325,8 +316,8 @@ with tab3:
                 min_value=0, max_value=100, value=current["sqm_weight"],
                 step=5, key=f"ratio_sqm_{expense_type}")
         with col2:
-            st.markdown(f"**{t('person_pct', lang, type=expense_type.capitalize())}**")
-            st.markdown(f"### {100 - new_sqm}%")
+            st.caption(t("person_pct", lang, type=expense_type.capitalize()))
+            st.markdown(f"&nbsp; **{100 - new_sqm}%**")
 
         pending_ratios[expense_type] = {"sqm_weight": new_sqm, "headcount_weight": 100 - new_sqm}
         if new_sqm != current["sqm_weight"]:
