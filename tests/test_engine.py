@@ -194,3 +194,42 @@ def test_headcount_overrides(companies, ratios, monthly_input, defaults):
     hotel_override = next(r for r in result_override if r["company_id"] == "hotel")
     # More headcount -> higher share for headcount-weighted expenses
     assert hotel_override["electricity"] > hotel_default["electricity"]
+
+
+# --- Zero sqm / zero headcount robustness tests ---
+
+def test_distribute_zero_total_sqm():
+    """If all companies have 0 sqm, rebalance to 100% headcount."""
+    companies = [
+        {"id": "a", "area_m2": 0.0, "headcount_default": 2},
+        {"id": "b", "area_m2": 0.0, "headcount_default": 3},
+    ]
+    result = _distribute(1000.0, companies, 50, 50)
+    assert sum(result.values()) == 1000.0
+    # Should be proportional to headcount only: 2/5 and 3/5
+    assert result["a"] == 400.0
+    assert result["b"] == 600.0
+
+
+def test_distribute_zero_total_headcount():
+    """If all companies have 0 headcount, rebalance to 100% sqm."""
+    companies = [
+        {"id": "a", "area_m2": 40.0, "headcount_default": 0},
+        {"id": "b", "area_m2": 60.0, "headcount_default": 0},
+    ]
+    result = _distribute(1000.0, companies, 50, 50)
+    assert sum(result.values()) == 1000.0
+    assert result["a"] == 400.0
+    assert result["b"] == 600.0
+
+
+def test_distribute_zero_both_sqm_and_headcount():
+    """If both are zero, equal split."""
+    companies = [
+        {"id": "a", "area_m2": 0.0, "headcount_default": 0},
+        {"id": "b", "area_m2": 0.0, "headcount_default": 0},
+    ]
+    result = _distribute(1000.0, companies, 50, 50)
+    assert sum(result.values()) == 1000.0
+    assert result["a"] == 500.0
+    assert result["b"] == 500.0

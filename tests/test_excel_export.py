@@ -64,10 +64,10 @@ def defaults():
     return {"elevator_cost": 400}
 
 
-def _generate(allocation_results, monthly_input, ratios, companies, defaults):
+def _generate(allocation_results, monthly_input, ratios, companies, defaults, headcount_overrides=None):
     with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as f:
         path = f.name
-    generate_excel(path, allocation_results, monthly_input, ratios, companies, defaults)
+    generate_excel(path, allocation_results, monthly_input, ratios, companies, defaults, headcount_overrides)
     return path
 
 
@@ -127,5 +127,37 @@ def test_calculation_sheet_has_input_values(allocation_results, monthly_input, r
         # Elevator cost should appear
         values = [ws.cell(row=r, column=1).value for r in range(1, 30)]
         assert any("Elevator" in str(v) for v in values if v)
+    finally:
+        os.unlink(path)
+
+
+def test_calculation_sheet_shows_overridden_headcount(allocation_results, monthly_input, ratios, companies, defaults):
+    overrides = {"hotel": 12}
+    path = _generate(allocation_results, monthly_input, ratios, companies, defaults, overrides)
+    try:
+        wb = openpyxl.load_workbook(path)
+        ws = wb["Calculation Details"]
+        # Find the row with "Hotel" and check headcount used = 12
+        found = False
+        for row in range(1, ws.max_row + 1):
+            if ws.cell(row=row, column=1).value == "Hotel":
+                assert ws.cell(row=row, column=3).value == 12  # Headcount (used)
+                assert ws.cell(row=row, column=4).value == 8   # Headcount (default)
+                found = True
+                break
+        assert found, "Hotel row not found in Calculation Details"
+    finally:
+        os.unlink(path)
+
+
+def test_calculation_sheet_shows_eligible_groups(allocation_results, monthly_input, ratios, companies, defaults):
+    path = _generate(allocation_results, monthly_input, ratios, companies, defaults)
+    try:
+        wb = openpyxl.load_workbook(path)
+        ws = wb["Calculation Details"]
+        values = [ws.cell(row=r, column=1).value for r in range(1, ws.max_row + 1)]
+        assert "ELIGIBLE COMPANIES PER EXPENSE TYPE" in values
+        assert "Electricity" in values
+        assert "Gas - Hotel" in values
     finally:
         os.unlink(path)

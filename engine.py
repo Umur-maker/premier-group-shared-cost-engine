@@ -20,6 +20,16 @@ def _distribute(amount, eligible_companies, sqm_weight, headcount_weight, headco
     overrides = headcount_overrides or {}
     total_hc = sum(overrides.get(c["id"], c["headcount_default"]) for c in eligible_companies)
 
+    # Rebalance weights if one dimension is zero
+    if total_sqm == 0 and total_hc == 0:
+        # Both zero: equal split
+        n = len(eligible_companies)
+        return {c["id"]: round(amount / n, 2) for c in eligible_companies}
+    elif total_sqm == 0:
+        w_sqm, w_hc = 0.0, 1.0
+    elif total_hc == 0:
+        w_sqm, w_hc = 1.0, 0.0
+
     result = {}
     for c in eligible_companies:
         sqm_ratio = c["area_m2"] / total_sqm if total_sqm > 0 else 0

@@ -1,6 +1,7 @@
 import streamlit as st
 import tempfile
 import os
+import pandas as pd
 from datetime import datetime
 from data_manager import (
     load_companies, save_companies, load_settings, save_settings,
@@ -86,63 +87,74 @@ with tab1:
     st.divider()
 
     if st.button("Generate Excel Report", type="primary", use_container_width=True):
-        monthly_input = {
-            "electricity_total": electricity_total,
-            "garbage_total": garbage_total,
-            "water_total": water_total,
-            "hotel_gas_total": hotel_gas_total,
-            "ground_floor_gas_total": ground_floor_gas_total,
-            "first_floor_gas_total": first_floor_gas_total,
-            "external_water_deduction": external_water,
-            "external_electricity_contribution": external_electricity,
-        }
+        # Validation
+        has_error = False
+        if external_water > water_total:
+            st.error(f"External water deduction ({external_water:.2f}) cannot exceed water total ({water_total:.2f}).")
+            has_error = True
+        if external_electricity > electricity_total:
+            st.error(f"External electricity contribution ({external_electricity:.2f}) cannot exceed electricity total ({electricity_total:.2f}).")
+            has_error = True
 
-        settings = st.session_state.settings
-        results = allocate_costs(
-            st.session_state.companies,
-            settings["ratios"],
-            monthly_input,
-            settings["defaults"],
-            headcount_overrides if headcount_overrides else None,
-        )
+        if not has_error:
+            monthly_input = {
+                "electricity_total": electricity_total,
+                "garbage_total": garbage_total,
+                "water_total": water_total,
+                "hotel_gas_total": hotel_gas_total,
+                "ground_floor_gas_total": ground_floor_gas_total,
+                "first_floor_gas_total": first_floor_gas_total,
+                "external_water_deduction": external_water,
+                "external_electricity_contribution": external_electricity,
+            }
 
-        # Preview table
-        st.subheader("Allocation Preview")
-        import pandas as pd
-        df = pd.DataFrame(results)
-        df = df.rename(columns={
-            "company_name": "Company",
-            "electricity": "Electricity",
-            "water": "Water",
-            "garbage": "Garbage",
-            "gas_hotel": "Gas (Hotel)",
-            "gas_ground_floor": "Gas (GF)",
-            "gas_first_floor": "Gas (1F)",
-            "total": "Total",
-        })
-        display_cols = ["Company", "Electricity", "Water", "Garbage",
-                        "Gas (Hotel)", "Gas (GF)", "Gas (1F)", "Total"]
-        st.dataframe(df[display_cols], use_container_width=True, hide_index=True)
-
-        # Generate Excel
-        month_name = datetime(year, month, 1).strftime("%B")
-        filename = f"Premier_Group_Cost_Allocation_{year}_{month:02d}_{month_name}.xlsx"
-        tmp_path = os.path.join(tempfile.gettempdir(), filename)
-
-        generate_excel(
-            tmp_path, results, monthly_input,
-            settings["ratios"], active_companies, settings["defaults"],
-        )
-
-        with open(tmp_path, "rb") as f:
-            st.download_button(
-                label=f"Download {filename}",
-                data=f,
-                file_name=filename,
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                type="primary",
-                use_container_width=True,
+            settings = st.session_state.settings
+            hc_overrides = headcount_overrides if headcount_overrides else None
+            results = allocate_costs(
+                st.session_state.companies,
+                settings["ratios"],
+                monthly_input,
+                settings["defaults"],
+                hc_overrides,
             )
+
+            # Preview table
+            st.subheader("Allocation Preview")
+            df = pd.DataFrame(results)
+            df = df.rename(columns={
+                "company_name": "Company",
+                "electricity": "Electricity",
+                "water": "Water",
+                "garbage": "Garbage",
+                "gas_hotel": "Gas (Hotel)",
+                "gas_ground_floor": "Gas (GF)",
+                "gas_first_floor": "Gas (1F)",
+                "total": "Total",
+            })
+            display_cols = ["Company", "Electricity", "Water", "Garbage",
+                            "Gas (Hotel)", "Gas (GF)", "Gas (1F)", "Total"]
+            st.dataframe(df[display_cols], use_container_width=True, hide_index=True)
+
+            # Generate Excel
+            month_name = datetime(year, month, 1).strftime("%B")
+            filename = f"Premier_Group_Cost_Allocation_{year}_{month:02d}_{month_name}.xlsx"
+            tmp_path = os.path.join(tempfile.gettempdir(), filename)
+
+            generate_excel(
+                tmp_path, results, monthly_input,
+                settings["ratios"], active_companies, settings["defaults"],
+                hc_overrides,
+            )
+
+            with open(tmp_path, "rb") as f:
+                st.download_button(
+                    label=f"Download {filename}",
+                    data=f,
+                    file_name=filename,
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    type="primary",
+                    use_container_width=True,
+                )
 
 # =============================================================================
 # TAB 2: Company Management
@@ -174,21 +186,30 @@ with tab2:
                 new_active = st.checkbox("Active", value=c["active"], key=f"ed_act_{c['id']}")
 
             if st.button("Save Changes", key=f"save_{c['id']}"):
-                update_company(c["id"], {
-                    "name": new_name,
-                    "area_m2": new_area,
-                    "headcount_default": new_hc,
-                    "floor": new_floor,
-                    "building": new_building,
-                    "has_heating": new_heating,
-                    "electricity_eligible": new_elec,
-                    "water_eligible": new_water,
-                    "garbage_eligible": new_garbage,
-                    "active": new_active,
-                })
-                st.session_state._reload = True
-                st.success(f"Updated {new_name}")
-                st.rerun()
+                # Validate name uniqueness (allow same name for self)
+                other_names = [x["name"].strip().lower() for x in companies if x["id"] != c["id"]]
+                if new_name.strip().lower() in other_names:
+                    st.error(f"Company name '{new_name}' already exists.")
+                elif not new_name.strip():
+                    st.error("Company name cannot be empty.")
+                elif new_area <= 0:
+                    st.error("Area must be greater than 0.")
+                else:
+                    update_company(c["id"], {
+                        "name": new_name.strip(),
+                        "area_m2": new_area,
+                        "headcount_default": new_hc,
+                        "floor": new_floor,
+                        "building": new_building,
+                        "has_heating": new_heating,
+                        "electricity_eligible": new_elec,
+                        "water_eligible": new_water,
+                        "garbage_eligible": new_garbage,
+                        "active": new_active,
+                    })
+                    st.session_state._reload = True
+                    st.success(f"Updated {new_name}")
+                    st.rerun()
 
     # Add new company
     st.divider()
@@ -209,39 +230,54 @@ with tab2:
             add_garbage = st.checkbox("Garbage Eligible", value=True)
 
         submitted = st.form_submit_button("Add Company", type="primary")
-        if submitted and add_name:
-            company_id = add_name.lower().replace(" ", "-").replace("&", "and")
-            new_company = {
-                "id": company_id,
-                "name": add_name,
-                "area_m2": add_area,
-                "headcount_default": add_hc,
-                "building": add_building,
-                "floor": add_floor,
-                "has_heating": add_heating,
-                "electricity_eligible": add_elec,
-                "water_eligible": add_water,
-                "garbage_eligible": add_garbage,
-                "active": True,
-            }
-            add_company(new_company)
-            st.session_state._reload = True
-            st.success(f"Added {add_name}")
-            st.rerun()
+        if submitted:
+            existing_names = [x["name"].strip().lower() for x in companies]
+            existing_ids = [x["id"] for x in companies]
+            company_id = add_name.strip().lower().replace(" ", "-").replace("&", "and")
+
+            if not add_name.strip():
+                st.error("Company name is required.")
+            elif add_name.strip().lower() in existing_names:
+                st.error(f"Company name '{add_name}' already exists.")
+            elif company_id in existing_ids:
+                st.error(f"Company ID '{company_id}' already exists. Choose a different name.")
+            elif add_area <= 0:
+                st.error("Area must be greater than 0.")
+            else:
+                new_company = {
+                    "id": company_id,
+                    "name": add_name.strip(),
+                    "area_m2": add_area,
+                    "headcount_default": add_hc,
+                    "building": add_building,
+                    "floor": add_floor,
+                    "has_heating": add_heating,
+                    "electricity_eligible": add_elec,
+                    "water_eligible": add_water,
+                    "garbage_eligible": add_garbage,
+                    "active": True,
+                }
+                add_company(new_company)
+                st.session_state._reload = True
+                st.success(f"Added {add_name}")
+                st.rerun()
 
 # =============================================================================
 # TAB 3: Settings
 # =============================================================================
 with tab3:
     st.header("Settings")
-    settings = st.session_state.settings
+    saved_settings = st.session_state.settings
 
     st.subheader("Allocation Ratios")
     st.caption("Drag the slider to set sqm weight. Headcount weight adjusts automatically to total 100%.")
 
+    # Use temporary UI values - do NOT mutate saved_settings until Save
+    pending_ratios = {}
     settings_changed = False
+
     for expense_type in ["electricity", "gas", "water", "garbage"]:
-        current = settings["ratios"][expense_type]
+        current = saved_settings["ratios"][expense_type]
         col1, col2 = st.columns([3, 1])
         with col1:
             new_sqm = st.slider(
@@ -251,11 +287,13 @@ with tab3:
                 key=f"ratio_{expense_type}",
             )
         with col2:
-            st.metric(f"headcount %", f"{100 - new_sqm}%")
+            st.metric("headcount %", f"{100 - new_sqm}%")
 
+        pending_ratios[expense_type] = {
+            "sqm_weight": new_sqm,
+            "headcount_weight": 100 - new_sqm,
+        }
         if new_sqm != current["sqm_weight"]:
-            settings["ratios"][expense_type]["sqm_weight"] = new_sqm
-            settings["ratios"][expense_type]["headcount_weight"] = 100 - new_sqm
             settings_changed = True
 
     st.divider()
@@ -263,17 +301,18 @@ with tab3:
     new_elevator = st.number_input(
         "Elevator Cost (RON) - informational",
         min_value=0.0,
-        value=float(settings["defaults"]["elevator_cost"]),
+        value=float(saved_settings["defaults"]["elevator_cost"]),
         step=10.0,
         format="%.2f",
     )
-    if new_elevator != settings["defaults"]["elevator_cost"]:
-        settings["defaults"]["elevator_cost"] = new_elevator
+    if new_elevator != saved_settings["defaults"]["elevator_cost"]:
         settings_changed = True
 
     if settings_changed:
         if st.button("Save Settings", type="primary"):
-            save_settings(settings)
+            saved_settings["ratios"] = pending_ratios
+            saved_settings["defaults"]["elevator_cost"] = new_elevator
+            save_settings(saved_settings)
             st.session_state._reload = True
             st.success("Settings saved!")
             st.rerun()
