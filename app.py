@@ -71,13 +71,13 @@ with tab1:
     st.markdown(f"#### {t('invoice_totals', lang)}")
     col1, col2 = st.columns(2)
     with col1:
-        inp_elec = st.text_input(t("electricity", lang), value="", placeholder=ph, key="inp_elec")
-        inp_water = st.text_input(t("water", lang), value="", placeholder=ph, key="inp_water")
-        inp_garbage = st.text_input(t("garbage", lang), value="", placeholder=ph, key="inp_garbage")
+        inp_elec = st.text_input(t("electricity_ron", lang), value="", placeholder=ph, key="inp_elec")
+        inp_water = st.text_input(t("water_ron", lang), value="", placeholder=ph, key="inp_water")
+        inp_garbage = st.text_input(t("garbage_ron", lang), value="", placeholder=ph, key="inp_garbage")
     with col2:
-        inp_hgas = st.text_input(t("hotel_gas", lang), value="", placeholder=ph, key="inp_hgas")
-        inp_gfgas = st.text_input(t("ground_floor_gas", lang), value="", placeholder=ph, key="inp_gfgas")
-        inp_ffgas = st.text_input(t("first_floor_gas", lang), value="", placeholder=ph, key="inp_ffgas")
+        inp_hgas = st.text_input(t("hotel_gas_ron", lang), value="", placeholder=ph, key="inp_hgas")
+        inp_gfgas = st.text_input(t("ground_floor_gas_ron", lang), value="", placeholder=ph, key="inp_gfgas")
+        inp_ffgas = st.text_input(t("first_floor_gas_ron", lang), value="", placeholder=ph, key="inp_ffgas")
 
     st.markdown(f"#### {t('external_usage', lang)}")
     ecol1, ecol2 = st.columns(2)
@@ -325,10 +325,8 @@ with tab3:
                 min_value=0, max_value=100, value=current["sqm_weight"],
                 step=5, key=f"ratio_sqm_{expense_type}")
         with col2:
-            st.text_input(
-                t("person_pct", lang, type=expense_type.capitalize()),
-                value=f"{100 - new_sqm}%", disabled=True,
-                key=f"ratio_hc_display_{expense_type}")
+            st.markdown(f"**{t('person_pct', lang, type=expense_type.capitalize())}**")
+            st.markdown(f"### {100 - new_sqm}%")
 
         pending_ratios[expense_type] = {"sqm_weight": new_sqm, "headcount_weight": 100 - new_sqm}
         if new_sqm != current["sqm_weight"]:
