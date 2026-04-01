@@ -4,8 +4,5 @@
     "gas": {"sqm_weight": 80, "headcount_weight": 20},
     "water": {"sqm_weight": 30, "headcount_weight": 70},
     "garbage": {"sqm_weight": 30, "headcount_weight": 70}
-  },
-  "defaults": {
-    "elevator_cost": 400
   }
 }

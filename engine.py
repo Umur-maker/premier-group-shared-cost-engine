@@ -53,7 +53,7 @@ def _distribute(amount, eligible_companies, sqm_weight, headcount_weight, headco
     return result
 
 
-def allocate_costs(companies, ratios, monthly_input, defaults, headcount_overrides=None):
+def allocate_costs(companies, ratios, monthly_input, headcount_overrides=None):
     """Main allocation function. Pure function: no I/O, no side effects.
 
     Args:
@@ -63,7 +63,6 @@ def allocate_costs(companies, ratios, monthly_input, defaults, headcount_overrid
         monthly_input: dict with electricity_total, garbage_total, water_total,
                        hotel_gas_total, ground_floor_gas_total, first_floor_gas_total,
                        external_water_deduction, external_electricity_contribution
-        defaults: dict with elevator_cost
         headcount_overrides: optional dict of {company_id: headcount} for this month
 
     Returns:
