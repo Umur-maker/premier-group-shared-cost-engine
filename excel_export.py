@@ -11,6 +11,7 @@ THIN_BORDER = Border(
 )
 SECTION_FONT = Font(bold=True, size=12)
 SUBSECTION_FILL = PatternFill(start_color="D9E2F3", end_color="D9E2F3", fill_type="solid")
+RON_FORMAT = '#,##0.00 "RON"'
 
 
 def _style_header(ws, row, col_count):
@@ -26,10 +27,17 @@ def _write_cell(ws, row, col, value, is_currency=False, bold=False):
     cell = ws.cell(row=row, column=col, value=value)
     cell.border = THIN_BORDER
     if is_currency:
-        cell.number_format = "#,##0.00"
+        cell.number_format = RON_FORMAT
         cell.alignment = Alignment(horizontal="right")
     if bold:
         cell.font = Font(bold=True)
+    return cell
+
+
+def _ron_cell(ws, row, col, value):
+    """Write a RON currency cell."""
+    cell = ws.cell(row=row, column=col, value=value)
+    cell.number_format = RON_FORMAT
     return cell
 
 
@@ -49,7 +57,7 @@ def _write_summary_sheet(wb, results, lang):
     _write_cell(ws, total_row, 2, round(sum(r["total"] for r in results), 2), is_currency=True, bold=True)
 
     ws.column_dimensions["A"].width = 25
-    ws.column_dimensions["B"].width = 22
+    ws.column_dimensions["B"].width = 25
 
 
 def _write_detailed_sheet(wb, results, lang):
@@ -76,95 +84,81 @@ def _write_detailed_sheet(wb, results, lang):
 
     ws.column_dimensions["A"].width = 25
     for col in range(2, len(headers) + 1):
-        ws.column_dimensions[get_column_letter(col)].width = 18
+        ws.column_dimensions[get_column_letter(col)].width = 20
 
 
 def _write_calculation_sheet(wb, results, monthly_input, ratios, companies, lang):
     ws = wb.create_sheet(t("excel_calc", lang))
     row = 1
 
-    # Section 1: Input Values
-    ws.cell(row=row, column=1, value=t("excel_input_values", lang)).font = SECTION_FONT
-    row += 1
-
-    bill_labels = [
-        (t("electricity", lang), "electricity_total"),
-        (t("water", lang), "water_total"),
-        (t("garbage", lang), "garbage_total"),
-        (t("hotel_gas", lang), "hotel_gas_total"),
-        (t("ground_floor_gas", lang), "ground_floor_gas_total"),
-        (t("first_floor_gas", lang), "first_floor_gas_total"),
+    bill_types = [
+        (t("electricity", lang), "electricity_total", "external_electricity"),
+        (t("water", lang), "water_total", "external_water"),
+        (t("garbage", lang), "garbage_total", "external_garbage"),
+        (t("hotel_gas", lang), "hotel_gas_total", "external_hotel_gas"),
+        (t("ground_floor_gas", lang), "ground_floor_gas_total", "external_gf_gas"),
+        (t("first_floor_gas", lang), "first_floor_gas_total", "external_ff_gas"),
     ]
-    for label, key in bill_labels:
-        ws.cell(row=row, column=1, value=f"{label} (RON)")
-        ws.cell(row=row, column=2, value=monthly_input[key]).number_format = "#,##0.00"
+
+    ext_label_keys = [
+        "excel_external_electricity", "excel_external_water", "excel_external_garbage",
+        "excel_external_hotel_gas", "excel_external_gf_gas", "excel_external_ff_gas",
+    ]
+
+    # --- A. Original Invoice Totals ---
+    ws.cell(row=row, column=1, value=t("excel_original_totals", lang)).font = SECTION_FONT
+    row += 1
+    for label, total_key, _ in bill_types:
+        ws.cell(row=row, column=1, value=label)
+        _ron_cell(ws, row, 2, monthly_input[total_key])
         row += 1
-
     row += 1
 
-    # External usage
-    ext_labels = [
-        (t("excel_external_electricity", lang), "external_electricity"),
-        (t("excel_external_water", lang), "external_water"),
-        (t("excel_external_garbage", lang), "external_garbage"),
-        (t("excel_external_hotel_gas", lang), "external_hotel_gas"),
-        (t("excel_external_gf_gas", lang), "external_gf_gas"),
-        (t("excel_external_ff_gas", lang), "external_ff_gas"),
-    ]
-    for label, key in ext_labels:
-        val = monthly_input.get(key, 0)
+    # --- B. External Usage ---
+    ws.cell(row=row, column=1, value=t("excel_external_section", lang)).font = SECTION_FONT
+    row += 1
+    has_any_external = False
+    for i, (_, _, ext_key) in enumerate(bill_types):
+        val = monthly_input.get(ext_key, 0)
+        ws.cell(row=row, column=1, value=t(ext_label_keys[i], lang))
+        _ron_cell(ws, row, 2, val)
         if val > 0:
-            ws.cell(row=row, column=1, value=label)
-            ws.cell(row=row, column=2, value=val).number_format = "#,##0.00"
-            row += 1
-
+            has_any_external = True
+        row += 1
+    if not has_any_external:
+        ws.cell(row=row, column=1, value=t("excel_no_external", lang)).font = Font(italic=True)
+        row += 1
     row += 1
 
-    # Section 2: Net Allocable
+    # --- C. Net Allocable Amounts ---
     ws.cell(row=row, column=1, value=t("excel_net_amounts", lang)).font = SECTION_FONT
     row += 1
-
-    net_pairs = [
-        ("electricity", "electricity_total", "external_electricity"),
-        ("water", "water_total", "external_water"),
-        ("garbage", "garbage_total", "external_garbage"),
-        ("hotel_gas", "hotel_gas_total", "external_hotel_gas"),
-        ("ground_floor_gas", "ground_floor_gas_total", "external_gf_gas"),
-        ("first_floor_gas", "first_floor_gas_total", "external_ff_gas"),
-    ]
-    for type_key, total_key, ext_key in net_pairs:
+    for label, total_key, ext_key in bill_types:
         ext = monthly_input.get(ext_key, 0)
         net = monthly_input[total_key] - ext
-        label_type = t(type_key, lang) if type_key in ("electricity", "water", "garbage") else t(type_key, lang)
-        if ext > 0:
-            label = t("excel_after_external", lang, type=label_type)
-        else:
-            label = label_type
-        ws.cell(row=row, column=1, value=label)
-        ws.cell(row=row, column=2, value=round(net, 2)).number_format = "#,##0.00"
+        display_label = t("excel_after_external", lang, type=label) if ext > 0 else label
+        ws.cell(row=row, column=1, value=display_label)
+        _ron_cell(ws, row, 2, round(net, 2))
         row += 1
-
     row += 1
 
-    # Section 3: Ratios
+    # --- D. Allocation Ratios ---
     ws.cell(row=row, column=1, value=t("excel_ratios", lang)).font = SECTION_FONT
     row += 1
     for expense_type, weights in ratios.items():
-        label = expense_type.capitalize()
-        ws.cell(row=row, column=1, value=label)
+        ws.cell(row=row, column=1, value=expense_type.capitalize())
         ws.cell(row=row, column=2, value=t("excel_ratio_format", lang,
                                             sqm=weights["sqm_weight"], hc=weights["headcount_weight"]))
         row += 1
-
     row += 1
 
-    # Section 4: Company Data
+    # --- E. Company Data ---
     active = [c for c in companies if c["active"]]
     ws.cell(row=row, column=1, value=t("excel_company_data", lang)).font = SECTION_FONT
     row += 1
 
-    headers = [t("excel_company", lang), t("area_m2", lang), t("excel_persons", lang),
-               t("floor", lang), t("excel_has_heating", lang),
+    headers = [t("company_no", lang), t("excel_company", lang), t("area_m2", lang),
+               t("excel_persons", lang), t("floor", lang), t("excel_has_heating", lang),
                t("excel_sqm_pct", lang), t("excel_person_pct", lang)]
     for col, h in enumerate(headers, 1):
         ws.cell(row=row, column=col, value=h)
@@ -174,26 +168,27 @@ def _write_calculation_sheet(wb, results, monthly_input, ratios, companies, lang
     total_sqm = sum(c["area_m2"] for c in active)
     total_hc = sum(c["headcount_default"] for c in active)
 
-    for c in active:
-        ws.cell(row=row, column=1, value=c["name"])
-        ws.cell(row=row, column=2, value=c["area_m2"])
-        ws.cell(row=row, column=3, value=c["headcount_default"])
-        ws.cell(row=row, column=4, value=floor_name(c["floor"], lang))
-        ws.cell(row=row, column=5, value=t("excel_yes", lang) if c["has_heating"] else t("excel_no", lang))
+    for idx, c in enumerate(active, 1):
+        ws.cell(row=row, column=1, value=idx)
+        ws.cell(row=row, column=2, value=c["name"])
+        ws.cell(row=row, column=3, value=c["area_m2"])
+        ws.cell(row=row, column=4, value=c["headcount_default"])
+        ws.cell(row=row, column=5, value=floor_name(c["floor"], lang))
+        ws.cell(row=row, column=6, value=t("excel_yes", lang) if c["has_heating"] else t("excel_no", lang))
         sqm_pct = c["area_m2"] / total_sqm if total_sqm else 0
         hc_pct = c["headcount_default"] / total_hc if total_hc else 0
-        ws.cell(row=row, column=6, value=round(sqm_pct * 100, 2))
-        ws.cell(row=row, column=6).number_format = '0.00"%"'
-        ws.cell(row=row, column=7, value=round(hc_pct * 100, 2))
+        ws.cell(row=row, column=7, value=round(sqm_pct * 100, 2))
         ws.cell(row=row, column=7).number_format = '0.00"%"'
+        ws.cell(row=row, column=8, value=round(hc_pct * 100, 2))
+        ws.cell(row=row, column=8).number_format = '0.00"%"'
         row += 1
 
-    ws.cell(row=row, column=1, value=t("excel_total", lang)).font = Font(bold=True)
-    ws.cell(row=row, column=2, value=total_sqm).font = Font(bold=True)
-    ws.cell(row=row, column=3, value=total_hc).font = Font(bold=True)
+    ws.cell(row=row, column=2, value=t("excel_total", lang)).font = Font(bold=True)
+    ws.cell(row=row, column=3, value=total_sqm).font = Font(bold=True)
+    ws.cell(row=row, column=4, value=total_hc).font = Font(bold=True)
     row += 2
 
-    # Section 5: Eligible Groups
+    # --- F. Eligible Groups ---
     ws.cell(row=row, column=1, value=t("excel_eligible", lang)).font = SECTION_FONT
     row += 1
 
@@ -235,13 +230,12 @@ def _write_calculation_sheet(wb, results, monthly_input, ratios, companies, lang
                 }
                 key = key_map.get(expense_name)
                 if key:
-                    ws.cell(row=row, column=4, value=result_row[key])
-                    ws.cell(row=row, column=4).number_format = "#,##0.00"
+                    _ron_cell(ws, row, 4, result_row[key])
             row += 1
         row += 1
 
     ws.column_dimensions["A"].width = 35
-    for col in range(2, 8):
+    for col in range(2, 9):
         ws.column_dimensions[get_column_letter(col)].width = 22
 
 

@@ -56,6 +56,17 @@ def _gen(results, monthly_input, ratios, companies, lang="en"):
     return path
 
 
+def _all_cell_values(ws, max_row=60, max_col=8):
+    """Collect all cell string values for searching."""
+    vals = []
+    for r in range(1, max_row + 1):
+        for c in range(1, max_col + 1):
+            v = ws.cell(row=r, column=c).value
+            if v is not None:
+                vals.append(str(v))
+    return vals
+
+
 def test_creates_file(results, monthly_input, ratios, companies):
     path = _gen(results, monthly_input, ratios, companies)
     try:
@@ -98,36 +109,89 @@ def test_no_elevator_in_calc_sheet(results, monthly_input, ratios, companies):
     try:
         wb = openpyxl.load_workbook(path)
         ws = wb["Calculation Details"]
-        values = [ws.cell(row=r, column=1).value for r in range(1, 50)]
-        assert not any("Elevator" in str(v) for v in values if v)
-        assert not any("elevator" in str(v).lower() for v in values if v)
-    finally:
-        os.unlink(path)
-
-
-def test_external_usage_in_calc_sheet(results, monthly_input, ratios, companies):
-    path = _gen(results, monthly_input, ratios, companies)
-    try:
-        wb = openpyxl.load_workbook(path)
-        ws = wb["Calculation Details"]
-        values = [ws.cell(row=r, column=1).value for r in range(1, 50)]
-        # External electricity = 10, water = 20, garbage = 5 should appear
-        assert any("External" in str(v) and "Electricity" in str(v) for v in values if v)
-        assert any("External" in str(v) and "Water" in str(v) for v in values if v)
+        vals = _all_cell_values(ws)
+        text = " ".join(vals).lower()
+        assert "elevator" not in text
     finally:
         os.unlink(path)
 
 
 def test_person_label_not_headcount(results, monthly_input, ratios, companies):
-    """Excel should use 'Person' not 'Headcount'."""
     path = _gen(results, monthly_input, ratios, companies, "en")
     try:
         wb = openpyxl.load_workbook(path)
         ws = wb["Calculation Details"]
-        values = [ws.cell(row=r, column=c).value
-                  for r in range(1, 50) for c in range(1, 8)]
-        text = " ".join(str(v) for v in values if v)
-        assert "Persons" in text or "Person" in text
+        text = " ".join(_all_cell_values(ws))
+        assert "Person" in text or "person" in text
         assert "Headcount" not in text
+    finally:
+        os.unlink(path)
+
+
+# --- Currency formatting ---
+
+def test_ron_currency_format_in_summary(results, monthly_input, ratios, companies):
+    path = _gen(results, monthly_input, ratios, companies)
+    try:
+        wb = openpyxl.load_workbook(path)
+        ws = wb["Summary"]
+        fmt = ws.cell(row=2, column=2).number_format
+        assert "RON" in fmt
+    finally:
+        os.unlink(path)
+
+
+def test_ron_currency_format_in_detail(results, monthly_input, ratios, companies):
+    path = _gen(results, monthly_input, ratios, companies)
+    try:
+        wb = openpyxl.load_workbook(path)
+        ws = wb["Detailed Breakdown"]
+        fmt = ws.cell(row=2, column=2).number_format
+        assert "RON" in fmt
+    finally:
+        os.unlink(path)
+
+
+# --- External usage section ---
+
+def test_external_usage_section_exists(results, monthly_input, ratios, companies):
+    path = _gen(results, monthly_input, ratios, companies, "en")
+    try:
+        wb = openpyxl.load_workbook(path)
+        ws = wb["Calculation Details"]
+        vals = _all_cell_values(ws)
+        text = " ".join(vals)
+        assert "EXTERNAL USAGE" in text
+        assert "ORIGINAL" in text
+        assert "NET ALLOCABLE" in text
+    finally:
+        os.unlink(path)
+
+
+def test_all_six_external_fields_in_excel(results, monthly_input, ratios, companies):
+    path = _gen(results, monthly_input, ratios, companies, "en")
+    try:
+        wb = openpyxl.load_workbook(path)
+        ws = wb["Calculation Details"]
+        text = " ".join(_all_cell_values(ws))
+        assert "External Electricity" in text
+        assert "External Water" in text
+        assert "External Garbage" in text
+        assert "External Hotel Gas" in text
+        assert "External Ground Floor Gas" in text
+        assert "External First Floor Gas" in text
+    finally:
+        os.unlink(path)
+
+
+# --- Company numbering ---
+
+def test_company_numbering_in_calc_sheet(results, monthly_input, ratios, companies):
+    path = _gen(results, monthly_input, ratios, companies, "en")
+    try:
+        wb = openpyxl.load_workbook(path)
+        ws = wb["Calculation Details"]
+        vals = _all_cell_values(ws)
+        assert "No." in vals
     finally:
         os.unlink(path)

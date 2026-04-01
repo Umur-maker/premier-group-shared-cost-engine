@@ -6,7 +6,7 @@ from datetime import datetime
 from data_manager import load_companies, load_settings, save_settings, add_company, update_company
 from engine import allocate_costs
 from excel_export import generate_excel
-from translations import t, floor_name
+from translations import t, floor_name, month_name, MONTH_NAMES
 from history import save_run, list_runs, get_excel_path, delete_run
 
 st.set_page_config(page_title="Premier Business Center - Shared Cost Engine", layout="centered")
@@ -20,7 +20,6 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# --- Data loading ---
 def _load_data():
     if "companies" not in st.session_state or st.session_state.get("_reload"):
         st.session_state.companies = load_companies()
@@ -31,8 +30,8 @@ def _load_data():
 _load_data()
 
 # --- Language selector ---
-lang_options = {"English": "en", "Romanian": "ro"}
-lang_label = st.sidebar.selectbox("Language", list(lang_options.keys()))
+lang_options = {"English": "en", "Romana": "ro"}
+lang_label = st.sidebar.selectbox("Language / Limba", list(lang_options.keys()))
 lang = lang_options[lang_label]
 
 st.title(t("app_title", lang))
@@ -43,7 +42,6 @@ tab1, tab2, tab3, tab4 = st.tabs([
 ])
 
 
-# --- Helper: parse text input to float ---
 def _parse_amount(val):
     v = val.strip().replace(",", ".")
     if not v:
@@ -62,32 +60,35 @@ with tab1:
     with col_date1:
         month = st.selectbox(t("month", lang), range(1, 13),
             index=datetime.now().month - 1,
-            format_func=lambda m: datetime(2000, m, 1).strftime("%B"))
+            format_func=lambda m: month_name(m, lang))
     with col_date2:
         year = st.number_input(t("year", lang), min_value=2020,
             max_value=datetime.now().year + 5, value=datetime.now().year)
 
+    ph = t("input_placeholder", lang)
+    eph = t("ext_placeholder", lang)
+
     st.markdown(f"#### {t('invoice_totals', lang)}")
     col1, col2 = st.columns(2)
     with col1:
-        inp_elec = st.text_input(t("electricity", lang), value="", placeholder="e.g. 3598.89", key="inp_elec")
-        inp_water = st.text_input(t("water", lang), value="", placeholder="e.g. 855.60", key="inp_water")
-        inp_garbage = st.text_input(t("garbage", lang), value="", placeholder="e.g. 407.74", key="inp_garbage")
+        inp_elec = st.text_input(t("electricity", lang), value="", placeholder=ph, key="inp_elec")
+        inp_water = st.text_input(t("water", lang), value="", placeholder=ph, key="inp_water")
+        inp_garbage = st.text_input(t("garbage", lang), value="", placeholder=ph, key="inp_garbage")
     with col2:
-        inp_hgas = st.text_input(t("hotel_gas", lang), value="", placeholder="e.g. 4021.74", key="inp_hgas")
-        inp_gfgas = st.text_input(t("ground_floor_gas", lang), value="", placeholder="e.g. 2583.53", key="inp_gfgas")
-        inp_ffgas = st.text_input(t("first_floor_gas", lang), value="", placeholder="e.g. 3172.14", key="inp_ffgas")
+        inp_hgas = st.text_input(t("hotel_gas", lang), value="", placeholder=ph, key="inp_hgas")
+        inp_gfgas = st.text_input(t("ground_floor_gas", lang), value="", placeholder=ph, key="inp_gfgas")
+        inp_ffgas = st.text_input(t("first_floor_gas", lang), value="", placeholder=ph, key="inp_ffgas")
 
     st.markdown(f"#### {t('external_usage', lang)}")
     ecol1, ecol2 = st.columns(2)
     with ecol1:
-        ext_elec = st.text_input(t("external_electricity", lang), value="", placeholder="0", key="ext_elec")
-        ext_water = st.text_input(t("external_water", lang), value="", placeholder="0", key="ext_water")
-        ext_garbage = st.text_input(t("external_garbage", lang), value="", placeholder="0", key="ext_garbage")
+        ext_elec = st.text_input(t("external_electricity", lang), value="", placeholder=eph, key="ext_elec")
+        ext_water = st.text_input(t("external_water", lang), value="", placeholder=eph, key="ext_water")
+        ext_garbage = st.text_input(t("external_garbage", lang), value="", placeholder=eph, key="ext_garbage")
     with ecol2:
-        ext_hgas = st.text_input(t("external_hotel_gas", lang), value="", placeholder="0", key="ext_hgas")
-        ext_gfgas = st.text_input(t("external_gf_gas", lang), value="", placeholder="0", key="ext_gfgas")
-        ext_ffgas = st.text_input(t("external_ff_gas", lang), value="", placeholder="0", key="ext_ffgas")
+        ext_hgas = st.text_input(t("external_hotel_gas", lang), value="", placeholder=eph, key="ext_hgas")
+        ext_gfgas = st.text_input(t("external_gf_gas", lang), value="", placeholder=eph, key="ext_gfgas")
+        ext_ffgas = st.text_input(t("external_ff_gas", lang), value="", placeholder=eph, key="ext_ffgas")
 
     st.divider()
 
@@ -130,7 +131,6 @@ with tab1:
             if not active_companies:
                 st.error(t("no_active", lang))
             else:
-                # Validate externals don't exceed totals
                 checks = [
                     ("electricity_total", "external_electricity", t("electricity", lang)),
                     ("water_total", "external_water", t("water", lang)),
@@ -162,7 +162,7 @@ with tab1:
                             ("Gas(H)", "gas_hotel", True),
                             ("Gas(GF)", "gas_ground_floor", True),
                             ("Gas(1F)", "gas_first_floor", True),
-                            (t("excel_total", lang), "total", True),
+                            (t("excel_total", lang) + " RON", "total", True),
                         ]
                         hcols = st.columns([2.5] + [1] * 7)
                         for i, (lbl, _, _) in enumerate(preview_cols):
@@ -173,14 +173,13 @@ with tab1:
                                 val = r[key]
                                 rcols[i].write(f"{val:,.2f}" if is_num else val)
 
-                        month_name = datetime(2000, month, 1).strftime("%B")
-                        filename = f"Premier_BC_Cost_Allocation_{year}_{month:02d}_{month_name}.xlsx"
+                        mn = month_name(month, lang)
+                        filename = f"Premier_BC_Cost_Allocation_{year}_{month:02d}_{mn}.xlsx"
                         tmp_path = os.path.join(tempfile.gettempdir(), filename)
 
                         generate_excel(tmp_path, results, monthly_input,
                                        settings["ratios"], active_companies, lang)
 
-                        # Save to history
                         save_run(month, year, lang, monthly_input,
                                  settings["ratios"], st.session_state.companies,
                                  results, tmp_path)
@@ -197,10 +196,28 @@ with tab1:
 # =============================================================================
 with tab2:
     companies = st.session_state.companies
+    active_companies = [c for c in companies if c["active"]]
 
-    for c in companies:
+    # Mini charts
+    if active_companies:
+        chart_col1, chart_col2 = st.columns(2)
+        chart_data_persons = {c["name"]: c["headcount_default"] for c in active_companies}
+        chart_data_area = {c["name"]: c["area_m2"] for c in active_companies}
+
+        with chart_col1:
+            st.caption(t("chart_persons", lang))
+            st.bar_chart(chart_data_persons, height=200)
+        with chart_col2:
+            st.caption(t("chart_area", lang))
+            st.bar_chart(chart_data_area, height=200)
+
+        st.divider()
+
+    for idx, c in enumerate(companies, 1):
         icon = "🟢" if c["active"] else "🔴"
-        label = f'{icon} {c["name"]} \u2014 {c["area_m2"]} m\u00b2, {c["headcount_default"]} {t("excel_persons", lang).lower()}, {floor_name(c["floor"], lang)}'
+        floor_opts = ["ground_floor", "first_floor", "mezzanine", "hotel"]
+        floor_labels = [floor_name(f, lang) for f in floor_opts]
+        label = f'{t("company_no", lang)} {idx} {icon} {c["name"]} \u2014 {c["area_m2"]} m\u00b2, {c["headcount_default"]} {t("excel_persons", lang).lower()}, {floor_name(c["floor"], lang)}'
 
         with st.expander(label):
             col1, col2, col3 = st.columns(3)
@@ -209,8 +226,6 @@ with tab2:
                 new_area = st.number_input(t("area_m2", lang), value=c["area_m2"], key=f"ed_area_{c['id']}", step=0.01)
                 new_hc = st.number_input(t("persons", lang), value=c["headcount_default"], min_value=0, key=f"ed_hc_{c['id']}", step=1)
             with col2:
-                floor_opts = ["ground_floor", "first_floor", "mezzanine", "hotel"]
-                floor_labels = [floor_name(f, lang) for f in floor_opts]
                 new_floor_idx = st.selectbox(t("floor", lang), range(len(floor_opts)),
                     index=floor_opts.index(c["floor"]),
                     format_func=lambda i: floor_labels[i], key=f"ed_floor_{c['id']}")
@@ -290,7 +305,7 @@ with tab2:
                 st.rerun()
 
 # =============================================================================
-# TAB 3: Settings
+# TAB 3: Settings - True auto-balance ratios
 # =============================================================================
 with tab3:
     saved_settings = st.session_state.settings
@@ -303,31 +318,44 @@ with tab3:
 
     for expense_type in ["electricity", "gas", "water", "garbage"]:
         current = saved_settings["ratios"][expense_type]
+        sqm_ss_key = f"_prev_sqm_{expense_type}"
+        hc_ss_key = f"_prev_hc_{expense_type}"
+
+        # Initialize previous values in session state
+        if sqm_ss_key not in st.session_state:
+            st.session_state[sqm_ss_key] = current["sqm_weight"]
+        if hc_ss_key not in st.session_state:
+            st.session_state[hc_ss_key] = current["headcount_weight"]
+
         col1, col2 = st.columns(2)
-
-        # Auto-balance: use session state to track which field was last edited
-        sqm_key = f"ratio_sqm_{expense_type}"
-        hc_key = f"ratio_hc_{expense_type}"
-
         with col1:
             new_sqm = st.number_input(
                 t("sqm_pct", lang, type=expense_type.capitalize()),
-                min_value=0, max_value=100, value=current["sqm_weight"],
-                step=5, key=sqm_key)
+                min_value=0, max_value=100, value=st.session_state[sqm_ss_key],
+                step=5, key=f"ratio_sqm_{expense_type}")
         with col2:
-            # Auto-balance: person % = 100 - sqm %
-            auto_hc = 100 - new_sqm
             new_hc = st.number_input(
                 t("person_pct", lang, type=expense_type.capitalize()),
-                min_value=0, max_value=100, value=auto_hc,
-                step=5, key=hc_key)
+                min_value=0, max_value=100, value=st.session_state[hc_ss_key],
+                step=5, key=f"ratio_hc_{expense_type}")
 
-        # If person was manually changed and doesn't match auto, adjust sqm
-        if new_hc != auto_hc:
+        # Auto-balance: detect which side changed
+        prev_sqm = st.session_state[sqm_ss_key]
+        prev_hc = st.session_state[hc_ss_key]
+
+        if new_sqm != prev_sqm:
+            # sqm changed -> adjust person
+            new_hc = 100 - new_sqm
+        elif new_hc != prev_hc:
+            # person changed -> adjust sqm
             new_sqm = 100 - new_hc
 
-        pending_ratios[expense_type] = {"sqm_weight": new_sqm, "headcount_weight": 100 - new_sqm}
-        if new_sqm != current["sqm_weight"]:
+        # Store for next render
+        st.session_state[sqm_ss_key] = new_sqm
+        st.session_state[hc_ss_key] = new_hc
+
+        pending_ratios[expense_type] = {"sqm_weight": new_sqm, "headcount_weight": new_hc}
+        if new_sqm != current["sqm_weight"] or new_hc != current["headcount_weight"]:
             settings_changed = True
 
     if settings_changed:
@@ -336,6 +364,10 @@ with tab3:
             saved_settings["ratios"] = pending_ratios
             save_settings(saved_settings)
             st.session_state._reload = True
+            # Reset prev values
+            for expense_type in ["electricity", "gas", "water", "garbage"]:
+                st.session_state[f"_prev_sqm_{expense_type}"] = pending_ratios[expense_type]["sqm_weight"]
+                st.session_state[f"_prev_hc_{expense_type}"] = pending_ratios[expense_type]["headcount_weight"]
             st.success(t("settings_saved", lang))
             st.rerun()
 
@@ -350,8 +382,8 @@ with tab4:
         st.info(t("history_empty", lang))
     else:
         for entry in runs:
-            month_name = datetime(2000, entry["month"], 1).strftime("%B")
-            run_label = t("history_run", lang, month=month_name, year=entry["year"])
+            mn = month_name(entry["month"], entry.get("language", "en"))
+            run_label = t("history_run", lang, month=mn, year=entry["year"])
             gen_date = entry["generated_at"][:10]
 
             col1, col2, col3 = st.columns([3, 1, 1])
