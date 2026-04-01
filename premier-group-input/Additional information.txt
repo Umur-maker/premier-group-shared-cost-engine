@@ -1,0 +1,9 @@
+The heating (gas) bill is per floor.
+The water bill is for all buildings.
+The electricity bill is for all buildings.
+The garbage bill is for all buildings.
+We have 2 more owners that use the water. They give the consumption monthly and secretary decreases it from the bill, because it is on our bill. (not shown in information.xlsx)
+We have 2 more owners that must pay common parts(electricity and elevator) (not shown in information.xlsx)
+We cannot measure the electricity of the elevator. we just said it is 400 ron.
+So, there are a few variables.
+Kolnberg and Paul George Cata doesnt have heating (gas). Only AC (electricity).
