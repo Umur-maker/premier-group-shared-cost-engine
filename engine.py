@@ -22,9 +22,15 @@ def _distribute(amount, eligible_companies, sqm_weight, headcount_weight, headco
 
     # Rebalance weights if one dimension is zero
     if total_sqm == 0 and total_hc == 0:
-        # Both zero: equal split
+        # Both zero: equal split with rounding reconciliation
         n = len(eligible_companies)
-        return {c["id"]: round(amount / n, 2) for c in eligible_companies}
+        result = {c["id"]: round(amount / n, 2) for c in eligible_companies}
+        distributed = sum(result.values())
+        diff = round(amount - distributed, 2)
+        if diff != 0:
+            first_id = next(iter(result))
+            result[first_id] = round(result[first_id] + diff, 2)
+        return result
     elif total_sqm == 0:
         w_sqm, w_hc = 0.0, 1.0
     elif total_hc == 0:

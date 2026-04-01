@@ -233,3 +233,14 @@ def test_distribute_zero_both_sqm_and_headcount():
     assert sum(result.values()) == 1000.0
     assert result["a"] == 500.0
     assert result["b"] == 500.0
+
+
+def test_distribute_zero_both_with_indivisible_amount():
+    """Equal split with rounding reconciliation: 100 / 3 = 33.33 + 33.33 + 33.34."""
+    companies = [
+        {"id": "a", "area_m2": 0.0, "headcount_default": 0},
+        {"id": "b", "area_m2": 0.0, "headcount_default": 0},
+        {"id": "c", "area_m2": 0.0, "headcount_default": 0},
+    ]
+    result = _distribute(100.0, companies, 50, 50)
+    assert sum(result.values()) == 100.0

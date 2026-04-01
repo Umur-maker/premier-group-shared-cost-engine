@@ -173,7 +173,7 @@ with tab2:
             with col1:
                 new_name = st.text_input("Name", value=c["name"], key=f"ed_name_{c['id']}")
                 new_area = st.number_input("Area (m2)", value=c["area_m2"], key=f"ed_area_{c['id']}", step=0.01)
-                new_hc = st.number_input("Default Headcount", value=c["headcount_default"], key=f"ed_hc_{c['id']}", step=1)
+                new_hc = st.number_input("Default Headcount", value=c["headcount_default"], min_value=0, key=f"ed_hc_{c['id']}", step=1)
             with col2:
                 floor_opts = ["ground_floor", "first_floor", "mezzanine", "hotel"]
                 new_floor = st.selectbox("Floor", floor_opts, index=floor_opts.index(c["floor"]), key=f"ed_floor_{c['id']}")
@@ -194,6 +194,8 @@ with tab2:
                     st.error("Company name cannot be empty.")
                 elif new_area <= 0:
                     st.error("Area must be greater than 0.")
+                elif new_hc < 0:
+                    st.error("Default headcount cannot be negative.")
                 else:
                     update_company(c["id"], {
                         "name": new_name.strip(),
