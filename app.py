@@ -171,7 +171,7 @@ with tab1:
                             rcols = st.columns([2.5] + [1] * 7)
                             for i, (_, key, is_num) in enumerate(preview_cols):
                                 val = r[key]
-                                rcols[i].write(f"{val:,.2f}" if is_num else val)
+                                rcols[i].write(f"{val:,.2f} RON" if is_num else val)
 
                         mn = month_name(month, lang)
                         filename = f"Premier_BC_Cost_Allocation_{year}_{month:02d}_{mn}.xlsx"
@@ -318,44 +318,20 @@ with tab3:
 
     for expense_type in ["electricity", "gas", "water", "garbage"]:
         current = saved_settings["ratios"][expense_type]
-        sqm_ss_key = f"_prev_sqm_{expense_type}"
-        hc_ss_key = f"_prev_hc_{expense_type}"
-
-        # Initialize previous values in session state
-        if sqm_ss_key not in st.session_state:
-            st.session_state[sqm_ss_key] = current["sqm_weight"]
-        if hc_ss_key not in st.session_state:
-            st.session_state[hc_ss_key] = current["headcount_weight"]
-
         col1, col2 = st.columns(2)
         with col1:
             new_sqm = st.number_input(
                 t("sqm_pct", lang, type=expense_type.capitalize()),
-                min_value=0, max_value=100, value=st.session_state[sqm_ss_key],
+                min_value=0, max_value=100, value=current["sqm_weight"],
                 step=5, key=f"ratio_sqm_{expense_type}")
         with col2:
-            new_hc = st.number_input(
+            st.text_input(
                 t("person_pct", lang, type=expense_type.capitalize()),
-                min_value=0, max_value=100, value=st.session_state[hc_ss_key],
-                step=5, key=f"ratio_hc_{expense_type}")
+                value=f"{100 - new_sqm}%", disabled=True,
+                key=f"ratio_hc_display_{expense_type}")
 
-        # Auto-balance: detect which side changed
-        prev_sqm = st.session_state[sqm_ss_key]
-        prev_hc = st.session_state[hc_ss_key]
-
-        if new_sqm != prev_sqm:
-            # sqm changed -> adjust person
-            new_hc = 100 - new_sqm
-        elif new_hc != prev_hc:
-            # person changed -> adjust sqm
-            new_sqm = 100 - new_hc
-
-        # Store for next render
-        st.session_state[sqm_ss_key] = new_sqm
-        st.session_state[hc_ss_key] = new_hc
-
-        pending_ratios[expense_type] = {"sqm_weight": new_sqm, "headcount_weight": new_hc}
-        if new_sqm != current["sqm_weight"] or new_hc != current["headcount_weight"]:
+        pending_ratios[expense_type] = {"sqm_weight": new_sqm, "headcount_weight": 100 - new_sqm}
+        if new_sqm != current["sqm_weight"]:
             settings_changed = True
 
     if settings_changed:
@@ -364,10 +340,6 @@ with tab3:
             saved_settings["ratios"] = pending_ratios
             save_settings(saved_settings)
             st.session_state._reload = True
-            # Reset prev values
-            for expense_type in ["electricity", "gas", "water", "garbage"]:
-                st.session_state[f"_prev_sqm_{expense_type}"] = pending_ratios[expense_type]["sqm_weight"]
-                st.session_state[f"_prev_hc_{expense_type}"] = pending_ratios[expense_type]["headcount_weight"]
             st.success(t("settings_saved", lang))
             st.rerun()
 

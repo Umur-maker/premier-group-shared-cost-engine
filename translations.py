@@ -67,7 +67,7 @@ TRANSLATIONS = {
 
         # Settings
         "ratios_title": "Allocation Ratios",
-        "ratios_help": "When one value changes, the other adjusts automatically to keep total at 100%.",
+        "ratios_help": "Edit sqm %. Person % is calculated automatically (100 - sqm %).",
         "sqm_pct": "{type} \u2014 sqm %",
         "person_pct": "{type} \u2014 person %",
         "save_settings": "Save Settings",
@@ -184,7 +184,7 @@ TRANSLATIONS = {
 
         # Settings
         "ratios_title": "Proportii de Alocare",
-        "ratios_help": "Cand o valoare se schimba, cealalta se ajusteaza automat pentru a pastra totalul la 100%.",
+        "ratios_help": "Editati mp %. Persoane % se calculeaza automat (100 - mp %).",
         "sqm_pct": "{type} \u2014 mp %",
         "person_pct": "{type} \u2014 persoane %",
         "save_settings": "Salveaza Setarile",
