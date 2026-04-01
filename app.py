@@ -2,7 +2,6 @@ import re
 import streamlit as st
 import tempfile
 import os
-import pandas as pd
 from datetime import datetime
 from data_manager import (
     load_companies, save_companies, load_settings, save_settings,
@@ -133,22 +132,26 @@ with tab1:
                 if all(h == 0 for h in effective_hcs):
                     st.info("All headcounts are 0 this month. Allocation is based on area (sqm) only.")
 
-                # Preview table
+                # Preview table (pandas-free)
                 st.subheader("Allocation Preview")
-                df = pd.DataFrame(results)
-                df = df.rename(columns={
-                    "company_name": "Company",
-                    "electricity": "Electricity",
-                    "water": "Water",
-                    "garbage": "Garbage",
-                    "gas_hotel": "Gas (Hotel)",
-                    "gas_ground_floor": "Gas (GF)",
-                    "gas_first_floor": "Gas (1F)",
-                    "total": "Total",
-                })
-                display_cols = ["Company", "Electricity", "Water", "Garbage",
-                                "Gas (Hotel)", "Gas (GF)", "Gas (1F)", "Total"]
-                st.dataframe(df[display_cols], use_container_width=True, hide_index=True)
+                preview_cols = [
+                    ("Company", "company_name", False),
+                    ("Electricity", "electricity", True),
+                    ("Water", "water", True),
+                    ("Garbage", "garbage", True),
+                    ("Gas (Hotel)", "gas_hotel", True),
+                    ("Gas (GF)", "gas_ground_floor", True),
+                    ("Gas (1F)", "gas_first_floor", True),
+                    ("Total", "total", True),
+                ]
+                header_cols = st.columns([2] + [1] * 7)
+                for i, (label, _, _) in enumerate(preview_cols):
+                    header_cols[i].markdown(f"**{label}**")
+                for r in results:
+                    row_cols = st.columns([2] + [1] * 7)
+                    for i, (_, key, is_num) in enumerate(preview_cols):
+                        val = r[key]
+                        row_cols[i].write(f"{val:,.2f}" if is_num else val)
 
                 # Generate Excel
                 month_name = datetime(2000, month, 1).strftime("%B")
