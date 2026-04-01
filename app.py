@@ -8,6 +8,7 @@ from engine import allocate_costs
 from excel_export import generate_excel
 from translations import t, floor_name, month_name
 from history import save_run, list_runs, get_excel_path, delete_run
+from formatting import format_ron, parse_ron_input
 
 st.set_page_config(page_title="Premier Business Center - Shared Cost Engine", layout="centered")
 
@@ -16,8 +17,12 @@ st.markdown("""
     .block-container { padding-top: 1.5rem; padding-bottom: 1rem; }
     h1 { font-size: 1.6rem !important; margin-bottom: 0.5rem !important; }
     div[data-testid="stNumberInput"] { margin-bottom: -0.5rem; }
+    .ron-suffix { font-size: 0.9rem; color: #666; padding-top: 0.3rem; }
 </style>
 """, unsafe_allow_html=True)
+
+OPTIONAL_FIELDS = ["office_location", "contact_person", "phone", "email",
+                    "beginning_date", "expiration_date", "notes"]
 
 
 def _load_data():
@@ -41,19 +46,14 @@ tab1, tab2, tab3, tab4 = st.tabs([
 ])
 
 
-def _parse_amount(val):
-    v = val.strip().replace(",", ".")
-    if not v:
-        return 0.0
-    f = float(v)
-    if f < 0:
-        raise ValueError
-    return f
-
-
-def _ron(key):
-    """Get translated label with (RON) suffix."""
-    return f"{t(key, lang)} (RON)"
+def _money_input(label, key, placeholder):
+    """Render a money input with RON suffix."""
+    col_inp, col_suf = st.columns([4, 1])
+    with col_inp:
+        val = st.text_input(label, value="", placeholder=placeholder, key=key, label_visibility="visible")
+    with col_suf:
+        st.markdown('<p class="ron-suffix"><br>RON</p>', unsafe_allow_html=True)
+    return val
 
 
 # =============================================================================
@@ -75,35 +75,35 @@ with tab1:
     st.markdown(f"#### {t('invoice_totals', lang)}")
     col1, col2 = st.columns(2)
     with col1:
-        inp_elec = st.text_input(_ron("electricity"), value="", placeholder=ph, key="inp_elec")
-        inp_water = st.text_input(_ron("water"), value="", placeholder=ph, key="inp_water")
-        inp_garbage = st.text_input(_ron("garbage"), value="", placeholder=ph, key="inp_garbage")
+        inp_elec = _money_input(t("electricity", lang), "inp_elec", ph)
+        inp_water = _money_input(t("water", lang), "inp_water", ph)
+        inp_garbage = _money_input(t("garbage", lang), "inp_garbage", ph)
     with col2:
-        inp_hgas = st.text_input(_ron("hotel_gas"), value="", placeholder=ph, key="inp_hgas")
-        inp_gfgas = st.text_input(_ron("ground_floor_gas"), value="", placeholder=ph, key="inp_gfgas")
-        inp_ffgas = st.text_input(_ron("first_floor_gas"), value="", placeholder=ph, key="inp_ffgas")
+        inp_hgas = _money_input(t("hotel_gas", lang), "inp_hgas", ph)
+        inp_gfgas = _money_input(t("ground_floor_gas", lang), "inp_gfgas", ph)
+        inp_ffgas = _money_input(t("first_floor_gas", lang), "inp_ffgas", ph)
 
     st.markdown(f"#### {t('external_usage', lang)}")
     ecol1, ecol2 = st.columns(2)
     with ecol1:
-        ext_elec = st.text_input(t("external_electricity", lang), value="", placeholder=eph, key="ext_elec")
-        ext_water = st.text_input(t("external_water", lang), value="", placeholder=eph, key="ext_water")
-        ext_garbage = st.text_input(t("external_garbage", lang), value="", placeholder=eph, key="ext_garbage")
+        ext_elec = _money_input(t("external_electricity", lang), "ext_elec", eph)
+        ext_water = _money_input(t("external_water", lang), "ext_water", eph)
+        ext_garbage = _money_input(t("external_garbage", lang), "ext_garbage", eph)
     with ecol2:
-        ext_hgas = st.text_input(t("external_hotel_gas", lang), value="", placeholder=eph, key="ext_hgas")
-        ext_gfgas = st.text_input(t("external_gf_gas", lang), value="", placeholder=eph, key="ext_gfgas")
-        ext_ffgas = st.text_input(t("external_ff_gas", lang), value="", placeholder=eph, key="ext_ffgas")
+        ext_hgas = _money_input(t("external_hotel_gas", lang), "ext_hgas", eph)
+        ext_gfgas = _money_input(t("external_gf_gas", lang), "ext_gfgas", eph)
+        ext_ffgas = _money_input(t("external_ff_gas", lang), "ext_ffgas", eph)
 
     st.divider()
 
     if st.button(t("generate", lang), type="primary", use_container_width=True):
         field_map = {
-            _ron("electricity"): inp_elec,
-            _ron("water"): inp_water,
-            _ron("garbage"): inp_garbage,
-            _ron("hotel_gas"): inp_hgas,
-            _ron("ground_floor_gas"): inp_gfgas,
-            _ron("first_floor_gas"): inp_ffgas,
+            t("electricity", lang): inp_elec,
+            t("water", lang): inp_water,
+            t("garbage", lang): inp_garbage,
+            t("hotel_gas", lang): inp_hgas,
+            t("ground_floor_gas", lang): inp_gfgas,
+            t("first_floor_gas", lang): inp_ffgas,
             t("external_electricity", lang): ext_elec,
             t("external_water", lang): ext_water,
             t("external_garbage", lang): ext_garbage,
@@ -116,7 +116,7 @@ with tab1:
         errors = []
         for label, raw in field_map.items():
             try:
-                parsed[label] = _parse_amount(raw)
+                parsed[label] = parse_ron_input(raw)
             except (ValueError, AttributeError):
                 errors.append(label)
 
@@ -166,7 +166,7 @@ with tab1:
                             ("Gas(H)", "gas_hotel", True),
                             ("Gas(GF)", "gas_ground_floor", True),
                             ("Gas(1F)", "gas_first_floor", True),
-                            (t("excel_total", lang) + " RON", "total", True),
+                            (t("excel_total", lang), "total", True),
                         ]
                         hcols = st.columns([2.5] + [1] * 7)
                         for i, (lbl, _, _) in enumerate(preview_cols):
@@ -175,7 +175,7 @@ with tab1:
                             rcols = st.columns([2.5] + [1] * 7)
                             for i, (_, key, is_num) in enumerate(preview_cols):
                                 val = r[key]
-                                rcols[i].write(f"{val:,.2f} RON" if is_num else val)
+                                rcols[i].write(format_ron(val) if is_num else val)
 
                         mn = month_name(month, lang)
                         filename = f"Premier_BC_Cost_Allocation_{year}_{month:02d}_{mn}.xlsx"
@@ -196,7 +196,7 @@ with tab1:
                                 type="primary", use_container_width=True)
 
 # =============================================================================
-# TAB 2: Companies - Add New first, then list
+# TAB 2: Companies
 # =============================================================================
 with tab2:
     companies = st.session_state.companies
@@ -237,12 +237,15 @@ with tab2:
             elif add_area <= 0:
                 st.error(t("area_zero", lang))
             else:
-                add_company({
+                new_c = {
                     "id": company_id, "name": add_name.strip(), "area_m2": add_area,
                     "headcount_default": add_hc, "building": add_building, "floor": add_floor,
                     "has_heating": add_heating, "electricity_eligible": add_elec,
                     "water_eligible": add_water, "garbage_eligible": add_garbage, "active": True,
-                })
+                }
+                for f in OPTIONAL_FIELDS:
+                    new_c[f] = ""
+                add_company(new_c)
                 st.session_state._reload = True
                 st.success(t("added_ok", lang, name=add_name))
                 st.rerun()
@@ -255,6 +258,7 @@ with tab2:
         label = f'{t("company_no", lang)} {idx} {icon} {c["name"]} \u2014 {c["area_m2"]} m\u00b2, {c["headcount_default"]} {t("excel_persons", lang).lower()}, {floor_name(c["floor"], lang)}'
 
         with st.expander(label):
+            # Core fields
             col1, col2, col3 = st.columns(3)
             with col1:
                 new_name = st.text_input(t("company_name", lang), value=c["name"], key=f"ed_name_{c['id']}")
@@ -273,6 +277,19 @@ with tab2:
                 new_garbage = st.checkbox(t("garbage", lang), value=c["garbage_eligible"], key=f"ed_garb_{c['id']}")
                 new_active = st.checkbox(t("active", lang), value=c["active"], key=f"ed_act_{c['id']}")
 
+            # Optional info fields
+            st.caption(t("company_info", lang))
+            oi1, oi2 = st.columns(2)
+            with oi1:
+                new_office = st.text_input(t("office_location", lang), value=c.get("office_location", ""), key=f"ed_office_{c['id']}")
+                new_contact = st.text_input(t("contact_person", lang), value=c.get("contact_person", ""), key=f"ed_contact_{c['id']}")
+                new_phone = st.text_input(t("phone", lang), value=c.get("phone", ""), key=f"ed_phone_{c['id']}")
+                new_email = st.text_input(t("email", lang), value=c.get("email", ""), key=f"ed_email_{c['id']}")
+            with oi2:
+                new_begin = st.text_input(t("beginning_date", lang), value=c.get("beginning_date", ""), key=f"ed_begin_{c['id']}")
+                new_expire = st.text_input(t("expiration_date", lang), value=c.get("expiration_date", ""), key=f"ed_expire_{c['id']}")
+                new_notes = st.text_area(t("notes", lang), value=c.get("notes", ""), key=f"ed_notes_{c['id']}", height=100)
+
             if st.button(t("save", lang), key=f"save_{c['id']}"):
                 other_names = [x["name"].strip().lower() for x in companies if x["id"] != c["id"]]
                 if new_name.strip().lower() in other_names:
@@ -290,6 +307,10 @@ with tab2:
                         "building": new_building, "has_heating": new_heating,
                         "electricity_eligible": new_elec, "water_eligible": new_water,
                         "garbage_eligible": new_garbage, "active": new_active,
+                        "office_location": new_office, "contact_person": new_contact,
+                        "phone": new_phone, "email": new_email,
+                        "beginning_date": new_begin, "expiration_date": new_expire,
+                        "notes": new_notes,
                     })
                     st.session_state._reload = True
                     st.success(t("saved_ok", lang, name=new_name))
@@ -309,17 +330,18 @@ with tab3:
 
     for expense_type in ["electricity", "gas", "water", "garbage"]:
         current = saved_settings["ratios"][expense_type]
-        col1, col2 = st.columns(2)
+        col1, col2 = st.columns([3, 2])
         with col1:
             new_sqm = st.number_input(
                 t("sqm_pct", lang, type=expense_type.capitalize()),
                 min_value=0, max_value=100, value=current["sqm_weight"],
                 step=5, key=f"ratio_sqm_{expense_type}")
         with col2:
-            st.caption(t("person_pct", lang, type=expense_type.capitalize()))
-            st.markdown(f"&nbsp; **{100 - new_sqm}%**")
+            person_pct = 100 - new_sqm
+            st.markdown(f"<div style='padding-top:1.8rem;'>{t('person_pct', lang, type=expense_type.capitalize())}: <b>{person_pct}%</b></div>",
+                        unsafe_allow_html=True)
 
-        pending_ratios[expense_type] = {"sqm_weight": new_sqm, "headcount_weight": 100 - new_sqm}
+        pending_ratios[expense_type] = {"sqm_weight": new_sqm, "headcount_weight": person_pct}
         if new_sqm != current["sqm_weight"]:
             settings_changed = True
 
