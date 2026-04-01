@@ -1,5 +1,12 @@
 """UI and Excel translations for English and Romanian."""
 
+MONTH_NAMES = {
+    "en": ["January", "February", "March", "April", "May", "June",
+           "July", "August", "September", "October", "November", "December"],
+    "ro": ["Ianuarie", "Februarie", "Martie", "Aprilie", "Mai", "Iunie",
+           "Iulie", "August", "Septembrie", "Octombrie", "Noiembrie", "Decembrie"],
+}
+
 TRANSLATIONS = {
     "en": {
         # App
@@ -8,6 +15,7 @@ TRANSLATIONS = {
         "tab_companies": "Companies",
         "tab_settings": "Settings",
         "tab_history": "History",
+        "currency": "RON",
 
         # Monthly Input
         "month": "Month",
@@ -27,12 +35,14 @@ TRANSLATIONS = {
         "external_gf_gas": "External Ground Floor Gas Usage",
         "external_ff_gas": "External First Floor Gas Usage",
         "generate": "Generate Excel Report",
-        "preview": "Allocation Preview",
+        "preview": "Allocation Preview (RON)",
         "download": "Download",
         "no_active": "No active companies. Go to Companies tab to activate at least one.",
-        "external_exceeds": "{field} external usage ({ext:.2f}) cannot exceed total ({total:.2f}).",
+        "external_exceeds": "{field} external usage ({ext:.2f} RON) cannot exceed total ({total:.2f} RON).",
         "invalid_number": "Invalid number in: {fields}. Use digits and decimal point only.",
         "no_results": "No allocatable results. All companies may be inactive or ineligible.",
+        "input_placeholder": "e.g. 3598.89",
+        "ext_placeholder": "0",
 
         # Companies
         "company_name": "Company Name",
@@ -51,6 +61,9 @@ TRANSLATIONS = {
         "area_zero": "Area must be greater than 0.",
         "persons_negative": "Number of persons cannot be negative.",
         "id_exists": "A company with this ID already exists. Choose a different name.",
+        "company_no": "No.",
+        "chart_persons": "Persons by Company",
+        "chart_area": "Area (m\u00b2) by Company",
 
         # Settings
         "ratios_title": "Allocation Ratios",
@@ -80,28 +93,31 @@ TRANSLATIONS = {
         "excel_gas_hotel": "Gas (Hotel)",
         "excel_gas_gf": "Gas (Ground Floor)",
         "excel_gas_ff": "Gas (First Floor)",
-        "excel_input_values": "INPUT VALUES",
-        "excel_net_amounts": "NET ALLOCABLE AMOUNTS",
-        "excel_after_external": "{type} (after external usage deduction)",
-        "excel_ratios": "ALLOCATION RATIOS",
+        "excel_original_totals": "A. ORIGINAL INVOICE TOTALS (RON)",
+        "excel_external_section": "B. EXTERNAL USAGE (RON)",
+        "excel_net_amounts": "C. NET ALLOCABLE AMOUNTS (RON)",
+        "excel_ratios": "D. ALLOCATION RATIOS",
+        "excel_company_data": "E. COMPANY DATA",
+        "excel_eligible": "F. ELIGIBLE COMPANIES & ALLOCATIONS",
+        "excel_after_external": "{type} (after external usage)",
         "excel_ratio_format": "{sqm}% sqm + {hc}% persons",
-        "excel_company_data": "COMPANY DATA",
         "excel_persons": "Persons",
         "excel_has_heating": "Has Heating",
         "excel_yes": "Yes",
         "excel_no": "No",
         "excel_sqm_pct": "sqm % of total",
         "excel_person_pct": "Person % of total",
-        "excel_eligible": "ELIGIBLE COMPANIES PER EXPENSE TYPE",
         "excel_n_companies": "{n} companies",
         "excel_total_sqm": "Total sqm: {v:.2f}",
         "excel_total_persons": "Total persons: {v}",
-        "excel_external_electricity": "External Electricity Usage (RON)",
-        "excel_external_water": "External Water Usage (RON)",
-        "excel_external_garbage": "External Garbage Usage (RON)",
-        "excel_external_hotel_gas": "External Hotel Gas Usage (RON)",
-        "excel_external_gf_gas": "External Ground Floor Gas Usage (RON)",
-        "excel_external_ff_gas": "External First Floor Gas Usage (RON)",
+        "excel_external_electricity": "External Electricity Usage",
+        "excel_external_water": "External Water Usage",
+        "excel_external_garbage": "External Garbage Usage",
+        "excel_external_hotel_gas": "External Hotel Gas Usage",
+        "excel_external_gf_gas": "External Ground Floor Gas Usage",
+        "excel_external_ff_gas": "External First Floor Gas Usage",
+        "excel_no_external": "(no external usage)",
+        "excel_amount_ron": "Amount (RON)",
 
         # Floor names
         "floor_ground_floor": "Ground Floor",
@@ -116,6 +132,7 @@ TRANSLATIONS = {
         "tab_companies": "Companii",
         "tab_settings": "Setari",
         "tab_history": "Istoric",
+        "currency": "RON",
 
         # Monthly Input
         "month": "Luna",
@@ -135,12 +152,14 @@ TRANSLATIONS = {
         "external_gf_gas": "Consum Extern Gaz Parter",
         "external_ff_gas": "Consum Extern Gaz Etaj 1",
         "generate": "Genereaza Raport Excel",
-        "preview": "Previzualizare Alocare",
+        "preview": "Previzualizare Alocare (RON)",
         "download": "Descarca",
         "no_active": "Nu exista companii active. Activati cel putin una din tab-ul Companii.",
-        "external_exceeds": "Consumul extern {field} ({ext:.2f}) nu poate depasi totalul ({total:.2f}).",
+        "external_exceeds": "Consumul extern {field} ({ext:.2f} RON) nu poate depasi totalul ({total:.2f} RON).",
         "invalid_number": "Numar invalid in: {fields}. Folositi cifre si punct zecimal.",
         "no_results": "Nu exista rezultate. Toate companiile pot fi inactive sau neeligibile.",
+        "input_placeholder": "ex. 3598.89",
+        "ext_placeholder": "0",
 
         # Companies
         "company_name": "Numele Companiei",
@@ -159,6 +178,9 @@ TRANSLATIONS = {
         "area_zero": "Suprafata trebuie sa fie mai mare decat 0.",
         "persons_negative": "Numarul de persoane nu poate fi negativ.",
         "id_exists": "O companie cu acest ID exista deja. Alegeti un alt nume.",
+        "company_no": "Nr.",
+        "chart_persons": "Persoane pe Companie",
+        "chart_area": "Suprafata (m\u00b2) pe Companie",
 
         # Settings
         "ratios_title": "Proportii de Alocare",
@@ -188,28 +210,31 @@ TRANSLATIONS = {
         "excel_gas_hotel": "Gaz (Hotel)",
         "excel_gas_gf": "Gaz (Parter)",
         "excel_gas_ff": "Gaz (Etaj 1)",
-        "excel_input_values": "VALORI INTRODUSE",
-        "excel_net_amounts": "SUME NETE ALOCABILE",
-        "excel_after_external": "{type} (dupa deducerea consumului extern)",
-        "excel_ratios": "PROPORTII DE ALOCARE",
+        "excel_original_totals": "A. TOTALURI ORIGINALE FACTURI (RON)",
+        "excel_external_section": "B. CONSUM EXTERN (RON)",
+        "excel_net_amounts": "C. SUME NETE ALOCABILE (RON)",
+        "excel_ratios": "D. PROPORTII DE ALOCARE",
+        "excel_company_data": "E. DATE COMPANII",
+        "excel_eligible": "F. COMPANII ELIGIBILE SI ALOCARI",
+        "excel_after_external": "{type} (dupa consum extern)",
         "excel_ratio_format": "{sqm}% mp + {hc}% persoane",
-        "excel_company_data": "DATE COMPANII",
         "excel_persons": "Persoane",
         "excel_has_heating": "Are Incalzire",
         "excel_yes": "Da",
         "excel_no": "Nu",
         "excel_sqm_pct": "% mp din total",
         "excel_person_pct": "% persoane din total",
-        "excel_eligible": "COMPANII ELIGIBILE PE TIP DE CHELTUIALA",
         "excel_n_companies": "{n} companii",
         "excel_total_sqm": "Total mp: {v:.2f}",
         "excel_total_persons": "Total persoane: {v}",
-        "excel_external_electricity": "Consum Extern Electricitate (RON)",
-        "excel_external_water": "Consum Extern Apa (RON)",
-        "excel_external_garbage": "Consum Extern Gunoi (RON)",
-        "excel_external_hotel_gas": "Consum Extern Gaz Hotel (RON)",
-        "excel_external_gf_gas": "Consum Extern Gaz Parter (RON)",
-        "excel_external_ff_gas": "Consum Extern Gaz Etaj 1 (RON)",
+        "excel_external_electricity": "Consum Extern Electricitate",
+        "excel_external_water": "Consum Extern Apa",
+        "excel_external_garbage": "Consum Extern Gunoi",
+        "excel_external_hotel_gas": "Consum Extern Gaz Hotel",
+        "excel_external_gf_gas": "Consum Extern Gaz Parter",
+        "excel_external_ff_gas": "Consum Extern Gaz Etaj 1",
+        "excel_no_external": "(fara consum extern)",
+        "excel_amount_ron": "Suma (RON)",
 
         # Floor names
         "floor_ground_floor": "Parter",
@@ -231,3 +256,9 @@ def t(key, lang="en", **kwargs):
 def floor_name(floor_id, lang="en"):
     """Translate floor ID to display name."""
     return t(f"floor_{floor_id}", lang)
+
+
+def month_name(month_num, lang="en"):
+    """Get localized month name (1-indexed)."""
+    names = MONTH_NAMES.get(lang, MONTH_NAMES["en"])
+    return names[month_num - 1]
