@@ -34,9 +34,9 @@ def generate_statement_pdf(filepath, company, result, month, year, monthly_input
 
     # Logo
     if os.path.exists(LOGO_PATH):
-        logo = Image(LOGO_PATH, width=55*mm, height=18*mm)
+        logo = Image(LOGO_PATH, width=65*mm, height=21*mm)
         elements.append(logo)
-        elements.append(Spacer(1, 3*mm))
+        elements.append(Spacer(1, 4*mm))
 
     # Title
     stmt_title = "Monthly Shared Expense Statement" if lang == "en" else "Extras Lunar Costuri Comune"
@@ -105,9 +105,11 @@ def generate_statement_pdf(filepath, company, result, month, year, monthly_input
         ("GRID", (0, 0), (-1, -1), 0.5, HexColor("#d0d0d0")),
         # Total row
         ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
-        ("FONTSIZE", (0, -1), (-1, -1), 11),
-        ("BACKGROUND", (0, -1), (-1, -1), LIGHT_GRAY),
-        ("TEXTCOLOR", (0, -1), (0, -1), NAVY),
+        ("FONTSIZE", (0, -1), (-1, -1), 12),
+        ("BACKGROUND", (0, -1), (-1, -1), NAVY),
+        ("TEXTCOLOR", (0, -1), (-1, -1), HexColor("#FFFFFF")),
+        ("TOPPADDING", (0, -1), (-1, -1), 7),
+        ("BOTTOMPADDING", (0, -1), (-1, -1), 7),
     ]
     for i in range(1, len(expense_rows) + 1):
         if i % 2 == 0:
