@@ -39,6 +39,13 @@ def save_settings(settings):
 def add_company(company):
     with _lock:
         companies = load_companies()
+        # Re-validate uniqueness inside lock to prevent race condition
+        cid = company["id"]
+        cname = company["name"].strip().lower()
+        if any(c["id"] == cid for c in companies):
+            raise ValueError(f"Company ID '{cid}' already exists.")
+        if any(c["name"].strip().lower() == cname for c in companies):
+            raise ValueError(f"Company name '{company['name']}' already exists.")
         companies.append(company)
         _atomic_write(COMPANIES_FILE, companies)
         return companies

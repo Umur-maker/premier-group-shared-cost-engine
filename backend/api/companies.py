@@ -61,6 +61,8 @@ def create_company(body: CompanyCreate):
     name = body.name.strip()
     if not name:
         raise HTTPException(400, "Company name is required.")
+    if len(name) > 200:
+        raise HTTPException(400, "Company name must be 200 characters or less.")
     company_id = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
     if any(c["id"] == company_id for c in companies):
         raise HTTPException(409, f"Company ID '{company_id}' already exists.")
@@ -89,7 +91,10 @@ def create_company(body: CompanyCreate):
         "expiration_date": body.expiration_date,
         "notes": body.notes,
     }
-    add_company(new_company)
+    try:
+        add_company(new_company)
+    except ValueError as e:
+        raise HTTPException(409, str(e))
     return new_company
 
 
@@ -105,6 +110,8 @@ def edit_company(company_id: str, body: CompanyUpdate):
         fields["name"] = fields["name"].strip()
         if not fields["name"]:
             raise HTTPException(400, "Company name cannot be empty.")
+        if len(fields["name"]) > 200:
+            raise HTTPException(400, "Company name must be 200 characters or less.")
     if "area_m2" in fields and fields["area_m2"] <= 0:
         raise HTTPException(400, "Area must be greater than 0.")
     update_company(company_id, fields)

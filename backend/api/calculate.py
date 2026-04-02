@@ -13,6 +13,7 @@ from backend.core.statement_pdf import generate_statement_pdf
 from backend.core.data_manager import load_companies, load_settings
 from backend.core.history import save_run, get_excel_path, list_runs
 from backend.core.translations import month_name
+from backend.core.safe_filename import safe_name
 
 router = APIRouter(prefix="/api/calculate", tags=["calculate"])
 
@@ -132,7 +133,7 @@ def _get_company_result(body: StatementRequest):
 @router.post("/statement")
 def company_statement(body: StatementRequest):
     company, result, mi = _get_company_result(body)
-    filename = f"Statement_{company['name'].replace(' ', '_')}_{body.year}_{body.month:02d}.xlsx"
+    filename = f"Statement_{safe_name(company['name'])}_{body.year}_{body.month:02d}.xlsx"
     tmp_path = os.path.join(tempfile.gettempdir(), filename)
     generate_statement(tmp_path, company, result, body.month, body.year, mi, body.language)
     return FileResponse(tmp_path,
@@ -143,7 +144,7 @@ def company_statement(body: StatementRequest):
 @router.post("/statement-pdf")
 def company_statement_pdf(body: StatementRequest):
     company, result, mi = _get_company_result(body)
-    filename = f"Statement_{company['name'].replace(' ', '_')}_{body.year}_{body.month:02d}.pdf"
+    filename = f"Statement_{safe_name(company['name'])}_{body.year}_{body.month:02d}.pdf"
     tmp_path = os.path.join(tempfile.gettempdir(), filename)
     generate_statement_pdf(tmp_path, company, result, body.month, body.year, mi, body.language)
     return FileResponse(tmp_path, media_type="application/pdf",

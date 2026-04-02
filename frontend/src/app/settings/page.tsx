@@ -17,9 +17,12 @@ export default function SettingsPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    getSettings().then((s) => { setSettings(s); setPending(s); });
-  }, []);
+    getSettings()
+      .then((s) => { setSettings(s); setPending(s); })
+      .catch(() => setError(tr("error.backend_down", lang)));
+  }, [lang]);
 
+  if (error && !settings) return <p className="p-6 text-red-600">{error}</p>;
   if (!settings || !pending) return <p className="p-6 text-gray-500">Loading...</p>;
 
   const changed = JSON.stringify(settings.ratios) !== JSON.stringify(pending.ratios);
