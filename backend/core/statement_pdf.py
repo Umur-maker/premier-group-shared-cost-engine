@@ -32,11 +32,16 @@ def generate_statement_pdf(filepath, company, result, month, year, monthly_input
 
     elements = []
 
-    # Logo
+    # Logo — preserve original aspect ratio
     if os.path.exists(LOGO_PATH):
-        logo = Image(LOGO_PATH, width=65*mm, height=21*mm)
+        from reportlab.lib.utils import ImageReader
+        img_reader = ImageReader(LOGO_PATH)
+        iw, ih = img_reader.getSize()
+        logo_width = 60*mm
+        logo_height = logo_width * (ih / iw)
+        logo = Image(LOGO_PATH, width=logo_width, height=logo_height)
         elements.append(logo)
-        elements.append(Spacer(1, 4*mm))
+        elements.append(Spacer(1, 3*mm))
 
     # Title
     stmt_title = "Monthly Shared Expense Statement" if lang == "en" else "Extras Lunar Costuri Comune"
