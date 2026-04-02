@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getSettings, saveSettings } from "@/lib/api";
+import { PageLayout, SectionCard, Button } from "@/components";
 import type { Settings } from "@/types";
 
 const EXPENSE_TYPES = ["electricity", "gas", "water", "garbage"] as const;
@@ -16,7 +17,7 @@ export default function SettingsPage() {
     getSettings().then((s) => { setSettings(s); setPending(s); });
   }, []);
 
-  if (!settings || !pending) return <p>Loading...</p>;
+  if (!settings || !pending) return <p className="p-6 text-gray-500">Loading...</p>;
 
   const changed = JSON.stringify(settings.ratios) !== JSON.stringify(pending.ratios);
 
@@ -34,47 +35,67 @@ export default function SettingsPage() {
       await saveSettings(pending);
       setSettings(pending);
       setSaved(true);
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Error");
-    }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : "Error"); }
   };
 
   return (
-    <div>
-      <h2 className="text-xl font-bold mb-4">Settings</h2>
-      {error && <p className="text-red-600 text-sm mb-2">{error}</p>}
+    <PageLayout title="Settings">
+      {error && <p className="text-red-600 text-sm">{error}</p>}
 
-      <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">Allocation Ratios</h3>
-      <p className="text-xs text-gray-400 mb-3">Edit sqm %. Person % is calculated automatically.</p>
-
-      <div className="space-y-3">
-        {EXPENSE_TYPES.map((et) => {
-          const r = pending.ratios[et];
-          return (
-            <div key={et} className="flex items-center gap-4">
-              <span className="w-28 text-sm capitalize">{et}</span>
-              <label className="text-xs text-gray-500">sqm %</label>
-              <input type="number" min={0} max={100} step={5} value={r.sqm_weight}
-                onChange={(e) => setSqm(et, +e.target.value)}
-                className="border rounded px-2 py-1 w-20 text-sm" />
-              <span className="text-sm text-blue-600 font-semibold">
-                person %: {r.headcount_weight}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-
-      {changed && (
-        <div className="mt-4">
-          <p className="text-yellow-600 text-sm mb-2">You have unsaved changes.</p>
-          <button onClick={handleSave}
-            className="bg-blue-600 text-white px-4 py-1 rounded text-sm hover:bg-blue-700">
-            Save Settings
-          </button>
+      {/* Allocation Ratios */}
+      <SectionCard title="Allocation Ratios">
+        <p className="text-xs text-gray-400 mb-4">
+          Edit sqm %. Person % is calculated automatically (100 - sqm %).
+        </p>
+        <div className="space-y-3">
+          {EXPENSE_TYPES.map((et) => {
+            const r = pending.ratios[et];
+            return (
+              <div key={et} className="flex items-center gap-4">
+                <span className="w-28 text-sm capitalize font-medium">{et}</span>
+                <label className="text-xs text-gray-500">sqm %</label>
+                <input type="number" min={0} max={100} step={5} value={r.sqm_weight}
+                  onChange={(e) => setSqm(et, +e.target.value)}
+                  className="border rounded px-2 py-1.5 w-20 text-sm text-center" />
+                <span className="text-sm text-blue-600 font-semibold">
+                  person: {r.headcount_weight}%
+                </span>
+              </div>
+            );
+          })}
         </div>
-      )}
-      {saved && <p className="text-green-600 text-sm mt-2">Settings saved.</p>}
-    </div>
+        {changed && (
+          <div className="mt-4 pt-3 border-t border-gray-200">
+            <p className="text-yellow-600 text-xs mb-2">Unsaved changes</p>
+            <Button onClick={handleSave}>Save Settings</Button>
+          </div>
+        )}
+        {saved && <p className="text-green-600 text-xs mt-2">Settings saved.</p>}
+      </SectionCard>
+
+      {/* Language */}
+      <SectionCard title="Language">
+        <p className="text-xs text-gray-400 mb-2">
+          Language affects Excel report labels and month names.
+        </p>
+        <select className="border rounded px-2 py-1.5 text-sm">
+          <option value="en">English</option>
+          <option value="ro">Romanian</option>
+        </select>
+      </SectionCard>
+
+      {/* Appearance */}
+      <SectionCard title="Appearance">
+        <p className="text-xs text-gray-400 mb-2">Theme preference (coming in Phase 4).</p>
+        <div className="flex gap-3">
+          <label className="flex items-center gap-1 text-sm">
+            <input type="radio" name="theme" value="light" defaultChecked /> Light
+          </label>
+          <label className="flex items-center gap-1 text-sm">
+            <input type="radio" name="theme" value="dark" /> Dark
+          </label>
+        </div>
+      </SectionCard>
+    </PageLayout>
   );
 }
