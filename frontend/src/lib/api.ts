@@ -18,6 +18,7 @@ import type {
   MonthlyInput,
   CalculateResponse,
   HistoryEntry,
+  AllocationResult,
 } from "@/types";
 
 // Companies
@@ -69,3 +70,11 @@ export const deleteRun = (runId: string) =>
 
 export const getHistoryExcelUrl = (runId: string) =>
   `${API}/api/history/${runId}/excel`;
+
+export const getRunDetail = (runId: string) =>
+  request<HistoryEntry & { results: AllocationResult[]; companies: Company[] }>(
+    `/api/history/${runId}`
+  );
+
+export const getHistoryStatementPdfUrl = (runId: string, companyId: string) =>
+  `${API}/api/history/${runId}/statement-pdf?company_id=${encodeURIComponent(companyId)}`;
