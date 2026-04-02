@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { calculate, getExcelUrl } from "@/lib/api";
-import type { MonthlyInput, AllocationResult } from "@/types";
+import { useState, useEffect } from "react";
+import { calculate, getCompanies } from "@/lib/api";
+import { formatRon, parseRonInput } from "@/lib/formatting";
+import { PageLayout, SectionCard, MoneyInput, DataTable, Button, ExportPanel } from "@/components";
+import type { MonthlyInput, AllocationResult, Company } from "@/types";
 
-const MONTHS = [
-  "January","February","March","April","May","June",
-  "July","August","September","October","November","December",
-];
+const MONTHS = ["January","February","March","April","May","June",
+  "July","August","September","October","November","December"];
 
 const INVOICE_FIELDS: { key: keyof MonthlyInput; label: string }[] = [
   { key: "electricity_total", label: "Electricity" },
@@ -19,44 +19,41 @@ const INVOICE_FIELDS: { key: keyof MonthlyInput; label: string }[] = [
 ];
 
 const EXTERNAL_FIELDS: { key: keyof MonthlyInput; label: string }[] = [
-  { key: "external_electricity", label: "External Electricity" },
-  { key: "external_water", label: "External Water" },
-  { key: "external_garbage", label: "External Garbage" },
-  { key: "external_hotel_gas", label: "External Hotel Gas" },
-  { key: "external_gf_gas", label: "External GF Gas" },
-  { key: "external_ff_gas", label: "External FF Gas" },
+  { key: "external_electricity", label: "Ext. Electricity" },
+  { key: "external_water", label: "Ext. Water" },
+  { key: "external_garbage", label: "Ext. Garbage" },
+  { key: "external_hotel_gas", label: "Ext. Hotel Gas" },
+  { key: "external_gf_gas", label: "Ext. GF Gas" },
+  { key: "external_ff_gas", label: "Ext. FF Gas" },
 ];
-
-const EMPTY_INPUT: MonthlyInput = {
-  electricity_total: 0, water_total: 0, garbage_total: 0,
-  hotel_gas_total: 0, ground_floor_gas_total: 0, first_floor_gas_total: 0,
-  external_electricity: 0, external_water: 0, external_garbage: 0,
-  external_hotel_gas: 0, external_gf_gas: 0, external_ff_gas: 0,
-};
 
 export default function MonthlyInputPage() {
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [year, setYear] = useState(now.getFullYear());
-  const [input, setInput] = useState<MonthlyInput>({ ...EMPTY_INPUT });
+  const [raw, setRaw] = useState<Record<string, string>>({});
   const [results, setResults] = useState<AllocationResult[] | null>(null);
-  const [runId, setRunId] = useState<string | null>(null);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [runId, setRunId] = useState("");
   const [filename, setFilename] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const setField = (key: keyof MonthlyInput, val: string) => {
-    const v = val.replace(",", ".");
-    const num = v === "" ? 0 : parseFloat(v);
-    if (!isNaN(num)) setInput((prev) => ({ ...prev, [key]: num }));
+  useEffect(() => { getCompanies().then(setCompanies); }, []);
+
+  const buildInput = (): MonthlyInput => {
+    const mi: Record<string, number> = {};
+    for (const f of [...INVOICE_FIELDS, ...EXTERNAL_FIELDS]) {
+      mi[f.key] = parseRonInput(raw[f.key] || "");
+    }
+    return mi as unknown as MonthlyInput;
   };
 
   const handleGenerate = async () => {
-    setError("");
-    setResults(null);
-    setLoading(true);
+    setError(""); setResults(null); setLoading(true);
     try {
-      const res = await calculate({ month, year, language: "en", monthly_input: input });
+      const mi = buildInput();
+      const res = await calculate({ month, year, language: "en", monthly_input: mi });
       setResults(res.results);
       setRunId(res.run_id);
       setFilename(res.filename);
@@ -67,89 +64,82 @@ export default function MonthlyInputPage() {
     }
   };
 
+  const resultColumns = [
+    { key: "company_name", header: "Company" },
+    { key: "electricity", header: "Elec.", align: "right" as const, render: (r: AllocationResult) => formatRon(r.electricity) },
+    { key: "water", header: "Water", align: "right" as const, render: (r: AllocationResult) => formatRon(r.water) },
+    { key: "garbage", header: "Garb.", align: "right" as const, render: (r: AllocationResult) => formatRon(r.garbage) },
+    { key: "gas_hotel", header: "Gas(H)", align: "right" as const, render: (r: AllocationResult) => formatRon(r.gas_hotel) },
+    { key: "gas_ground_floor", header: "Gas(GF)", align: "right" as const, render: (r: AllocationResult) => formatRon(r.gas_ground_floor) },
+    { key: "gas_first_floor", header: "Gas(1F)", align: "right" as const, render: (r: AllocationResult) => formatRon(r.gas_first_floor) },
+    { key: "total", header: "Total", align: "right" as const, bold: true, render: (r: AllocationResult) => formatRon(r.total) },
+  ];
+
   return (
-    <div>
-      <h2 className="text-xl font-bold mb-4">Monthly Input</h2>
-
-      <div className="flex gap-4 mb-4">
-        <select value={month} onChange={(e) => setMonth(+e.target.value)}
-          className="border rounded px-2 py-1">
-          {MONTHS.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
-        </select>
-        <input type="number" value={year} onChange={(e) => setYear(+e.target.value)}
-          className="border rounded px-2 py-1 w-24" />
-      </div>
-
-      <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">Invoice Totals (RON)</h3>
-      <div className="grid grid-cols-3 gap-3 mb-4">
-        {INVOICE_FIELDS.map((f) => (
-          <div key={f.key}>
-            <label className="text-xs text-gray-600">{f.label}</label>
-            <input type="text" placeholder="0"
-              onChange={(e) => setField(f.key, e.target.value)}
-              className="w-full border rounded px-2 py-1 text-sm" />
+    <PageLayout title="Monthly Input">
+      <SectionCard>
+        <div className="flex gap-4 mb-4">
+          <div>
+            <label className="block text-xs text-gray-600 mb-1">Month</label>
+            <select value={month} onChange={(e) => setMonth(+e.target.value)}
+              className="border rounded px-2 py-1.5 text-sm">
+              {MONTHS.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+            </select>
           </div>
-        ))}
-      </div>
-
-      <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">External Usage (RON)</h3>
-      <div className="grid grid-cols-3 gap-3 mb-4">
-        {EXTERNAL_FIELDS.map((f) => (
-          <div key={f.key}>
-            <label className="text-xs text-gray-600">{f.label}</label>
-            <input type="text" placeholder="0"
-              onChange={(e) => setField(f.key, e.target.value)}
-              className="w-full border rounded px-2 py-1 text-sm" />
+          <div>
+            <label className="block text-xs text-gray-600 mb-1">Year</label>
+            <input type="number" value={year} onChange={(e) => setYear(+e.target.value)}
+              className="border rounded px-2 py-1.5 text-sm w-24" />
           </div>
-        ))}
-      </div>
+        </div>
+      </SectionCard>
 
-      <button onClick={handleGenerate} disabled={loading}
-        className="bg-blue-600 text-white px-6 py-2 rounded text-sm hover:bg-blue-700 disabled:opacity-50">
-        {loading ? "Generating..." : "Generate Excel Report"}
-      </button>
+      <SectionCard title="Invoice Totals">
+        <div className="grid grid-cols-3 gap-4">
+          {INVOICE_FIELDS.map((f) => (
+            <MoneyInput key={f.key} label={f.label}
+              value={raw[f.key] || ""}
+              onChange={(v) => setRaw((p) => ({ ...p, [f.key]: v }))}
+              placeholder="5.325,54" />
+          ))}
+        </div>
+      </SectionCard>
 
-      {error && <p className="text-red-600 text-sm mt-2">{error}</p>}
+      <SectionCard title="External Usage">
+        <div className="grid grid-cols-3 gap-4">
+          {EXTERNAL_FIELDS.map((f) => (
+            <MoneyInput key={f.key} label={f.label}
+              value={raw[f.key] || ""}
+              onChange={(v) => setRaw((p) => ({ ...p, [f.key]: v }))}
+              placeholder="0" />
+          ))}
+        </div>
+      </SectionCard>
+
+      <Button onClick={handleGenerate} disabled={loading}>
+        {loading ? "Generating..." : "Generate Report"}
+      </Button>
+
+      {error && <p className="text-red-600 text-sm">{error}</p>}
 
       {results && (
-        <div className="mt-6">
-          <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">Allocation Preview</h3>
-          <table className="w-full text-sm border-collapse">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="text-left p-2 border">Company</th>
-                <th className="text-right p-2 border">Elec.</th>
-                <th className="text-right p-2 border">Water</th>
-                <th className="text-right p-2 border">Garb.</th>
-                <th className="text-right p-2 border">Gas(H)</th>
-                <th className="text-right p-2 border">Gas(GF)</th>
-                <th className="text-right p-2 border">Gas(1F)</th>
-                <th className="text-right p-2 border font-bold">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {results.map((r) => (
-                <tr key={r.company_id} className="hover:bg-gray-50">
-                  <td className="p-2 border">{r.company_name}</td>
-                  <td className="p-2 border text-right">{r.electricity.toFixed(2)}</td>
-                  <td className="p-2 border text-right">{r.water.toFixed(2)}</td>
-                  <td className="p-2 border text-right">{r.garbage.toFixed(2)}</td>
-                  <td className="p-2 border text-right">{r.gas_hotel.toFixed(2)}</td>
-                  <td className="p-2 border text-right">{r.gas_ground_floor.toFixed(2)}</td>
-                  <td className="p-2 border text-right">{r.gas_first_floor.toFixed(2)}</td>
-                  <td className="p-2 border text-right font-bold">{r.total.toFixed(2)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {runId && (
-            <a href={getExcelUrl(runId)} download={filename}
-              className="inline-block mt-3 bg-green-600 text-white px-4 py-2 rounded text-sm hover:bg-green-700">
-              Download {filename}
-            </a>
-          )}
-        </div>
+        <>
+          <SectionCard title="Allocation Preview (RON)">
+            <DataTable columns={resultColumns} data={results} keyField="company_id" />
+          </SectionCard>
+
+          <ExportPanel
+            results={results}
+            companies={companies}
+            runId={runId}
+            filename={filename}
+            month={month}
+            year={year}
+            language="en"
+            monthlyInput={buildInput()}
+          />
+        </>
       )}
-    </div>
+    </PageLayout>
   );
 }
