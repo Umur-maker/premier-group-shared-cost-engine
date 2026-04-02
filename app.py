@@ -21,7 +21,6 @@ OPTIONAL_FIELDS = ["office_location", "contact_person", "phone", "email",
 FLOOR_OPTS = ["ground_floor", "first_floor", "mezzanine", "hotel"]
 
 
-# --- Data ---
 def _load_data():
     if "companies" not in st.session_state or st.session_state.get("_reload"):
         st.session_state.companies = load_companies()
@@ -37,7 +36,7 @@ _load_data()
 lang = st.session_state.lang
 is_dark = st.session_state.theme == "dark"
 
-# --- Sidebar: Navigation only ---
+# --- Sidebar ---
 with st.sidebar:
     st.markdown("### Premier Business Center")
     st.caption("Shared Cost Engine")
@@ -50,54 +49,64 @@ with st.sidebar:
     }
     if "page" not in st.session_state:
         st.session_state.page = "monthly"
-    for label, page_id in nav_items.items():
-        btn_type = "primary" if st.session_state.page == page_id else "secondary"
-        if st.button(label, key=f"nav_{page_id}", use_container_width=True, type=btn_type):
-            st.session_state.page = page_id
+    for label, pid in nav_items.items():
+        bt = "primary" if st.session_state.page == pid else "secondary"
+        if st.button(label, key=f"nav_{pid}", use_container_width=True, type=bt):
+            st.session_state.page = pid
             st.rerun()
 
 page = st.session_state.page
 
-# --- Theme CSS ---
+# --- Theme ---
 if is_dark:
     st.markdown("""<style>
-    .stApp { background: #0e1117; color: #fafafa; }
+    .stApp { background: #0d1117; color: #e6edf3; }
     section[data-testid="stSidebar"] { background: #161b22; }
     section[data-testid="stSidebar"] .stMarkdown, section[data-testid="stSidebar"] label,
-    section[data-testid="stSidebar"] .stCaption { color: #c9d1d9 !important; }
+    section[data-testid="stSidebar"] .stCaption p { color: #c9d1d9 !important; }
+    h1, h2, h3, h4, h5 { color: #f0f3f6 !important; }
+    label, .stCaption p { color: #c9d1d9 !important; }
     .stTextInput>div>div>input, .stNumberInput>div>div>input,
-    .stTextArea>div>div>textarea { background: #161b22; color: #e6edf3; border-color: #30363d; }
-    .stSelectbox>div>div { background: #161b22; color: #e6edf3; }
+    .stTextArea>div>div>textarea {
+        background: #0d1117 !important; color: #e6edf3 !important; border-color: #30363d !important;
+    }
+    .stTextInput>div>div>input::placeholder { color: #6e7681 !important; }
+    .stSelectbox>div>div { background: #0d1117; color: #e6edf3; }
     div[data-testid="stExpander"] { border-color: #30363d; background: #161b22; }
+    div[data-testid="stExpander"] summary span { color: #e6edf3 !important; }
     div[data-testid="stForm"] { background: #161b22; border-color: #30363d; }
-    .ron-tag { background: #1f6feb; color: #fff; }
-    .ratio-val { color: #58a6ff; }
+    .ron-suffix-box { background: #1f6feb; color: #fff; border: 1px solid #1f6feb; }
+    .money-input-wrap .stTextInput>div>div>input { border-radius: 6px 0 0 6px !important; border-right: none !important; }
+    .ratio-val { color: #79c0ff; }
     .section-lbl { color: #8b949e; }
     hr { border-color: #21262d !important; }
+    .stCheckbox label span { color: #c9d1d9 !important; }
     </style>""", unsafe_allow_html=True)
 else:
     st.markdown("""<style>
-    .stApp { background: #f8f9fa; }
-    section[data-testid="stSidebar"] { background: #ffffff; border-right: 1px solid #e1e4e8; }
-    div[data-testid="stExpander"] { background: #ffffff; border: 1px solid #e1e4e8; }
-    div[data-testid="stForm"] { background: #ffffff; border: 1px solid #e1e4e8; }
-    .ron-tag { background: #1a73e8; color: #fff; }
+    .stApp { background: #f6f8fa; }
+    section[data-testid="stSidebar"] { background: #fff; border-right: 1px solid #d0d7de; }
+    div[data-testid="stExpander"] { background: #fff; border: 1px solid #d0d7de; }
+    div[data-testid="stForm"] { background: #fff; border: 1px solid #d0d7de; }
+    .ron-suffix-box { background: #1a73e8; color: #fff; border: 1px solid #1a73e8; }
+    .money-input-wrap .stTextInput>div>div>input { border-radius: 6px 0 0 6px !important; border-right: none !important; }
     .ratio-val { color: #1a73e8; }
-    .section-lbl { color: #6c757d; }
+    .section-lbl { color: #57606a; }
     </style>""", unsafe_allow_html=True)
 
-# --- Shared CSS ---
 st.markdown("""<style>
 .block-container { padding-top: 1rem; max-width: 1050px; }
 h1 { font-size: 1.4rem !important; margin-bottom: 0 !important; }
-.ron-tag {
-    display: inline-block; padding: 0.35rem 0.6rem; border-radius: 0 6px 6px 0;
-    font-weight: 700; font-size: 0.82rem; margin-top: 1.85rem; letter-spacing: 0.03rem;
+.ron-suffix-box {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 0 0.65rem; border-radius: 0 6px 6px 0;
+    font-weight: 700; font-size: 0.8rem; letter-spacing: 0.04rem;
+    height: 42px; margin-top: 1.65rem;
 }
-.ratio-val { font-size: 1.05rem; font-weight: 700; margin-top: 2rem; }
+.ratio-val { font-size: 1rem; font-weight: 700; margin-top: 1.9rem; }
 .section-lbl {
     font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08rem;
-    font-weight: 600; margin: 0.6rem 0 0.2rem 0;
+    font-weight: 600; margin: 0.6rem 0 0.15rem 0;
 }
 div[data-testid="stNumberInput"] { margin-bottom: -0.3rem; }
 </style>""", unsafe_allow_html=True)
@@ -106,11 +115,14 @@ floor_labels = [floor_name(f, lang) for f in FLOOR_OPTS]
 
 
 def _money(label, key, placeholder):
-    c1, c2 = st.columns([6, 1])
+    """Unified money input: [amount|RON] as one visual component."""
+    st.markdown('<div class="money-input-wrap">', unsafe_allow_html=True)
+    c1, c2 = st.columns([7, 1])
     with c1:
         val = st.text_input(label, value="", placeholder=placeholder, key=key)
     with c2:
-        st.markdown('<div class="ron-tag">RON</div>', unsafe_allow_html=True)
+        st.markdown('<div class="ron-suffix-box">RON</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
     return val
 
 
@@ -119,7 +131,7 @@ def _section(label):
 
 
 # =============================================================================
-# PAGE: Monthly Input
+# MONTHLY INPUT
 # =============================================================================
 if page == "monthly":
     st.markdown(f"## {t('tab_monthly', lang)}")
@@ -242,86 +254,85 @@ if page == "monthly":
                                 type="primary", use_container_width=True)
 
 # =============================================================================
-# PAGE: Companies
+# COMPANIES
 # =============================================================================
 elif page == "companies":
     st.markdown(f"## {t('tab_companies', lang)}")
     companies = st.session_state.companies
 
-    # --- Add New ---
-    _section(t("add_company", lang))
-    with st.form("add_company_form"):
-        _section(t("basic_info", lang))
-        a1, a2, a3, a4 = st.columns(4)
-        with a1:
-            add_name = st.text_input(t("company_name", lang))
-        with a2:
-            add_area = st.number_input(t("area_m2", lang), min_value=0.0, step=0.01)
-        with a3:
-            add_hc = st.number_input(t("persons", lang), min_value=0, step=1, value=1)
-        with a4:
-            add_fi = st.selectbox(t("floor", lang), range(len(FLOOR_OPTS)),
-                format_func=lambda i: floor_labels[i])
-            add_floor = FLOOR_OPTS[add_fi]
+    # --- Add New (collapsed) ---
+    with st.expander(f"+ {t('add_company', lang)}", expanded=False):
+        with st.form("add_company_form"):
+            _section(t("basic_info", lang))
+            a1, a2, a3, a4 = st.columns(4)
+            with a1:
+                add_name = st.text_input(t("company_name", lang))
+            with a2:
+                add_area = st.number_input(t("area_m2", lang), min_value=0.0, step=0.01)
+            with a3:
+                add_hc = st.number_input(t("persons", lang), min_value=0, step=1, value=1)
+            with a4:
+                add_fi = st.selectbox(t("floor", lang), range(len(FLOOR_OPTS)),
+                    format_func=lambda i: floor_labels[i])
+                add_floor = FLOOR_OPTS[add_fi]
 
-        ab1, ab2 = st.columns([1, 3])
-        with ab1:
-            add_building = st.text_input(t("building", lang), value="C4")
+            ab1, ab2 = st.columns([1, 3])
+            with ab1:
+                add_building = st.text_input(t("building", lang), value="C4")
 
-        _section(t("utility_eligibility", lang))
-        au1, au2, au3, au4 = st.columns(4)
-        with au1:
-            add_heat = st.checkbox(t("has_heating", lang), value=True)
-        with au2:
-            add_elec = st.checkbox(t("electricity", lang), value=True)
-        with au3:
-            add_water = st.checkbox(t("water", lang), value=True)
-        with au4:
-            add_garb = st.checkbox(t("garbage", lang), value=True)
+            _section(t("utility_eligibility", lang))
+            au1, au2, au3, au4 = st.columns(4)
+            with au1:
+                add_heat = st.checkbox(t("has_heating", lang), value=True)
+            with au2:
+                add_elec = st.checkbox(t("electricity", lang), value=True)
+            with au3:
+                add_water = st.checkbox(t("water", lang), value=True)
+            with au4:
+                add_garb = st.checkbox(t("garbage", lang), value=True)
 
-        _section(t("contact_details", lang))
-        ao1, ao2, ao3, ao4 = st.columns(4)
-        with ao1:
-            add_contact = st.text_input(t("contact_person", lang), key="add_contact")
-            add_phone = st.text_input(t("phone", lang), key="add_phone")
-        with ao2:
-            add_email = st.text_input(t("email", lang), key="add_email")
-            add_office = st.text_input(t("office_location", lang), key="add_office")
-        with ao3:
-            add_begin = st.text_input(t("beginning_date", lang), key="add_begin")
-            add_expire = st.text_input(t("expiration_date", lang), key="add_expire")
-        with ao4:
-            add_notes = st.text_area(t("notes", lang), key="add_notes", height=68)
+            _section(t("contact_details", lang))
+            ao1, ao2, ao3, ao4 = st.columns(4)
+            with ao1:
+                add_contact = st.text_input(t("contact_person", lang), key="add_contact")
+                add_phone = st.text_input(t("phone", lang), key="add_phone")
+            with ao2:
+                add_email = st.text_input(t("email", lang), key="add_email")
+                add_office = st.text_input(t("office_location", lang), key="add_office")
+            with ao3:
+                add_begin = st.text_input(t("beginning_date", lang), key="add_begin")
+                add_expire = st.text_input(t("expiration_date", lang), key="add_expire")
+            with ao4:
+                add_notes = st.text_area(t("notes", lang), key="add_notes", height=68)
 
-        submitted = st.form_submit_button(t("add_company", lang), type="primary")
-        if submitted:
-            existing_names = [x["name"].strip().lower() for x in companies]
-            existing_ids = [x["id"] for x in companies]
-            cid = re.sub(r"[^a-z0-9]+", "-", add_name.strip().lower()).strip("-")
-            if not add_name.strip():
-                st.error(t("name_empty", lang))
-            elif add_name.strip().lower() in existing_names:
-                st.error(t("name_exists", lang, name=add_name))
-            elif cid in existing_ids:
-                st.error(t("id_exists", lang))
-            elif add_area <= 0:
-                st.error(t("area_zero", lang))
-            else:
-                add_company({
-                    "id": cid, "name": add_name.strip(), "area_m2": add_area,
-                    "headcount_default": add_hc, "building": add_building, "floor": add_floor,
-                    "has_heating": add_heat, "electricity_eligible": add_elec,
-                    "water_eligible": add_water, "garbage_eligible": add_garb, "active": True,
-                    "office_location": add_office, "contact_person": add_contact,
-                    "phone": add_phone, "email": add_email,
-                    "beginning_date": add_begin, "expiration_date": add_expire, "notes": add_notes,
-                })
-                st.session_state._reload = True
-                st.success(t("added_ok", lang, name=add_name))
-                st.rerun()
+            submitted = st.form_submit_button(t("add_company", lang), type="primary")
+            if submitted:
+                existing_names = [x["name"].strip().lower() for x in companies]
+                existing_ids = [x["id"] for x in companies]
+                cid = re.sub(r"[^a-z0-9]+", "-", add_name.strip().lower()).strip("-")
+                if not add_name.strip():
+                    st.error(t("name_empty", lang))
+                elif add_name.strip().lower() in existing_names:
+                    st.error(t("name_exists", lang, name=add_name))
+                elif cid in existing_ids:
+                    st.error(t("id_exists", lang))
+                elif add_area <= 0:
+                    st.error(t("area_zero", lang))
+                else:
+                    add_company({
+                        "id": cid, "name": add_name.strip(), "area_m2": add_area,
+                        "headcount_default": add_hc, "building": add_building, "floor": add_floor,
+                        "has_heating": add_heat, "electricity_eligible": add_elec,
+                        "water_eligible": add_water, "garbage_eligible": add_garb, "active": True,
+                        "office_location": add_office, "contact_person": add_contact,
+                        "phone": add_phone, "email": add_email,
+                        "beginning_date": add_begin, "expiration_date": add_expire, "notes": add_notes,
+                    })
+                    st.session_state._reload = True
+                    st.success(t("added_ok", lang, name=add_name))
+                    st.rerun()
 
-    st.divider()
-
+    # --- Company List ---
     for idx, c in enumerate(companies, 1):
         icon = "🟢" if c["active"] else "🔴"
         lbl = f'{t("company_no", lang)} {idx} {icon} {c["name"]} \u2014 {c["area_m2"]} m\u00b2, {c["headcount_default"]} {t("excel_persons", lang).lower()}'
@@ -395,13 +406,12 @@ elif page == "companies":
                     st.rerun()
 
 # =============================================================================
-# PAGE: Settings (includes Language + Appearance)
+# SETTINGS
 # =============================================================================
 elif page == "settings":
     st.markdown(f"## {t('tab_settings', lang)}")
     saved = st.session_state.settings
 
-    # --- Allocation Ratios ---
     _section(t("ratios_title", lang))
     st.caption(t("ratios_help", lang))
 
@@ -433,12 +443,12 @@ elif page == "settings":
 
     st.divider()
 
-    # --- Language ---
     _section(t("language", lang))
     lang_opts = {"English": "en", "Romana": "ro"}
     lang_names = list(lang_opts.keys())
     cur_idx = lang_names.index("Romana" if lang == "ro" else "English")
-    new_lang_label = st.selectbox(t("language", lang), lang_names, index=cur_idx, key="settings_lang")
+    new_lang_label = st.selectbox(t("language", lang), lang_names, index=cur_idx,
+                                  key="settings_lang", label_visibility="collapsed")
     new_lang = lang_opts[new_lang_label]
     if new_lang != lang:
         st.session_state.lang = new_lang
@@ -446,7 +456,6 @@ elif page == "settings":
 
     st.divider()
 
-    # --- Appearance ---
     _section(t("appearance", lang))
     theme_opts = [t("theme_light", lang), t("theme_dark", lang)]
     cur_theme_idx = 1 if is_dark else 0
@@ -458,7 +467,7 @@ elif page == "settings":
         st.rerun()
 
 # =============================================================================
-# PAGE: History
+# HISTORY
 # =============================================================================
 elif page == "history":
     st.markdown(f"## {t('history_title', lang)}")
