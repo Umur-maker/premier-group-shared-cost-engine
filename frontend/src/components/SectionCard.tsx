@@ -6,9 +6,9 @@ interface SectionCardProps {
 
 export function SectionCard({ title, children, className = "" }: SectionCardProps) {
   return (
-    <div className={`bg-white border border-gray-200 rounded-lg p-5 ${className}`}>
+    <div className={`bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-5 ${className}`}>
       {title && (
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+        <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
           {title}
         </h3>
       )}
