@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useApp } from "@/lib/AppContext";
@@ -17,21 +18,37 @@ export function Sidebar() {
   ];
 
   return (
-    <aside className="w-56 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-4 flex-shrink-0">
-      <h1 className="text-sm font-bold mb-1">{tr("app.title", lang)}</h1>
-      <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">{tr("app.subtitle", lang)}</p>
-      <nav className="space-y-1">
+    <aside className="w-60 bg-sidebar-bg dark:bg-sidebar-dark flex-shrink-0 flex flex-col">
+      {/* Logo */}
+      <div className="p-5 pb-3">
+        <Image src="/logo.png" alt="Premier Business Center" width={180} height={60}
+          className="mb-2" priority />
+        <p className="text-[11px] text-blue-200 tracking-wide uppercase">
+          {tr("app.subtitle", lang)}
+        </p>
+      </div>
+
+      {/* Divider */}
+      <div className="mx-4 border-t border-white/15" />
+
+      {/* Navigation */}
+      <nav className="flex-1 p-3 space-y-0.5">
         {nav.map((item) => (
           <Link key={item.href} href={item.href}
-            className={`block px-3 py-2 rounded text-sm transition-colors ${
+            className={`block px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
               pathname === item.href
-                ? "bg-blue-600 text-white"
-                : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                ? "bg-accent text-white"
+                : "text-blue-100 hover:bg-white/10 hover:text-white"
             }`}>
             {item.label}
           </Link>
         ))}
       </nav>
+
+      {/* Footer */}
+      <div className="p-4 text-[10px] text-blue-300/50">
+        v2.0
+      </div>
     </aside>
   );
 }

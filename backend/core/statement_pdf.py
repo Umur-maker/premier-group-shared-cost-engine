@@ -1,15 +1,17 @@
 """Generate a company-specific cost sharing statement as PDF."""
 
+import os
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.lib.colors import HexColor
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from backend.core.translations import t, month_name
 
-
-BLUE = HexColor("#4472C4")
-LIGHT_GRAY = HexColor("#f5f5f5")
+NAVY = HexColor("#1a2d5a")
+RED = HexColor("#e31e24")
+LIGHT_GRAY = HexColor("#f5f6f8")
+LOGO_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logo.png")
 RON_FMT = lambda v: f"{v:,.2f} RON".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
@@ -19,10 +21,10 @@ def generate_statement_pdf(filepath, company, result, month, year, monthly_input
         leftMargin=25*mm, rightMargin=25*mm, topMargin=20*mm, bottomMargin=20*mm)
 
     styles = getSampleStyleSheet()
-    title_style = ParagraphStyle("Title2", parent=styles["Title"], fontSize=18,
-        textColor=BLUE, spaceAfter=2*mm)
-    subtitle_style = ParagraphStyle("Sub", parent=styles["Normal"], fontSize=13,
-        textColor=HexColor("#333333"), spaceBefore=1*mm, spaceAfter=1*mm)
+    title_style = ParagraphStyle("Title2", parent=styles["Title"], fontSize=16,
+        textColor=NAVY, spaceAfter=1*mm)
+    subtitle_style = ParagraphStyle("Sub", parent=styles["Normal"], fontSize=12,
+        textColor=RED, spaceBefore=1*mm, spaceAfter=1*mm, fontName="Helvetica-Bold")
     period_style = ParagraphStyle("Period", parent=styles["Normal"], fontSize=11,
         textColor=HexColor("#666666"), spaceAfter=6*mm)
     note_style = ParagraphStyle("Note", parent=styles["Normal"], fontSize=8,
@@ -30,27 +32,38 @@ def generate_statement_pdf(filepath, company, result, month, year, monthly_input
 
     elements = []
 
-    # Header
-    elements.append(Paragraph("Premier Business Center", title_style))
+    # Logo
+    if os.path.exists(LOGO_PATH):
+        logo = Image(LOGO_PATH, width=55*mm, height=18*mm)
+        elements.append(logo)
+        elements.append(Spacer(1, 3*mm))
 
+    # Title
     stmt_title = "Monthly Shared Expense Statement" if lang == "en" else "Extras Lunar Costuri Comune"
     elements.append(Paragraph(stmt_title, subtitle_style))
 
     mn = month_name(month, lang)
     elements.append(Paragraph(f"{mn} {year}", period_style))
 
-    # Company info table
+    # Divider line
+    div_table = Table([[""]], colWidths=[160*mm])
+    div_table.setStyle(TableStyle([("LINEBELOW", (0, 0), (-1, 0), 1, NAVY)]))
+    elements.append(div_table)
+    elements.append(Spacer(1, 4*mm))
+
+    # Company info
     info_data = [[t("excel_company", lang), company["name"]]]
     if company.get("office_location"):
         info_data.append([t("office_location", lang), company["office_location"]])
     if company.get("contact_person"):
         info_data.append([t("contact_person", lang), company["contact_person"]])
 
-    info_table = Table(info_data, colWidths=[45*mm, 110*mm])
+    info_table = Table(info_data, colWidths=[45*mm, 115*mm])
     info_table.setStyle(TableStyle([
         ("FONTSIZE", (0, 0), (-1, -1), 10),
         ("TEXTCOLOR", (0, 0), (0, -1), HexColor("#666666")),
         ("FONTNAME", (1, 0), (1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (1, 0), (1, 0), 12),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
     ]))
     elements.append(info_table)
@@ -78,26 +91,24 @@ def generate_statement_pdf(filepath, company, result, month, year, monthly_input
     total_row = [total_label, RON_FMT(result["total"])]
 
     table_data = [header_row] + expense_rows + [total_row]
-    expense_table = Table(table_data, colWidths=[100*mm, 55*mm])
+    expense_table = Table(table_data, colWidths=[100*mm, 60*mm])
 
     table_style = [
-        # Header
-        ("BACKGROUND", (0, 0), (-1, 0), BLUE),
+        ("BACKGROUND", (0, 0), (-1, 0), NAVY),
         ("TEXTCOLOR", (0, 0), (-1, 0), HexColor("#FFFFFF")),
         ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
         ("FONTSIZE", (0, 0), (-1, 0), 10),
         ("ALIGN", (1, 0), (1, -1), "RIGHT"),
-        # Body
         ("FONTSIZE", (0, 1), (-1, -1), 10),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-        ("TOPPADDING", (0, 0), (-1, -1), 4),
-        ("GRID", (0, 0), (-1, -1), 0.5, HexColor("#CCCCCC")),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+        ("TOPPADDING", (0, 0), (-1, -1), 5),
+        ("GRID", (0, 0), (-1, -1), 0.5, HexColor("#d0d0d0")),
         # Total row
         ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
         ("FONTSIZE", (0, -1), (-1, -1), 11),
         ("BACKGROUND", (0, -1), (-1, -1), LIGHT_GRAY),
+        ("TEXTCOLOR", (0, -1), (0, -1), NAVY),
     ]
-    # Alternate row colors
     for i in range(1, len(expense_rows) + 1):
         if i % 2 == 0:
             table_style.append(("BACKGROUND", (0, i), (-1, i), LIGHT_GRAY))
