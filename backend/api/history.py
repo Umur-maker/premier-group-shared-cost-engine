@@ -7,6 +7,7 @@ from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
 from backend.core.history import list_runs, get_excel_path, delete_run
 from backend.core.statement_pdf import generate_statement_pdf
+from backend.core.safe_filename import safe_name
 
 router = APIRouter(prefix="/api/history", tags=["history"])
 
@@ -82,7 +83,7 @@ def history_statement_pdf(run_id: str, company_id: str = Query(...)):
         raise HTTPException(404, f"No allocation result for '{company_id}' in this run.")
 
     lang = entry.get("language", "en")
-    filename = f"Statement_{company['name'].replace(' ', '_')}_{entry['year']}_{entry['month']:02d}.pdf"
+    filename = f"Statement_{safe_name(company['name'])}_{entry['year']}_{entry['month']:02d}.pdf"
     tmp_path = os.path.join(tempfile.gettempdir(), filename)
 
     generate_statement_pdf(

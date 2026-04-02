@@ -65,7 +65,7 @@ export default function HistoryPage() {
             <SectionCard key={r.id}>
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="font-medium">{months[r.month - 1]} {r.year}</span>
+                  <span className="font-medium">{(r.month >= 1 && r.month <= 12 ? months[r.month - 1] : `?${r.month}`)} {r.year}</span>
                   <span className="text-gray-500 dark:text-gray-400 text-xs ml-3">
                     {tr("history.generated", lang)}: {r.generated_at.slice(0, 10)}
                   </span>

@@ -37,6 +37,7 @@ export default function MonthlyInputPage() {
   const [filename, setFilename] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [frozenInput, setFrozenInput] = useState<MonthlyInput | null>(null);
 
   useEffect(() => {
     getCompanies().then(setCompanies).catch(() => setError(tr("error.backend_down", lang)));
@@ -54,6 +55,7 @@ export default function MonthlyInputPage() {
       const mi = buildInput();
       const res = await calculate({ month, year, language: lang, monthly_input: mi });
       setResults(res.results); setRunId(res.run_id); setFilename(res.filename);
+      setFrozenInput(mi);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Error");
     } finally { setLoading(false); }
@@ -123,7 +125,7 @@ export default function MonthlyInputPage() {
           </SectionCard>
           <ExportPanel results={results} companies={companies} runId={runId}
             filename={filename} month={month} year={year} language={lang}
-            monthlyInput={buildInput()} />
+            monthlyInput={frozenInput!} />
         </>
       )}
     </PageLayout>
