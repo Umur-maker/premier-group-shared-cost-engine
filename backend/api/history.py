@@ -4,6 +4,7 @@ import os
 import tempfile
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import FileResponse
+from starlette.background import BackgroundTask
 from backend.core.history import list_runs, get_excel_path, delete_run
 from backend.core.statement_pdf import generate_statement_pdf
 
@@ -90,4 +91,5 @@ def history_statement_pdf(run_id: str, company_id: str = Query(...)):
         entry.get("monthly_input", {}), lang,
     )
 
-    return FileResponse(tmp_path, media_type="application/pdf", filename=filename)
+    return FileResponse(tmp_path, media_type="application/pdf",
+        filename=filename, background=BackgroundTask(os.unlink, tmp_path))

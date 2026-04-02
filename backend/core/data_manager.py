@@ -1,9 +1,12 @@
 import json
 import os
+import threading
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
 COMPANIES_FILE = os.path.join(DATA_DIR, "companies.json")
 SETTINGS_FILE = os.path.join(DATA_DIR, "settings.json")
+
+_lock = threading.Lock()
 
 
 def load_companies():
@@ -19,7 +22,8 @@ def _atomic_write(filepath, data):
 
 
 def save_companies(companies):
-    _atomic_write(COMPANIES_FILE, companies)
+    with _lock:
+        _atomic_write(COMPANIES_FILE, companies)
 
 
 def load_settings():
@@ -28,24 +32,27 @@ def load_settings():
 
 
 def save_settings(settings):
-    _atomic_write(SETTINGS_FILE, settings)
+    with _lock:
+        _atomic_write(SETTINGS_FILE, settings)
 
 
 def add_company(company):
-    companies = load_companies()
-    companies.append(company)
-    save_companies(companies)
-    return companies
+    with _lock:
+        companies = load_companies()
+        companies.append(company)
+        _atomic_write(COMPANIES_FILE, companies)
+        return companies
 
 
 def update_company(company_id, updated_fields):
-    companies = load_companies()
-    for c in companies:
-        if c["id"] == company_id:
-            c.update(updated_fields)
-            break
-    save_companies(companies)
-    return companies
+    with _lock:
+        companies = load_companies()
+        for c in companies:
+            if c["id"] == company_id:
+                c.update(updated_fields)
+                break
+        _atomic_write(COMPANIES_FILE, companies)
+        return companies
 
 
 def deactivate_company(company_id):

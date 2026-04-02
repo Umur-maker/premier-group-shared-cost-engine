@@ -4,11 +4,10 @@
 export function formatRon(value: number): string {
   if (value === 0) return "0,00 RON";
   const neg = value < 0;
-  const abs = Math.abs(value);
-  const int = Math.floor(abs);
-  const dec = Math.round((abs - int) * 100);
-  const intStr = int.toLocaleString("de-DE"); // dots as thousands separator
-  const result = `${intStr},${String(dec).padStart(2, "0")} RON`;
+  const fixed = Math.abs(value).toFixed(2); // safe 2-decimal string
+  const [intPart, decPart] = fixed.split(".");
+  const intStr = parseInt(intPart).toLocaleString("de-DE"); // dots as thousands
+  const result = `${intStr},${decPart} RON`;
   return neg ? `-${result}` : result;
 }
 

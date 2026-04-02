@@ -26,6 +26,7 @@ export default function HistoryPage() {
   useEffect(() => { load(); }, []);
 
   const handleDelete = async (id: string) => {
+    if (!confirm(tr("history.confirm_delete", lang))) return;
     try { await deleteRun(id); setExpandedRun(null); await load(); } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Error"); }
   };
@@ -120,7 +121,7 @@ export default function HistoryPage() {
                     </div>
                   ) : (
                     <p className="text-xs text-gray-400">
-                      Snapshot data not available for this run. Only new runs support company statements.
+                      {tr("history.snapshot_unavailable", lang)}
                     </p>
                   )}
                 </div>

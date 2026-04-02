@@ -6,9 +6,8 @@ import { SectionCard } from "./SectionCard";
 import { useApp } from "@/lib/AppContext";
 import { tr } from "@/lib/i18n";
 import { formatRon } from "@/lib/formatting";
+import { API_BASE, getExcelUrl } from "@/lib/api";
 import type { AllocationResult, Company, MonthlyInput } from "@/types";
-
-const API = "http://localhost:8000";
 
 interface ExportPanelProps {
   results: AllocationResult[];
@@ -27,14 +26,16 @@ export function ExportPanel({
   const { lang } = useApp();
   const [selectedCompany, setSelectedCompany] = useState("");
   const [loading, setLoading] = useState("");
+  const [error, setError] = useState("");
 
   const activeCompanies = companies.filter((c) => c.active);
 
   const downloadFile = async (endpoint: string, ext: string) => {
     if (!selectedCompany) return;
     setLoading(ext);
+    setError("");
     try {
-      const res = await fetch(`${API}/api/calculate/${endpoint}`, {
+      const res = await fetch(`${API_BASE}/api/calculate/${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -42,7 +43,10 @@ export function ExportPanel({
           monthly_input: monthlyInput,
         }),
       });
-      if (!res.ok) throw new Error("Failed");
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: "Download failed" }));
+        throw new Error(err.detail || "Download failed");
+      }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -51,6 +55,8 @@ export function ExportPanel({
       a.download = `Statement_${company?.name.replace(/\s/g, "_")}_${year}_${String(month).padStart(2, "0")}.${ext}`;
       a.click();
       URL.revokeObjectURL(url);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Download failed");
     } finally { setLoading(""); }
   };
 
@@ -61,7 +67,7 @@ export function ExportPanel({
           <span className="text-sm text-gray-600 dark:text-gray-400">
             {tr("export.internal", lang)}:
           </span>
-          <a href={`${API}/api/calculate/${runId}/excel`} download={filename}>
+          <a href={getExcelUrl(runId)} download={filename}>
             <Button>{tr("export.download_report", lang)}</Button>
           </a>
         </div>
@@ -92,6 +98,7 @@ export function ExportPanel({
               {loading === "pdf" ? "..." : tr("export.download_pdf", lang)}
             </Button>
           </div>
+          {error && <p className="text-red-600 text-sm mt-2">{error}</p>}
         </div>
       </div>
     </SectionCard>
