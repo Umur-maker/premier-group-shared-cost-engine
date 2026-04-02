@@ -1,0 +1,120 @@
+"""Company CRUD endpoints."""
+
+import re
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+from typing import Optional
+from backend.core.data_manager import (
+    load_companies, add_company, update_company, get_active_companies,
+)
+
+router = APIRouter(prefix="/api/companies", tags=["companies"])
+
+
+class CompanyCreate(BaseModel):
+    name: str
+    area_m2: float
+    headcount_default: int = 1
+    building: str = "C4"
+    floor: str = "ground_floor"
+    has_heating: bool = True
+    electricity_eligible: bool = True
+    water_eligible: bool = True
+    garbage_eligible: bool = True
+    office_location: str = ""
+    contact_person: str = ""
+    phone: str = ""
+    email: str = ""
+    beginning_date: str = ""
+    expiration_date: str = ""
+    notes: str = ""
+
+
+class CompanyUpdate(BaseModel):
+    name: Optional[str] = None
+    area_m2: Optional[float] = None
+    headcount_default: Optional[int] = None
+    building: Optional[str] = None
+    floor: Optional[str] = None
+    has_heating: Optional[bool] = None
+    electricity_eligible: Optional[bool] = None
+    water_eligible: Optional[bool] = None
+    garbage_eligible: Optional[bool] = None
+    active: Optional[bool] = None
+    office_location: Optional[str] = None
+    contact_person: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    beginning_date: Optional[str] = None
+    expiration_date: Optional[str] = None
+    notes: Optional[str] = None
+
+
+@router.get("")
+def list_companies():
+    return load_companies()
+
+
+@router.post("", status_code=201)
+def create_company(body: CompanyCreate):
+    companies = load_companies()
+    name = body.name.strip()
+    if not name:
+        raise HTTPException(400, "Company name is required.")
+    company_id = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+    if any(c["id"] == company_id for c in companies):
+        raise HTTPException(409, f"Company ID '{company_id}' already exists.")
+    if any(c["name"].strip().lower() == name.lower() for c in companies):
+        raise HTTPException(409, f"Company name '{name}' already exists.")
+    if body.area_m2 <= 0:
+        raise HTTPException(400, "Area must be greater than 0.")
+
+    new_company = {
+        "id": company_id,
+        "name": name,
+        "area_m2": body.area_m2,
+        "headcount_default": body.headcount_default,
+        "building": body.building,
+        "floor": body.floor,
+        "has_heating": body.has_heating,
+        "electricity_eligible": body.electricity_eligible,
+        "water_eligible": body.water_eligible,
+        "garbage_eligible": body.garbage_eligible,
+        "active": True,
+        "office_location": body.office_location,
+        "contact_person": body.contact_person,
+        "phone": body.phone,
+        "email": body.email,
+        "beginning_date": body.beginning_date,
+        "expiration_date": body.expiration_date,
+        "notes": body.notes,
+    }
+    add_company(new_company)
+    return new_company
+
+
+@router.put("/{company_id}")
+def edit_company(company_id: str, body: CompanyUpdate):
+    companies = load_companies()
+    if not any(c["id"] == company_id for c in companies):
+        raise HTTPException(404, f"Company '{company_id}' not found.")
+    fields = {k: v for k, v in body.model_dump().items() if v is not None}
+    if not fields:
+        raise HTTPException(400, "No fields to update.")
+    if "name" in fields:
+        fields["name"] = fields["name"].strip()
+        if not fields["name"]:
+            raise HTTPException(400, "Company name cannot be empty.")
+    if "area_m2" in fields and fields["area_m2"] <= 0:
+        raise HTTPException(400, "Area must be greater than 0.")
+    update_company(company_id, fields)
+    return {"status": "updated", "id": company_id}
+
+
+@router.delete("/{company_id}")
+def deactivate(company_id: str):
+    companies = load_companies()
+    if not any(c["id"] == company_id for c in companies):
+        raise HTTPException(404, f"Company '{company_id}' not found.")
+    update_company(company_id, {"active": False})
+    return {"status": "deactivated", "id": company_id}

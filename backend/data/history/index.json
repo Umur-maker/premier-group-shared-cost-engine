@@ -1,0 +1,43 @@
+[
+  {
+    "id": "2026_02_20260402_153850",
+    "month": 2,
+    "year": 2026,
+    "language": "en",
+    "generated_at": "2026-04-02T15:38:50.348196",
+    "excel_file": "2026_02_20260402_153850.xlsx",
+    "monthly_input": {
+      "electricity_total": 3598.89,
+      "water_total": 855.6,
+      "garbage_total": 407.74,
+      "hotel_gas_total": 4021.74,
+      "ground_floor_gas_total": 2583.53,
+      "first_floor_gas_total": 3172.14,
+      "external_electricity": 0.0,
+      "external_water": 0.0,
+      "external_garbage": 0.0,
+      "external_hotel_gas": 0.0,
+      "external_gf_gas": 0.0,
+      "external_ff_gas": 0.0
+    },
+    "ratios": {
+      "electricity": {
+        "sqm_weight": 75,
+        "headcount_weight": 25
+      },
+      "gas": {
+        "sqm_weight": 70,
+        "headcount_weight": 30
+      },
+      "water": {
+        "sqm_weight": 30,
+        "headcount_weight": 70
+      },
+      "garbage": {
+        "sqm_weight": 30,
+        "headcount_weight": 70
+      }
+    },
+    "company_count": 13
+  }
+]

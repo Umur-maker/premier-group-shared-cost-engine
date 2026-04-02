@@ -1,0 +1,20 @@
+{
+  "ratios": {
+    "electricity": {
+      "sqm_weight": 75,
+      "headcount_weight": 25
+    },
+    "gas": {
+      "sqm_weight": 70,
+      "headcount_weight": 30
+    },
+    "water": {
+      "sqm_weight": 30,
+      "headcount_weight": 70
+    },
+    "garbage": {
+      "sqm_weight": 30,
+      "headcount_weight": 70
+    }
+  }
+}
