@@ -69,9 +69,13 @@ div[data-testid="stExpander"] summary span { color: #e6edf3 !important; }
 div[data-testid="stForm"] { background: #161b22; border-color: #30363d; }
 .stCheckbox label span { color: #c9d1d9 !important; }
 hr { border-color: #21262d !important; }
-.money-ron { background: #1f6feb; color: #fff; border: 1px solid #1f6feb; }
-.money-wrap .stTextInput>div>div { border-top-right-radius: 0 !important; border-bottom-right-radius: 0 !important; }
-.money-wrap .stTextInput>div>div>input { border-right: none !important; }
+.money-field .stTextInput>div>div { position: relative; }
+.money-field .stTextInput>div>div::after {
+    content: 'RON'; position: absolute; right: 10px; top: 50%;
+    transform: translateY(-50%); font-size: 0.78rem; font-weight: 700;
+    letter-spacing: 0.04rem; color: #6e7681; pointer-events: none;
+}
+.money-field .stTextInput>div>div>input { padding-right: 3.2rem !important; }
 .ratio-val { color: #79c0ff; }
 .sec-label { color: #8b949e; }
 """
@@ -81,9 +85,13 @@ _light_css = """
 section[data-testid="stSidebar"] { background: #fff; border-right: 1px solid #d0d7de; }
 div[data-testid="stExpander"] { background: #fff; border: 1px solid #d8dee4; }
 div[data-testid="stForm"] { background: #fff; border: 1px solid #d8dee4; }
-.money-ron { background: #0969da; color: #fff; border: 1px solid #0969da; }
-.money-wrap .stTextInput>div>div { border-top-right-radius: 0 !important; border-bottom-right-radius: 0 !important; }
-.money-wrap .stTextInput>div>div>input { border-right: none !important; }
+.money-field .stTextInput>div>div { position: relative; }
+.money-field .stTextInput>div>div::after {
+    content: 'RON'; position: absolute; right: 10px; top: 50%;
+    transform: translateY(-50%); font-size: 0.78rem; font-weight: 700;
+    letter-spacing: 0.04rem; color: #8c959f; pointer-events: none;
+}
+.money-field .stTextInput>div>div>input { padding-right: 3.2rem !important; }
 .ratio-val { color: #0969da; }
 .sec-label { color: #57606a; }
 """
@@ -92,13 +100,6 @@ _shared_css = """
 .block-container { padding-top: 0.8rem; padding-bottom: 1rem; }
 h1 { font-size: 1.6rem !important; }
 h2 { font-size: 1.3rem !important; margin-bottom: 0.8rem !important; }
-.money-ron {
-    display: flex; align-items: center; justify-content: center;
-    padding: 0 0.7rem; font-weight: 700; font-size: 0.78rem;
-    letter-spacing: 0.05rem; height: 42px; margin-top: 1.65rem;
-    border-top-right-radius: 6px; border-bottom-right-radius: 6px;
-    border-top-left-radius: 0; border-bottom-left-radius: 0;
-}
 .ratio-val { font-size: 1rem; font-weight: 700; margin-top: 1.9rem; }
 .sec-label {
     font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06rem;
@@ -116,15 +117,15 @@ st.title(t("app_title", lang))
 # ═══════════════════════════════════════════════════════════════════
 # HELPERS
 # ═══════════════════════════════════════════════════════════════════
+_money_counter = [0]
+
 def _money(label, key, placeholder):
-    """Money input with flush RON suffix sharing the same border."""
-    c1, c2 = st.columns([8, 1])
-    with c1:
-        st.markdown('<div class="money-wrap">', unsafe_allow_html=True)
-        val = st.text_input(label, value="", placeholder=placeholder, key=key)
-        st.markdown('</div>', unsafe_allow_html=True)
-    with c2:
-        st.markdown('<div class="money-ron">RON</div>', unsafe_allow_html=True)
+    """Money input with RON label inside the input box (right-aligned overlay)."""
+    _money_counter[0] += 1
+    mid = f"money_{_money_counter[0]}"
+    st.markdown(f'<div class="money-field" id="{mid}">', unsafe_allow_html=True)
+    val = st.text_input(label, value="", placeholder=placeholder, key=key)
+    st.markdown('</div>', unsafe_allow_html=True)
     return val
 
 
