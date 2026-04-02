@@ -70,6 +70,12 @@ TRANSLATIONS = {
         "persons_negative": "Number of persons cannot be negative.",
         "id_exists": "A company with this ID already exists. Choose a different name.",
         "company_no": "No.",
+        "basic_info": "Basic Information",
+        "utility_eligibility": "Utility Eligibility",
+        "contact_details": "Contact & Contract Details",
+        "appearance": "Appearance",
+        "theme_light": "Light",
+        "theme_dark": "Dark",
 
         # Settings
         "ratios_title": "Allocation Ratios",
@@ -193,6 +199,12 @@ TRANSLATIONS = {
         "expiration_date": "Data Expirare",
         "notes": "Notite",
         "company_info": "Informatii Companie",
+        "basic_info": "Informatii de Baza",
+        "utility_eligibility": "Eligibilitate Utilitati",
+        "contact_details": "Contact si Detalii Contract",
+        "appearance": "Aspect",
+        "theme_light": "Luminos",
+        "theme_dark": "Inchis",
 
         # Settings
         "ratios_title": "Proportii de Alocare",
