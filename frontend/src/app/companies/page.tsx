@@ -2,124 +2,203 @@
 
 import { useEffect, useState } from "react";
 import { getCompanies, createCompany, updateCompany } from "@/lib/api";
+import { useApp } from "@/lib/AppContext";
+import { tr, floorLabel } from "@/lib/i18n";
 import { PageLayout, SectionCard, FormRow, Button } from "@/components";
 import type { Company } from "@/types";
 
 const FLOORS = ["ground_floor", "first_floor", "mezzanine", "hotel"];
-const FLOOR_LABELS: Record<string, string> = {
-  ground_floor: "Ground Floor", first_floor: "First Floor",
-  mezzanine: "Mezzanine", hotel: "Hotel",
+const EMPTY: Partial<Company> = {
+  name: "", area_m2: 0, headcount_default: 1, building: "C4", floor: "ground_floor",
+  has_heating: true, electricity_eligible: true, water_eligible: true, garbage_eligible: true,
+  office_location: "", contact_person: "", phone: "", email: "",
+  beginning_date: "", expiration_date: "", notes: "",
 };
 
 export default function CompaniesPage() {
+  const { lang } = useApp();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [error, setError] = useState("");
   const [showAdd, setShowAdd] = useState(false);
-  const [editing, setEditing] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: "", area: "0", persons: "1", floor: "ground_floor" });
+  const [editId, setEditId] = useState<string | null>(null);
+  const [form, setForm] = useState<Partial<Company>>({ ...EMPTY });
 
   const load = async () => {
     try { setCompanies(await getCompanies()); } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Error");
-    }
+      setError(e instanceof Error ? e.message : "Error"); }
   };
   useEffect(() => { load(); }, []);
+
+  const f = (key: keyof Company, val: string | number | boolean) =>
+    setForm((p) => ({ ...p, [key]: val }));
 
   const handleAdd = async () => {
     setError("");
     try {
-      await createCompany({
-        name: form.name, area_m2: parseFloat(form.area),
-        headcount_default: parseInt(form.persons), floor: form.floor,
-      });
-      setForm({ name: "", area: "0", persons: "1", floor: "ground_floor" });
-      setShowAdd(false);
-      await load();
+      await createCompany(form);
+      setForm({ ...EMPTY }); setShowAdd(false); await load();
     } catch (e: unknown) { setError(e instanceof Error ? e.message : "Error"); }
   };
 
-  const toggleActive = async (c: Company) => {
+  const startEdit = (c: Company) => {
+    setEditId(c.id); setForm({ ...c });
+  };
+
+  const handleSave = async () => {
+    if (!editId) return;
+    setError("");
     try {
-      await updateCompany(c.id, { active: !c.active });
-      await load();
+      await updateCompany(editId, form);
+      setEditId(null); await load();
     } catch (e: unknown) { setError(e instanceof Error ? e.message : "Error"); }
   };
+
+  const renderForm = (isEdit: boolean) => (
+    <div className="space-y-4">
+      <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">{tr("companies.basic", lang)}</p>
+      <div className="grid grid-cols-4 gap-3">
+        <FormRow label={tr("companies.name", lang)}>
+          <input value={form.name || ""} onChange={(e) => f("name", e.target.value)}
+            className="w-full border dark:border-gray-600 rounded px-2 py-1.5 text-sm bg-white dark:bg-gray-700" />
+        </FormRow>
+        <FormRow label={tr("companies.area", lang)}>
+          <input type="number" step="0.01" value={form.area_m2 || 0}
+            onChange={(e) => f("area_m2", parseFloat(e.target.value))}
+            className="w-full border dark:border-gray-600 rounded px-2 py-1.5 text-sm bg-white dark:bg-gray-700" />
+        </FormRow>
+        <FormRow label={tr("companies.persons", lang)}>
+          <input type="number" min={0} value={form.headcount_default || 0}
+            onChange={(e) => f("headcount_default", parseInt(e.target.value))}
+            className="w-full border dark:border-gray-600 rounded px-2 py-1.5 text-sm bg-white dark:bg-gray-700" />
+        </FormRow>
+        <FormRow label={tr("companies.floor", lang)}>
+          <select value={form.floor || "ground_floor"} onChange={(e) => f("floor", e.target.value)}
+            className="w-full border dark:border-gray-600 rounded px-2 py-1.5 text-sm bg-white dark:bg-gray-700">
+            {FLOORS.map((fl) => <option key={fl} value={fl}>{floorLabel(fl, lang)}</option>)}
+          </select>
+        </FormRow>
+      </div>
+      <div className="grid grid-cols-4 gap-3">
+        <FormRow label={tr("companies.building", lang)}>
+          <input value={form.building || ""} onChange={(e) => f("building", e.target.value)}
+            className="w-full border dark:border-gray-600 rounded px-2 py-1.5 text-sm bg-white dark:bg-gray-700" />
+        </FormRow>
+      </div>
+
+      <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">{tr("companies.utilities", lang)}</p>
+      <div className="flex gap-6 flex-wrap">
+        {([["has_heating", "companies.heating"], ["electricity_eligible", "field.electricity"],
+           ["water_eligible", "field.water"], ["garbage_eligible", "field.garbage"]] as const).map(([key, label]) => (
+          <label key={key} className="flex items-center gap-1.5 text-sm">
+            <input type="checkbox" checked={!!form[key as keyof Company]}
+              onChange={(e) => f(key as keyof Company, e.target.checked)} />
+            {tr(label, lang)}
+          </label>
+        ))}
+        {isEdit && (
+          <label className="flex items-center gap-1.5 text-sm">
+            <input type="checkbox" checked={!!form.active}
+              onChange={(e) => f("active", e.target.checked)} />
+            {tr("companies.active", lang)}
+          </label>
+        )}
+      </div>
+
+      <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">{tr("companies.contact_details", lang)}</p>
+      <div className="grid grid-cols-4 gap-3">
+        <FormRow label={tr("companies.contact", lang)}>
+          <input value={form.contact_person || ""} onChange={(e) => f("contact_person", e.target.value)}
+            className="w-full border dark:border-gray-600 rounded px-2 py-1.5 text-sm bg-white dark:bg-gray-700" />
+        </FormRow>
+        <FormRow label={tr("companies.phone", lang)}>
+          <input value={form.phone || ""} onChange={(e) => f("phone", e.target.value)}
+            className="w-full border dark:border-gray-600 rounded px-2 py-1.5 text-sm bg-white dark:bg-gray-700" />
+        </FormRow>
+        <FormRow label={tr("companies.email", lang)}>
+          <input value={form.email || ""} onChange={(e) => f("email", e.target.value)}
+            className="w-full border dark:border-gray-600 rounded px-2 py-1.5 text-sm bg-white dark:bg-gray-700" />
+        </FormRow>
+        <FormRow label={tr("companies.office", lang)}>
+          <input value={form.office_location || ""} onChange={(e) => f("office_location", e.target.value)}
+            className="w-full border dark:border-gray-600 rounded px-2 py-1.5 text-sm bg-white dark:bg-gray-700" />
+        </FormRow>
+        <FormRow label={tr("companies.begin_date", lang)}>
+          <input value={form.beginning_date || ""} onChange={(e) => f("beginning_date", e.target.value)}
+            className="w-full border dark:border-gray-600 rounded px-2 py-1.5 text-sm bg-white dark:bg-gray-700" />
+        </FormRow>
+        <FormRow label={tr("companies.end_date", lang)}>
+          <input value={form.expiration_date || ""} onChange={(e) => f("expiration_date", e.target.value)}
+            className="w-full border dark:border-gray-600 rounded px-2 py-1.5 text-sm bg-white dark:bg-gray-700" />
+        </FormRow>
+        <FormRow label={tr("companies.notes", lang)} className="col-span-2">
+          <textarea value={form.notes || ""} onChange={(e) => f("notes", e.target.value)} rows={2}
+            className="w-full border dark:border-gray-600 rounded px-2 py-1.5 text-sm bg-white dark:bg-gray-700" />
+        </FormRow>
+      </div>
+
+      <div className="flex gap-2">
+        <Button onClick={isEdit ? handleSave : handleAdd}>
+          {isEdit ? tr("companies.save", lang) : tr("companies.save_new", lang)}
+        </Button>
+        <Button variant="secondary" onClick={() => { setShowAdd(false); setEditId(null); }}>
+          {tr("companies.cancel", lang)}
+        </Button>
+      </div>
+    </div>
+  );
 
   return (
-    <PageLayout title="Companies">
+    <PageLayout title={tr("companies.title", lang)}>
       {error && <p className="text-red-600 text-sm">{error}</p>}
 
-      {/* Add Company */}
       <SectionCard>
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">
-            {companies.filter((c) => c.active).length} active companies
+          <span className="text-sm">
+            {companies.filter((c) => c.active).length} {tr("companies.active_count", lang)}
           </span>
-          <Button variant={showAdd ? "secondary" : "primary"} onClick={() => setShowAdd(!showAdd)}>
-            {showAdd ? "Cancel" : "+ Add Company"}
-          </Button>
+          {!showAdd && !editId && (
+            <Button onClick={() => { setShowAdd(true); setForm({ ...EMPTY }); }}>
+              {tr("companies.add", lang)}
+            </Button>
+          )}
         </div>
-
-        {showAdd && (
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <div className="grid grid-cols-4 gap-4 mb-3">
-              <FormRow label="Company Name">
-                <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="w-full border rounded px-2 py-1.5 text-sm" />
-              </FormRow>
-              <FormRow label="Area (m²)">
-                <input value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })}
-                  className="w-full border rounded px-2 py-1.5 text-sm" />
-              </FormRow>
-              <FormRow label="Persons">
-                <input value={form.persons} onChange={(e) => setForm({ ...form, persons: e.target.value })}
-                  className="w-full border rounded px-2 py-1.5 text-sm" />
-              </FormRow>
-              <FormRow label="Floor">
-                <select value={form.floor} onChange={(e) => setForm({ ...form, floor: e.target.value })}
-                  className="w-full border rounded px-2 py-1.5 text-sm">
-                  {FLOORS.map((f) => <option key={f} value={f}>{FLOOR_LABELS[f]}</option>)}
-                </select>
-              </FormRow>
-            </div>
-            <Button onClick={handleAdd}>Save New Company</Button>
-          </div>
-        )}
+        {showAdd && <div className="mt-4 pt-4 border-t dark:border-gray-700">{renderForm(false)}</div>}
       </SectionCard>
 
-      {/* Company List */}
-      <SectionCard title="Company List">
+      {editId && (
+        <SectionCard title={`${tr("companies.edit", lang)}: ${form.name}`}>
+          {renderForm(true)}
+        </SectionCard>
+      )}
+
+      <SectionCard title={tr("companies.title", lang)}>
         <table className="w-full text-sm border-collapse">
           <thead>
-            <tr className="bg-gray-50">
-              <th className="text-left p-2 border-b">#</th>
-              <th className="text-left p-2 border-b">Name</th>
-              <th className="text-right p-2 border-b">Area</th>
-              <th className="text-right p-2 border-b">Persons</th>
-              <th className="text-left p-2 border-b">Floor</th>
-              <th className="text-center p-2 border-b">Gas</th>
-              <th className="text-center p-2 border-b">Active</th>
-              <th className="text-left p-2 border-b">Contact</th>
-              <th className="p-2 border-b"></th>
+            <tr className="bg-gray-50 dark:bg-gray-700">
+              <th className="text-left p-2 border-b dark:border-gray-600">#</th>
+              <th className="text-left p-2 border-b dark:border-gray-600">{tr("companies.name", lang)}</th>
+              <th className="text-right p-2 border-b dark:border-gray-600">{tr("companies.area", lang)}</th>
+              <th className="text-right p-2 border-b dark:border-gray-600">{tr("companies.persons", lang)}</th>
+              <th className="text-left p-2 border-b dark:border-gray-600">{tr("companies.floor", lang)}</th>
+              <th className="text-center p-2 border-b dark:border-gray-600">{tr("companies.heating", lang)}</th>
+              <th className="text-center p-2 border-b dark:border-gray-600">{tr("companies.active", lang)}</th>
+              <th className="p-2 border-b dark:border-gray-600"></th>
             </tr>
           </thead>
           <tbody>
             {companies.map((c, i) => (
-              <tr key={c.id} className={`hover:bg-gray-50 ${!c.active ? "opacity-50" : ""}`}>
-                <td className="p-2 border-b text-gray-400">{i + 1}</td>
-                <td className="p-2 border-b font-medium">{c.name}</td>
-                <td className="p-2 border-b text-right">{c.area_m2} m²</td>
-                <td className="p-2 border-b text-right">{c.headcount_default}</td>
-                <td className="p-2 border-b">{FLOOR_LABELS[c.floor] || c.floor}</td>
-                <td className="p-2 border-b text-center">{c.has_heating ? "✓" : "—"}</td>
-                <td className="p-2 border-b text-center">{c.active ? "🟢" : "🔴"}</td>
-                <td className="p-2 border-b text-xs text-gray-500">
-                  {c.contact_person}{c.phone ? ` · ${c.phone}` : ""}
-                </td>
-                <td className="p-2 border-b">
-                  <button onClick={() => toggleActive(c)}
+              <tr key={c.id} className={`hover:bg-gray-50 dark:hover:bg-gray-700 ${!c.active ? "opacity-50" : ""}`}>
+                <td className="p-2 border-b dark:border-gray-700 text-gray-400">{i + 1}</td>
+                <td className="p-2 border-b dark:border-gray-700 font-medium">{c.name}</td>
+                <td className="p-2 border-b dark:border-gray-700 text-right">{c.area_m2} m²</td>
+                <td className="p-2 border-b dark:border-gray-700 text-right">{c.headcount_default}</td>
+                <td className="p-2 border-b dark:border-gray-700">{floorLabel(c.floor, lang)}</td>
+                <td className="p-2 border-b dark:border-gray-700 text-center">{c.has_heating ? "✓" : "—"}</td>
+                <td className="p-2 border-b dark:border-gray-700 text-center">{c.active ? "🟢" : "🔴"}</td>
+                <td className="p-2 border-b dark:border-gray-700">
+                  <button onClick={() => startEdit(c)}
                     className="text-xs text-blue-600 hover:underline">
-                    {c.active ? "Deactivate" : "Activate"}
+                    {tr("companies.edit", lang)}
                   </button>
                 </td>
               </tr>

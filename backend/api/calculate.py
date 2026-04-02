@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from backend.core.engine import allocate_costs
 from backend.core.excel_export import generate_excel
 from backend.core.statement_export import generate_statement
+from backend.core.statement_pdf import generate_statement_pdf
 from backend.core.data_manager import load_companies, load_settings
 from backend.core.history import save_run, get_excel_path, list_runs
 from backend.core.translations import month_name
@@ -128,6 +129,36 @@ def company_statement(body: StatementRequest):
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         filename=filename,
     )
+
+
+@router.post("/statement-pdf")
+def company_statement_pdf(body: StatementRequest):
+    """Generate a cost sharing statement as PDF for a single company."""
+    if body.month < 1 or body.month > 12:
+        raise HTTPException(400, "Month must be 1-12.")
+
+    companies = load_companies()
+    settings = load_settings()
+    mi = body.monthly_input.model_dump()
+
+    company = next((c for c in companies if c["id"] == body.company_id and c["active"]), None)
+    if not company:
+        raise HTTPException(404, f"Active company '{body.company_id}' not found.")
+
+    try:
+        results = allocate_costs(companies, settings["ratios"], mi)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+    result = next((r for r in results if r["company_id"] == body.company_id), None)
+    if not result:
+        raise HTTPException(400, f"No allocation result for '{body.company_id}'.")
+
+    filename = f"Statement_{company['name'].replace(' ', '_')}_{body.year}_{body.month:02d}.pdf"
+    tmp_path = os.path.join(tempfile.gettempdir(), filename)
+    generate_statement_pdf(tmp_path, company, result, body.month, body.year, mi, body.language)
+
+    return FileResponse(tmp_path, media_type="application/pdf", filename=filename)
 
 
 @router.get("/{run_id}/excel")

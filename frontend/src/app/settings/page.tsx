@@ -2,12 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { getSettings, saveSettings } from "@/lib/api";
+import { useApp } from "@/lib/AppContext";
+import { tr } from "@/lib/i18n";
 import { PageLayout, SectionCard, Button } from "@/components";
 import type { Settings } from "@/types";
 
 const EXPENSE_TYPES = ["electricity", "gas", "water", "garbage"] as const;
 
 export default function SettingsPage() {
+  const { lang, setLang, theme, setTheme } = useApp();
   const [settings, setSettings] = useState<Settings | null>(null);
   const [pending, setPending] = useState<Settings | null>(null);
   const [saved, setSaved] = useState(false);
@@ -39,14 +42,11 @@ export default function SettingsPage() {
   };
 
   return (
-    <PageLayout title="Settings">
+    <PageLayout title={tr("settings.title", lang)}>
       {error && <p className="text-red-600 text-sm">{error}</p>}
 
-      {/* Allocation Ratios */}
-      <SectionCard title="Allocation Ratios">
-        <p className="text-xs text-gray-400 mb-4">
-          Edit sqm %. Person % is calculated automatically (100 - sqm %).
-        </p>
+      <SectionCard title={tr("settings.ratios", lang)}>
+        <p className="text-xs text-gray-400 mb-4">{tr("settings.ratios_help", lang)}</p>
         <div className="space-y-3">
           {EXPENSE_TYPES.map((et) => {
             const r = pending.ratios[et];
@@ -56,8 +56,9 @@ export default function SettingsPage() {
                 <label className="text-xs text-gray-500">sqm %</label>
                 <input type="number" min={0} max={100} step={5} value={r.sqm_weight}
                   onChange={(e) => setSqm(et, +e.target.value)}
-                  className="border rounded px-2 py-1.5 w-20 text-sm text-center" />
-                <span className="text-sm text-blue-600 font-semibold">
+                  className="border dark:border-gray-600 rounded px-2 py-1.5 w-20 text-sm text-center
+                             bg-white dark:bg-gray-700" />
+                <span className="text-sm text-blue-600 dark:text-blue-400 font-semibold">
                   person: {r.headcount_weight}%
                 </span>
               </div>
@@ -65,34 +66,34 @@ export default function SettingsPage() {
           })}
         </div>
         {changed && (
-          <div className="mt-4 pt-3 border-t border-gray-200">
-            <p className="text-yellow-600 text-xs mb-2">Unsaved changes</p>
-            <Button onClick={handleSave}>Save Settings</Button>
+          <div className="mt-4 pt-3 border-t dark:border-gray-700">
+            <p className="text-yellow-600 text-xs mb-2">{tr("settings.unsaved", lang)}</p>
+            <Button onClick={handleSave}>{tr("settings.save", lang)}</Button>
           </div>
         )}
-        {saved && <p className="text-green-600 text-xs mt-2">Settings saved.</p>}
+        {saved && <p className="text-green-600 text-xs mt-2">{tr("settings.saved", lang)}</p>}
       </SectionCard>
 
-      {/* Language */}
-      <SectionCard title="Language">
-        <p className="text-xs text-gray-400 mb-2">
-          Language affects Excel report labels and month names.
-        </p>
-        <select className="border rounded px-2 py-1.5 text-sm">
+      <SectionCard title={tr("settings.language", lang)}>
+        <p className="text-xs text-gray-400 mb-2">{tr("settings.language_help", lang)}</p>
+        <select value={lang} onChange={(e) => setLang(e.target.value)}
+          className="border dark:border-gray-600 rounded px-3 py-1.5 text-sm bg-white dark:bg-gray-700">
           <option value="en">English</option>
-          <option value="ro">Romanian</option>
+          <option value="ro">Romana</option>
         </select>
       </SectionCard>
 
-      {/* Appearance */}
-      <SectionCard title="Appearance">
-        <p className="text-xs text-gray-400 mb-2">Theme preference (coming in Phase 4).</p>
-        <div className="flex gap-3">
-          <label className="flex items-center gap-1 text-sm">
-            <input type="radio" name="theme" value="light" defaultChecked /> Light
+      <SectionCard title={tr("settings.appearance", lang)}>
+        <div className="flex gap-4">
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input type="radio" name="theme" checked={theme === "light"}
+              onChange={() => setTheme("light")} />
+            {tr("settings.light", lang)}
           </label>
-          <label className="flex items-center gap-1 text-sm">
-            <input type="radio" name="theme" value="dark" /> Dark
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input type="radio" name="theme" checked={theme === "dark"}
+              onChange={() => setTheme("dark")} />
+            {tr("settings.dark", lang)}
           </label>
         </div>
       </SectionCard>
