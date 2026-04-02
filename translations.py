@@ -76,6 +76,11 @@ TRANSLATIONS = {
         "appearance": "Appearance",
         "theme_light": "Light",
         "theme_dark": "Dark",
+        "language": "Language",
+        "nav_monthly": "Monthly Input",
+        "nav_companies": "Companies",
+        "nav_settings": "Settings",
+        "nav_history": "History",
 
         # Settings
         "ratios_title": "Allocation Ratios",
@@ -205,6 +210,11 @@ TRANSLATIONS = {
         "appearance": "Aspect",
         "theme_light": "Luminos",
         "theme_dark": "Inchis",
+        "language": "Limba",
+        "nav_monthly": "Date Lunare",
+        "nav_companies": "Companii",
+        "nav_settings": "Setari",
+        "nav_history": "Istoric",
 
         # Settings
         "ratios_title": "Proportii de Alocare",
