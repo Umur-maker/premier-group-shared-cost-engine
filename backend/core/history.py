@@ -3,11 +3,14 @@
 import json
 import os
 import shutil
+import threading
 from datetime import datetime
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
 HISTORY_DIR = os.path.join(DATA_DIR, "history")
 HISTORY_INDEX = os.path.join(HISTORY_DIR, "index.json")
+
+_lock = threading.Lock()
 
 
 def _ensure_dir():
@@ -32,32 +35,33 @@ def _save_index(entries):
 
 def save_run(month, year, language, monthly_input, ratios, companies, results, excel_path):
     """Save a completed run to history. Copies the Excel file into history dir."""
-    _ensure_dir()
-    run_id = f"{year}_{month:02d}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-    excel_filename = f"{run_id}.xlsx"
-    dest_path = os.path.join(HISTORY_DIR, excel_filename)
-    shutil.copy2(excel_path, dest_path)
+    with _lock:
+        _ensure_dir()
+        run_id = f"{year}_{month:02d}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        excel_filename = f"{run_id}.xlsx"
+        dest_path = os.path.join(HISTORY_DIR, excel_filename)
+        shutil.copy2(excel_path, dest_path)
 
-    active_companies = [c for c in companies if c.get("active", True)]
+        active_companies = [c for c in companies if c.get("active", True)]
 
-    entry = {
-        "id": run_id,
-        "month": month,
-        "year": year,
-        "language": language,
-        "generated_at": datetime.now().isoformat(),
-        "excel_file": excel_filename,
-        "monthly_input": monthly_input,
-        "ratios": ratios,
-        "company_count": len(active_companies),
-        "results": results,
-        "companies": active_companies,
-    }
+        entry = {
+            "id": run_id,
+            "month": month,
+            "year": year,
+            "language": language,
+            "generated_at": datetime.now().isoformat(),
+            "excel_file": excel_filename,
+            "monthly_input": monthly_input,
+            "ratios": ratios,
+            "company_count": len(active_companies),
+            "results": results,
+            "companies": active_companies,
+        }
 
-    entries = _load_index()
-    entries.insert(0, entry)
-    _save_index(entries)
-    return entry
+        entries = _load_index()
+        entries.insert(0, entry)
+        _save_index(entries)
+        return entry
 
 
 def list_runs():
@@ -72,11 +76,12 @@ def get_excel_path(entry):
 
 def delete_run(run_id):
     """Delete a history entry and its Excel file."""
-    entries = _load_index()
-    entry = next((e for e in entries if e["id"] == run_id), None)
-    if entry:
-        excel_path = os.path.join(HISTORY_DIR, entry["excel_file"])
-        if os.path.exists(excel_path):
-            os.remove(excel_path)
-        entries = [e for e in entries if e["id"] != run_id]
-        _save_index(entries)
+    with _lock:
+        entries = _load_index()
+        entry = next((e for e in entries if e["id"] == run_id), None)
+        if entry:
+            excel_path = os.path.join(HISTORY_DIR, entry["excel_file"])
+            if os.path.exists(excel_path):
+                os.remove(excel_path)
+            entries = [e for e in entries if e["id"] != run_id]
+            _save_index(entries)

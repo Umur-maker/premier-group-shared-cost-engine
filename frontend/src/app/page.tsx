@@ -38,7 +38,9 @@ export default function MonthlyInputPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => { getCompanies().then(setCompanies); }, []);
+  useEffect(() => {
+    getCompanies().then(setCompanies).catch(() => setError(tr("error.backend_down", lang)));
+  }, [lang]);
 
   const buildInput = (): MonthlyInput => {
     const mi: Record<string, number> = {};

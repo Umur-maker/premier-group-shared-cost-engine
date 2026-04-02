@@ -1,5 +1,6 @@
 """FastAPI entry point for Premier Business Center Shared Cost Engine."""
 
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.api.companies import router as companies_router
@@ -12,9 +13,13 @@ app = FastAPI(
     version="2.0.0",
 )
 
+cors_origins = os.environ.get(
+    "CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000"
+).split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=[o.strip() for o in cors_origins],
     allow_methods=["*"],
     allow_headers=["*"],
 )

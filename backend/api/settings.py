@@ -24,9 +24,10 @@ def get_settings():
 
 @router.put("")
 def update_settings(body: SettingsUpdate):
+    required = {"electricity", "gas", "water", "garbage"}
+    if set(body.ratios.keys()) != required:
+        raise HTTPException(400, f"Must provide all expense types: {sorted(required)}")
     for expense_type, weights in body.ratios.items():
-        if expense_type not in ("electricity", "gas", "water", "garbage"):
-            raise HTTPException(400, f"Unknown expense type: {expense_type}")
         if weights.sqm_weight + weights.headcount_weight != 100:
             raise HTTPException(400, f"{expense_type}: sqm + person must equal 100")
         if weights.sqm_weight < 0 or weights.headcount_weight < 0:

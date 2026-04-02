@@ -91,6 +91,9 @@ const dict: Record<string, Record<string, string>> = {
     "floor.first_floor": "First Floor",
     "floor.mezzanine": "Mezzanine",
     "floor.hotel": "Hotel",
+    "history.confirm_delete": "Are you sure you want to delete this run? This cannot be undone.",
+    "history.snapshot_unavailable": "Snapshot data not available for this run. Only new runs support company statements.",
+    "error.backend_down": "Could not connect to the server. Please check that the backend is running.",
   },
   ro: {
     "app.title": "Premier Business Center",
@@ -184,6 +187,9 @@ const dict: Record<string, Record<string, string>> = {
     "floor.first_floor": "Etaj 1",
     "floor.mezzanine": "Mezanin",
     "floor.hotel": "Hotel",
+    "history.confirm_delete": "Sigur doriti sa stergeti acest raport? Aceasta actiune nu poate fi anulata.",
+    "history.snapshot_unavailable": "Datele snapshot nu sunt disponibile pentru acest raport. Doar rapoartele noi suporta extrase pe companie.",
+    "error.backend_down": "Nu s-a putut conecta la server. Verificati ca backend-ul este pornit.",
   },
 };
 

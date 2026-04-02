@@ -5,6 +5,7 @@ import tempfile
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
+from starlette.background import BackgroundTask
 from backend.core.engine import allocate_costs
 from backend.core.excel_export import generate_excel
 from backend.core.statement_export import generate_statement
@@ -38,10 +39,16 @@ class CalculateRequest(BaseModel):
     monthly_input: MonthlyInput
 
 
+def _validate_period(month: int, year: int):
+    if month < 1 or month > 12:
+        raise HTTPException(400, "Month must be 1-12.")
+    if year < 2020 or year > 2100:
+        raise HTTPException(400, "Year must be between 2020 and 2100.")
+
+
 @router.post("")
 def calculate(body: CalculateRequest):
-    if body.month < 1 or body.month > 12:
-        raise HTTPException(400, "Month must be 1-12.")
+    _validate_period(body.month, body.year)
     if body.language not in ("en", "ro"):
         raise HTTPException(400, "Language must be 'en' or 'ro'.")
 
@@ -49,7 +56,6 @@ def calculate(body: CalculateRequest):
     settings = load_settings()
     mi = body.monthly_input.model_dump()
 
-    # Validate externals don't exceed totals
     checks = [
         ("electricity_total", "external_electricity", "Electricity"),
         ("water_total", "external_water", "Water"),
@@ -70,16 +76,20 @@ def calculate(body: CalculateRequest):
     if not results:
         raise HTTPException(400, "No active companies found.")
 
-    # Generate Excel
     active = [c for c in companies if c["active"]]
     mn = month_name(body.month, body.language)
     filename = f"Premier_BC_{body.year}_{body.month:02d}_{mn}.xlsx"
     tmp_path = os.path.join(tempfile.gettempdir(), filename)
     generate_excel(tmp_path, results, mi, settings["ratios"], active, body.language)
 
-    # Save to history
     entry = save_run(body.month, body.year, body.language, mi,
                      settings["ratios"], companies, results, tmp_path)
+
+    # Clean up temp file (history has its own copy)
+    try:
+        os.unlink(tmp_path)
+    except OSError:
+        pass
 
     return {
         "results": results,
@@ -96,12 +106,9 @@ class StatementRequest(BaseModel):
     monthly_input: MonthlyInput
 
 
-@router.post("/statement")
-def company_statement(body: StatementRequest):
-    """Generate a cost sharing statement for a single company."""
-    if body.month < 1 or body.month > 12:
-        raise HTTPException(400, "Month must be 1-12.")
-
+def _get_company_result(body: StatementRequest):
+    """Shared logic for statement endpoints."""
+    _validate_period(body.month, body.year)
     companies = load_companies()
     settings = load_settings()
     mi = body.monthly_input.model_dump()
@@ -119,46 +126,28 @@ def company_statement(body: StatementRequest):
     if not result:
         raise HTTPException(400, f"No allocation result for '{body.company_id}'.")
 
-    mn = month_name(body.month, body.language)
+    return company, result, mi
+
+
+@router.post("/statement")
+def company_statement(body: StatementRequest):
+    company, result, mi = _get_company_result(body)
     filename = f"Statement_{company['name'].replace(' ', '_')}_{body.year}_{body.month:02d}.xlsx"
     tmp_path = os.path.join(tempfile.gettempdir(), filename)
     generate_statement(tmp_path, company, result, body.month, body.year, mi, body.language)
-
-    return FileResponse(
-        tmp_path,
+    return FileResponse(tmp_path,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        filename=filename,
-    )
+        filename=filename, background=BackgroundTask(os.unlink, tmp_path))
 
 
 @router.post("/statement-pdf")
 def company_statement_pdf(body: StatementRequest):
-    """Generate a cost sharing statement as PDF for a single company."""
-    if body.month < 1 or body.month > 12:
-        raise HTTPException(400, "Month must be 1-12.")
-
-    companies = load_companies()
-    settings = load_settings()
-    mi = body.monthly_input.model_dump()
-
-    company = next((c for c in companies if c["id"] == body.company_id and c["active"]), None)
-    if not company:
-        raise HTTPException(404, f"Active company '{body.company_id}' not found.")
-
-    try:
-        results = allocate_costs(companies, settings["ratios"], mi)
-    except ValueError as e:
-        raise HTTPException(400, str(e))
-
-    result = next((r for r in results if r["company_id"] == body.company_id), None)
-    if not result:
-        raise HTTPException(400, f"No allocation result for '{body.company_id}'.")
-
+    company, result, mi = _get_company_result(body)
     filename = f"Statement_{company['name'].replace(' ', '_')}_{body.year}_{body.month:02d}.pdf"
     tmp_path = os.path.join(tempfile.gettempdir(), filename)
     generate_statement_pdf(tmp_path, company, result, body.month, body.year, mi, body.language)
-
-    return FileResponse(tmp_path, media_type="application/pdf", filename=filename)
+    return FileResponse(tmp_path, media_type="application/pdf",
+        filename=filename, background=BackgroundTask(os.unlink, tmp_path))
 
 
 @router.get("/{run_id}/excel")
@@ -170,8 +159,6 @@ def download_excel(run_id: str):
     path = get_excel_path(entry)
     if not os.path.exists(path):
         raise HTTPException(404, "Excel file not found.")
-    return FileResponse(
-        path,
+    return FileResponse(path,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        filename=os.path.basename(path),
-    )
+        filename=os.path.basename(path))

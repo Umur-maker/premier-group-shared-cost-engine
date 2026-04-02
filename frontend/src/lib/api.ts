@@ -1,7 +1,7 @@
-const API = "http://localhost:8000";
+export const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${API}${path}`, {
+  const res = await fetch(`${API_BASE}${path}`, {
     headers: { "Content-Type": "application/json" },
     ...options,
   });
@@ -60,7 +60,7 @@ export const calculate = (data: {
   });
 
 export const getExcelUrl = (runId: string) =>
-  `${API}/api/calculate/${runId}/excel`;
+  `${API_BASE}/api/calculate/${runId}/excel`;
 
 // History
 export const getHistory = () => request<HistoryEntry[]>("/api/history");
@@ -69,7 +69,7 @@ export const deleteRun = (runId: string) =>
   request<{ status: string }>(`/api/history/${runId}`, { method: "DELETE" });
 
 export const getHistoryExcelUrl = (runId: string) =>
-  `${API}/api/history/${runId}/excel`;
+  `${API_BASE}/api/history/${runId}/excel`;
 
 export const getRunDetail = (runId: string) =>
   request<HistoryEntry & { results: AllocationResult[]; companies: Company[] }>(
@@ -77,4 +77,4 @@ export const getRunDetail = (runId: string) =>
   );
 
 export const getHistoryStatementPdfUrl = (runId: string, companyId: string) =>
-  `${API}/api/history/${runId}/statement-pdf?company_id=${encodeURIComponent(companyId)}`;
+  `${API_BASE}/api/history/${runId}/statement-pdf?company_id=${encodeURIComponent(companyId)}`;
