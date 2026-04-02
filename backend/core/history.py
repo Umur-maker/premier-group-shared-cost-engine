@@ -38,6 +38,8 @@ def save_run(month, year, language, monthly_input, ratios, companies, results, e
     dest_path = os.path.join(HISTORY_DIR, excel_filename)
     shutil.copy2(excel_path, dest_path)
 
+    active_companies = [c for c in companies if c.get("active", True)]
+
     entry = {
         "id": run_id,
         "month": month,
@@ -47,7 +49,9 @@ def save_run(month, year, language, monthly_input, ratios, companies, results, e
         "excel_file": excel_filename,
         "monthly_input": monthly_input,
         "ratios": ratios,
-        "company_count": len([c for c in companies if c["active"]]),
+        "company_count": len(active_companies),
+        "results": results,
+        "companies": active_companies,
     }
 
     entries = _load_index()
