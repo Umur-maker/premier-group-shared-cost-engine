@@ -163,10 +163,10 @@ CONTENT = {
                  "person-based allocation."),
                 ("table", "ratio_table", [
                     ["Expense Type", "sqm %", "person %", "Logic"],
-                    ["Electricity", "75%", "25%", "Mostly AC (area) + some per-person"],
-                    ["Gas", "70%", "30%", "Heating is mostly area-based"],
+                    ["Electricity", "50%", "50%", "Equal weight: AC (area) + devices (person)"],
+                    ["Gas", "80%", "20%", "Heating is mostly area-based"],
                     ["Water", "30%", "70%", "Mostly per-person consumption"],
-                    ["Garbage", "30%", "70%", "People generate garbage"],
+                    ["Garbage", "25%", "75%", "People generate garbage"],
                 ]),
                 ("Language", "h3", None),
                 ("lang_desc", "body",
@@ -226,14 +226,14 @@ CONTENT = {
                 ("example", "body",
                  "Balkan has 25.5 m\u00b2 and 2 persons.\n"
                  "Total eligible: 623.29 m\u00b2 and 33 persons.\n"
-                 "Electricity ratio: 75% sqm + 25% person.\n"
+                 "Electricity ratio: 50% sqm + 50% person.\n"
                  "Electricity bill: 3,598.89 RON."),
                 ("calc_formula", "formula",
                  "sqm_ratio    = 25.5 / 623.29 = 4.09%\n"
                  "person_ratio = 2 / 33        = 6.06%\n"
-                 "share = 3,598.89 x (0.75 x 0.0409 + 0.25 x 0.0606)\n"
-                 "      = 3,598.89 x 0.0459\n"
-                 "      = 165.19 RON"),
+                 "share = 3,598.89 x (0.50 x 0.0409 + 0.50 x 0.0606)\n"
+                 "      = 3,598.89 x 0.0508\n"
+                 "      = 182.82 RON"),
                 ("Gas allocation rules:", "h3", None),
                 ("bullet_list", "bullets", [
                     "Hotel gas: 100% charged to Hotel only",
@@ -345,10 +345,10 @@ CONTENT = {
                  "alocarea bazata pe suprafata si cea bazata pe persoane."),
                 ("table", "ratio_table", [
                     ["Tip Cheltuiala", "mp %", "persoane %", "Logica"],
-                    ["Electricitate", "75%", "25%", "Majoritar AC (suprafata) + ceva per persoana"],
-                    ["Gaz", "70%", "30%", "Incalzirea depinde majoritar de suprafata"],
+                    ["Electricitate", "50%", "50%", "Pondere egala: AC (suprafata) + dispozitive (persoana)"],
+                    ["Gaz", "80%", "20%", "Incalzirea depinde majoritar de suprafata"],
                     ["Apa", "30%", "70%", "Majoritar consum per persoana"],
-                    ["Gunoi", "30%", "70%", "Persoanele genereaza gunoi"],
+                    ["Gunoi", "25%", "75%", "Persoanele genereaza gunoi"],
                 ]),
                 ("Limba", "h3", None),
                 ("lang_desc", "body", "Alegeti intre Engleza si Romana. Afecteaza toate etichetele UI si limba rapoartelor."),
@@ -401,14 +401,14 @@ CONTENT = {
                 ("example", "body",
                  "Balkan are 25,5 m\u00b2 si 2 persoane.\n"
                  "Total eligibil: 623,29 m\u00b2 si 33 persoane.\n"
-                 "Proportie electricitate: 75% mp + 25% persoane.\n"
+                 "Proportie electricitate: 50% mp + 50% persoane.\n"
                  "Factura electricitate: 3.598,89 RON."),
                 ("calc_formula", "formula",
                  "raport_mp    = 25,5 / 623,29 = 4,09%\n"
                  "raport_pers  = 2 / 33        = 6,06%\n"
-                 "cota = 3.598,89 x (0,75 x 0,0409 + 0,25 x 0,0606)\n"
-                 "     = 3.598,89 x 0,0459\n"
-                 "     = 165,19 RON"),
+                 "cota = 3.598,89 x (0,50 x 0,0409 + 0,50 x 0,0606)\n"
+                 "     = 3.598,89 x 0,0508\n"
+                 "     = 182,82 RON"),
                 ("Reguli alocare gaz:", "h3", None),
                 ("bullet_list", "bullets", [
                     "Gaz hotel: 100% facturat Hotelului",
@@ -517,10 +517,10 @@ CONTENT = {
                  "seklinde hesaplanir. Bu, maliyetlerin alan bazli ve kisi bazli dagitim arasindaki dengesini belirler."),
                 ("table", "ratio_table", [
                     ["Gider Tipi", "m\u00b2 %", "kisi %", "Mantik"],
-                    ["Elektrik", "%75", "%25", "Cogunlukla klima (alan) + biraz kisi bazli"],
-                    ["Dogalgaz", "%70", "%30", "Isitma buyuk olcude alana baglidir"],
+                    ["Elektrik", "%50", "%50", "Esit agirlik: klima (alan) + cihazlar (kisi)"],
+                    ["Dogalgaz", "%80", "%20", "Isitma buyuk olcude alana baglidir"],
                     ["Su", "%30", "%70", "Cogunlukla kisi bazli tuketim"],
-                    ["Cop", "%30", "%70", "Insanlar cop uretir"],
+                    ["Cop", "%25", "%75", "Insanlar cop uretir"],
                 ]),
                 ("Dil", "h3", None),
                 ("lang_desc", "body", "Ingilizce ve Rumence arasinda secim yapin. Tum arayuz etiketlerini ve rapor dilini etkiler."),
@@ -573,14 +573,14 @@ CONTENT = {
                 ("example", "body",
                  "Balkan 25,5 m\u00b2 ve 2 kisiye sahiptir.\n"
                  "Toplam uygun: 623,29 m\u00b2 ve 33 kisi.\n"
-                 "Elektrik orani: %75 alan + %25 kisi.\n"
+                 "Elektrik orani: %50 alan + %50 kisi.\n"
                  "Elektrik faturasi: 3.598,89 RON."),
                 ("calc_formula", "formula",
                  "alan_orani  = 25,5 / 623,29 = %4,09\n"
                  "kisi_orani  = 2 / 33        = %6,06\n"
-                 "pay = 3.598,89 x (0,75 x 0,0409 + 0,25 x 0,0606)\n"
-                 "    = 3.598,89 x 0,0459\n"
-                 "    = 165,19 RON"),
+                 "pay = 3.598,89 x (0,50 x 0,0409 + 0,50 x 0,0606)\n"
+                 "    = 3.598,89 x 0,0508\n"
+                 "    = 182,82 RON"),
                 ("Dogalgaz dagitim kurallari:", "h3", None),
                 ("bullet_list", "bullets", [
                     "Otel dogalgazi: %100 Otel'e fatura edilir",
