@@ -105,7 +105,6 @@ export default function MonthlyInputPage() {
     { key: "printer", header: tr("table.printer", lang), align: "right" as const, render: (r: AllocationResult) => formatRon(r.printer) },
     { key: "internet", header: tr("table.internet", lang), align: "right" as const, render: (r: AllocationResult) => formatRon(r.internet) },
     { key: "maintenance", header: tr("table.maint", lang), align: "right" as const, render: (r: AllocationResult) => formatRon(r.maintenance) },
-    { key: "hotel_rent", header: "H.Rent", align: "right" as const, render: (r: AllocationResult) => formatRon(r.hotel_rent) },
     { key: "rent", header: tr("table.rent", lang), align: "right" as const, render: (r: AllocationResult) => formatRon(r.rent) },
     { key: "total", header: tr("table.total", lang), align: "right" as const, bold: true, render: (r: AllocationResult) => formatRon(r.total) },
   ];
@@ -232,7 +231,7 @@ export default function MonthlyInputPage() {
                   ["drinking_water", tr("field.drinking_water", lang)],
                   ["printer", tr("field.printer", lang)],
                   ["internet", tr("field.internet", lang)],
-                  ["maintenance", "Maintenance"], ["hotel_rent", "Hotel Rent"], ["rent", tr("table.rent", lang)],
+                  ["maintenance", "Maintenance"], ["rent", tr("table.rent", lang)],
                 ].map(([key, label]) => {
                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   const total = results.reduce((s, r) => s + ((r as any)[key] || 0), 0);

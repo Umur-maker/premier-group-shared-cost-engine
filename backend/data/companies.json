@@ -18,7 +18,8 @@
     "beginning_date": "16.02.2024",
     "expiration_date": "16.02.2027",
     "notes": "",
-    "monthly_rent_eur": 0
+    "monthly_rent_eur": 0,
+    "maintenance_rate_eur": 2
   },
   {
     "id": "mikazen",
@@ -39,7 +40,8 @@
     "beginning_date": "20.06.2024",
     "expiration_date": "21.04.2026",
     "notes": "Centrul Mikazen SRL - Kids Therapy",
-    "monthly_rent_eur": 0
+    "monthly_rent_eur": 0,
+    "maintenance_rate_eur": 2
   },
   {
     "id": "vendor",
@@ -60,7 +62,8 @@
     "beginning_date": "01.02.2024",
     "expiration_date": "01.02.2027",
     "notes": "",
-    "monthly_rent_eur": 0
+    "monthly_rent_eur": 0,
+    "maintenance_rate_eur": 2
   },
   {
     "id": "balkan",
@@ -81,7 +84,8 @@
     "beginning_date": "17.10.2022",
     "expiration_date": "16.10.2027",
     "notes": "Balkan Media Impex SRL",
-    "monthly_rent_eur": 0
+    "monthly_rent_eur": 0,
+    "maintenance_rate_eur": 2
   },
   {
     "id": "altay",
@@ -102,7 +106,8 @@
     "beginning_date": "07.07.2025",
     "expiration_date": "07.07.2028",
     "notes": "Altay Electro Mechanical",
-    "monthly_rent_eur": 0
+    "monthly_rent_eur": 0,
+    "maintenance_rate_eur": 2
   },
   {
     "id": "windoor",
@@ -123,7 +128,8 @@
     "beginning_date": "17.06.2025",
     "expiration_date": "17.06.2027",
     "notes": "",
-    "monthly_rent_eur": 0
+    "monthly_rent_eur": 0,
+    "maintenance_rate_eur": 2
   },
   {
     "id": "kolnberg",
@@ -144,7 +150,8 @@
     "beginning_date": "07.10.2025",
     "expiration_date": "07.10.2028",
     "notes": "",
-    "monthly_rent_eur": 0
+    "monthly_rent_eur": 0,
+    "maintenance_rate_eur": 2
   },
   {
     "id": "gbcs",
@@ -165,7 +172,8 @@
     "beginning_date": "01.11.2022",
     "expiration_date": "30.10.2027",
     "notes": "GBCS Financial Consulting SRL",
-    "monthly_rent_eur": 0
+    "monthly_rent_eur": 0,
+    "maintenance_rate_eur": 2
   },
   {
     "id": "premier-capital",
@@ -186,7 +194,8 @@
     "beginning_date": "",
     "expiration_date": "",
     "notes": "Our own entity - Premier Capital & Investments Group S.R.L.",
-    "monthly_rent_eur": 0
+    "monthly_rent_eur": 0,
+    "maintenance_rate_eur": 0
   },
   {
     "id": "premier-rise",
@@ -207,7 +216,8 @@
     "beginning_date": "15.04.2024",
     "expiration_date": "15.04.2027",
     "notes": "Premier Rise SRL",
-    "monthly_rent_eur": 0
+    "monthly_rent_eur": 0,
+    "maintenance_rate_eur": 2
   },
   {
     "id": "premier-vision",
@@ -228,7 +238,8 @@
     "beginning_date": "12.12.2025",
     "expiration_date": "12.12.2028",
     "notes": "",
-    "monthly_rent_eur": 0
+    "monthly_rent_eur": 0,
+    "maintenance_rate_eur": 2
   },
   {
     "id": "paul-george-cata",
@@ -249,7 +260,8 @@
     "beginning_date": "13.09.2023",
     "expiration_date": "13.09.2026",
     "notes": "Avocat",
-    "monthly_rent_eur": 0
+    "monthly_rent_eur": 0,
+    "maintenance_rate_eur": 0
   },
   {
     "id": "hotel",
@@ -270,7 +282,8 @@
     "beginning_date": "27.11.2024",
     "expiration_date": "27.11.2031",
     "notes": "Zentra - hotel operator",
-    "monthly_rent_eur": 0
+    "monthly_rent_eur": 5250,
+    "maintenance_rate_eur": 0
   },
   {
     "id": "pyragony",
@@ -291,7 +304,8 @@
     "beginning_date": "",
     "expiration_date": "",
     "notes": "Separate bills - not included in shared cost allocation",
-    "monthly_rent_eur": 0
+    "monthly_rent_eur": 0,
+    "maintenance_rate_eur": 0
   },
   {
     "id": "vellea-home",
@@ -312,6 +326,7 @@
     "beginning_date": "",
     "expiration_date": "",
     "notes": "Separate bills - not included in shared cost allocation",
-    "monthly_rent_eur": 0
+    "monthly_rent_eur": 0,
+    "maintenance_rate_eur": 0
   }
 ]

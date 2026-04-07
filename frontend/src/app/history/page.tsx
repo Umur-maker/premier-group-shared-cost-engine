@@ -56,7 +56,7 @@ export default function HistoryPage() {
     { key: "gas_ground_floor", header: tr("table.gas_gf", lang), align: "right" as const, render: (r: AllocationResult) => formatRon(r.gas_ground_floor) },
     { key: "gas_first_floor", header: tr("table.gas_ff", lang), align: "right" as const, render: (r: AllocationResult) => formatRon(r.gas_first_floor) },
     { key: "maintenance", header: tr("table.maint", lang), align: "right" as const, render: (r: AllocationResult) => formatRon(r.maintenance || 0) },
-    { key: "hotel_rent", header: tr("table.rent", lang), align: "right" as const, render: (r: AllocationResult) => formatRon(r.hotel_rent || 0) },
+    { key: "rent", header: tr("table.rent", lang), align: "right" as const, render: (r: AllocationResult) => formatRon(r.rent || 0) },
     { key: "total", header: tr("table.total", lang), align: "right" as const, bold: true, render: (r: AllocationResult) => formatRon(r.total) },
   ];
 

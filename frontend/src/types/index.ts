@@ -18,6 +18,7 @@ export interface Company {
   expiration_date: string;
   notes: string;
   monthly_rent_eur: number;
+  maintenance_rate_eur: number;
 }
 
 export interface RatioWeight {
@@ -28,9 +29,6 @@ export interface RatioWeight {
 export interface Settings {
   ratios: Record<string, RatioWeight>;
   eur_ron_rate: number;
-  maintenance_rate_eur: number;
-  hotel_rent_eur: number;
-  cleaning_fixed_ron: number;
   cost_categories: Record<string, CostCategory>;
 }
 
@@ -81,7 +79,6 @@ export interface AllocationResult {
   printer: number;
   internet: number;
   maintenance: number;
-  hotel_rent: number;
   rent: number;
   total: number;
 }

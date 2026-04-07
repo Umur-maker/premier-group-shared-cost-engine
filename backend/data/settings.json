@@ -4,13 +4,9 @@
     "gas": {"sqm_weight": 80, "headcount_weight": 20},
     "water": {"sqm_weight": 30, "headcount_weight": 70},
     "garbage": {"sqm_weight": 25, "headcount_weight": 75},
-    "consumables": {"sqm_weight": 50, "headcount_weight": 50},
-    "security_cameras": {"sqm_weight": 50, "headcount_weight": 50}
+    "consumables": {"sqm_weight": 50, "headcount_weight": 50}
   },
   "eur_ron_rate": 5.1,
-  "maintenance_rate_eur": 2,
-  "hotel_rent_eur": 5250,
-  "cleaning_fixed_ron": 5063,
   "cost_categories": {
     "consumables": {
       "amount_type": "input",
@@ -37,18 +33,6 @@
       "allocation": "equal",
       "eligible": "custom",
       "include_companies": ["premier-capital", "premier-rise", "premier-vision", "paul-george-cata"]
-    },
-    "maintenance": {
-      "amount_type": "per_m2",
-      "rate_eur": 2,
-      "eligible": "custom",
-      "exclude_companies": ["premier-capital", "paul-george-cata", "hotel"]
-    },
-    "hotel_rent": {
-      "amount_type": "fixed_eur",
-      "amount_eur": 5250,
-      "eligible": "custom",
-      "include_companies": ["hotel"]
     }
   },
   "hotel_sublet": {
