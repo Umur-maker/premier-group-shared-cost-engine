@@ -16,9 +16,8 @@
       "amount_type": "input",
       "allocation": "weighted",
       "ratio_key": "consumables",
-      "eligible": "all",
-      "exclude_companies": [],
-      "exclude_floors": []
+      "eligible": "custom",
+      "include_companies": ["premier-capital", "premier-rise", "premier-vision", "paul-george-cata"]
     },
     "drinking_water": {
       "amount_type": "input",
