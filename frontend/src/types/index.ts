@@ -85,7 +85,19 @@ export interface AllocationResult {
 export interface CalculateResponse {
   results: AllocationResult[];
   filename: string;
+}
+
+export interface SaveResponse {
   run_id: string;
+  filename: string;
+  replaced: string | null;
+  results: AllocationResult[];
+}
+
+export interface MonthCheck {
+  exists: boolean;
+  run_id?: string;
+  generated_at?: string;
 }
 
 export interface HistoryEntry {
@@ -100,13 +112,12 @@ export interface HistoryEntry {
   company_count: number;
 }
 
-export interface PaymentStatus {
-  paid: boolean;
-  paid_amount: number;
-  paid_date: string;
-}
-
-export interface OutstandingBalance {
-  total_outstanding: number;
-  unpaid_months: { year: number; month: number; amount: number; partial: boolean }[];
+export interface PaymentEntry {
+  id: string;
+  run_id: string;
+  company_id: string;
+  amount: number;
+  date: string;
+  note: string;
+  created_at: string;
 }

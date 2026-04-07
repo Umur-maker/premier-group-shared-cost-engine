@@ -17,10 +17,11 @@ import type {
   Settings,
   MonthlyInput,
   CalculateResponse,
+  SaveResponse,
+  MonthCheck,
   HistoryEntry,
   AllocationResult,
-  PaymentStatus,
-  OutstandingBalance,
+  PaymentEntry,
 } from "@/types";
 
 // Companies
@@ -50,16 +51,25 @@ export const saveSettings = (data: Partial<Settings>) =>
     body: JSON.stringify(data),
   });
 
-// Calculate
-export const calculate = (data: {
-  month: number;
-  year: number;
-  language: string;
-  monthly_input: MonthlyInput;
+// Calculate — preview only (no save)
+export const calculatePreview = (data: {
+  month: number; year: number; language: string; monthly_input: MonthlyInput;
 }) => request<CalculateResponse>("/api/calculate", {
     method: "POST",
     body: JSON.stringify(data),
   });
+
+// Save as official report
+export const saveOfficial = (data: {
+  month: number; year: number; language: string; monthly_input: MonthlyInput;
+}) => request<SaveResponse>("/api/calculate/save", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+
+// Check if month has official report
+export const checkMonth = (year: number, month: number) =>
+  request<MonthCheck>(`/api/calculate/check/${year}/${month}`);
 
 export const getExcelUrl = (runId: string) =>
   `${API_BASE}/api/calculate/${runId}/excel`;
@@ -81,16 +91,22 @@ export const getRunDetail = (runId: string) =>
 export const getHistoryStatementPdfUrl = (runId: string, companyId: string) =>
   `${API_BASE}/api/history/${runId}/statement-pdf?company_id=${encodeURIComponent(companyId)}`;
 
-// Payments
-export const getPayments = (year: number, month: number) =>
-  request<Record<string, PaymentStatus>>(`/api/payments/${year}/${month}`);
+// Payments (ledger)
+export const getRunPayments = (runId: string) =>
+  request<PaymentEntry[]>(`/api/payments/run/${runId}`);
 
-export const updatePayment = (year: number, month: number, data: {
-  company_id: string; paid: boolean; paid_amount?: number; paid_date?: string;
-}) => request<{ status: string }>(`/api/payments/${year}/${month}`, {
-    method: "PUT",
+export const addPaymentEntry = (runId: string, data: {
+  company_id: string; amount: number; date: string; note?: string;
+}) => request<PaymentEntry>(`/api/payments/run/${runId}`, {
+    method: "POST",
     body: JSON.stringify(data),
   });
 
-export const getBalances = (year: number, month: number) =>
-  request<Record<string, OutstandingBalance>>(`/api/payments/balances/${year}/${month}`);
+export const deletePaymentEntry = (paymentId: string) =>
+  request<{ status: string }>(`/api/payments/entry/${paymentId}`, { method: "DELETE" });
+
+export const getCompanyBalance = (companyId: string) =>
+  request<{ company_id: string; running_balance: number }>(`/api/payments/balance/${companyId}`);
+
+export const getAllBalances = () =>
+  request<Record<string, number>>("/api/payments/balances");
