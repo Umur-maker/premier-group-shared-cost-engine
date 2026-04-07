@@ -7,6 +7,7 @@ import { tr, floorLabel } from "@/lib/i18n";
 import { PageLayout, SectionCard, FormRow, Button } from "@/components";
 import type { Company } from "@/types";
 
+// Floor options for company form
 const FLOORS = ["ground_floor", "first_floor", "hotel"];
 const EMPTY: Partial<Company> = {
   name: "", area_m2: 0, headcount_default: 1, building: "C4", floor: "ground_floor",
