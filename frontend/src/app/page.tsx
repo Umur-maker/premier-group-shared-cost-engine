@@ -8,33 +8,25 @@ import { tr, monthNames } from "@/lib/i18n";
 import { PageLayout, SectionCard, MoneyInput, DataTable, Button, ExportPanel } from "@/components";
 import type { MonthlyInput, AllocationResult, Company } from "@/types";
 
-const INVOICE_KEYS: (keyof MonthlyInput)[] = [
+const ALL_COST_KEYS: (keyof MonthlyInput)[] = [
   "electricity_total", "water_total", "garbage_total",
   "hotel_gas_total", "ground_floor_gas_total", "first_floor_gas_total",
+  "consumables_total", "drinking_water_total", "printer_total",
+  "internet_total", "cleaning_cost", "security_cameras_cost",
+];
+const ALL_COST_I18N = [
+  "field.electricity", "field.water", "field.garbage",
+  "field.hotel_gas", "field.gf_gas", "field.ff_gas",
+  "field.consumables", "field.drinking_water", "field.printer",
+  "field.internet", "field.cleaning", "field.security_cameras",
 ];
 const EXTERNAL_KEYS: (keyof MonthlyInput)[] = [
   "external_electricity", "external_water", "external_garbage",
   "external_hotel_gas", "external_gf_gas", "external_ff_gas",
 ];
-const NEW_COST_KEYS: (keyof MonthlyInput)[] = [
-  "consumables_total", "drinking_water_total", "printer_total", "internet_total",
-];
-const OUTGOING_KEYS: (keyof MonthlyInput)[] = [
-  "cleaning_cost", "security_cameras_cost",
-];
-const INVOICE_I18N = [
-  "field.electricity", "field.water", "field.garbage",
-  "field.hotel_gas", "field.gf_gas", "field.ff_gas",
-];
 const EXTERNAL_I18N = [
   "field.ext_electricity", "field.ext_water", "field.ext_garbage",
   "field.ext_hotel_gas", "field.ext_gf_gas", "field.ext_ff_gas",
-];
-const NEW_COST_I18N = [
-  "field.consumables", "field.drinking_water", "field.printer", "field.internet",
-];
-const OUTGOING_I18N = [
-  "field.cleaning", "field.security_cameras",
 ];
 
 type PageState = "input" | "preview" | "saved";
@@ -61,7 +53,7 @@ export default function MonthlyInputPage() {
 
   const buildInput = (): MonthlyInput => {
     const mi: Record<string, number> = {};
-    for (const k of [...INVOICE_KEYS, ...EXTERNAL_KEYS, ...NEW_COST_KEYS, ...OUTGOING_KEYS]) mi[k] = parseRonInput(raw[k] || "");
+    for (const k of [...ALL_COST_KEYS, ...EXTERNAL_KEYS]) mi[k] = parseRonInput(raw[k] || "");
     return mi as unknown as MonthlyInput;
   };
 
@@ -146,14 +138,15 @@ export default function MonthlyInputPage() {
       {/* Input section — only visible in input state */}
       {pageState === "input" && (
         <>
-          <SectionCard title={tr("monthly.invoices", lang)}>
+          <SectionCard title={tr("monthly.costs", lang)}>
             <div className="grid grid-cols-3 gap-4">
-              {INVOICE_KEYS.map((k, i) => (
-                <MoneyInput key={k} label={tr(INVOICE_I18N[i], lang)}
+              {ALL_COST_KEYS.map((k, i) => (
+                <MoneyInput key={k} label={tr(ALL_COST_I18N[i], lang)}
                   value={raw[k] || ""} onChange={(v) => setRaw((p) => ({ ...p, [k]: v }))}
-                  placeholder="5.325,54" />
+                  placeholder="0" />
               ))}
             </div>
+            <p className="text-xs text-gray-400 mt-3">{tr("monthly.auto_costs_note", lang)}</p>
           </SectionCard>
 
           <SectionCard title={tr("monthly.external", lang)}>
@@ -164,28 +157,6 @@ export default function MonthlyInputPage() {
                   placeholder="0" />
               ))}
             </div>
-          </SectionCard>
-
-          <SectionCard title={tr("monthly.other_costs", lang)}>
-            <div className="grid grid-cols-4 gap-4">
-              {NEW_COST_KEYS.map((k, i) => (
-                <MoneyInput key={k} label={tr(NEW_COST_I18N[i], lang)}
-                  value={raw[k] || ""} onChange={(v) => setRaw((p) => ({ ...p, [k]: v }))}
-                  placeholder="0" />
-              ))}
-            </div>
-            <p className="text-xs text-gray-400 mt-3">{tr("monthly.auto_costs_note", lang)}</p>
-          </SectionCard>
-
-          <SectionCard title={tr("monthly.outgoing_costs", lang)}>
-            <div className="grid grid-cols-2 gap-4">
-              {OUTGOING_KEYS.map((k, i) => (
-                <MoneyInput key={k} label={tr(OUTGOING_I18N[i], lang)}
-                  value={raw[k] || ""} onChange={(v) => setRaw((p) => ({ ...p, [k]: v }))}
-                  placeholder="0" />
-              ))}
-            </div>
-            <p className="text-xs text-gray-400 mt-3">{tr("monthly.outgoing_note", lang)}</p>
           </SectionCard>
 
           <Button onClick={handlePreview} disabled={loading}>

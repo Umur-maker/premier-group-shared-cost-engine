@@ -7,7 +7,8 @@ import { tr, floorLabel } from "@/lib/i18n";
 import { PageLayout, SectionCard, FormRow, Button } from "@/components";
 import type { Company } from "@/types";
 
-// Floor options for company form
+// Building and floor options
+const BUILDINGS = ["C1", "C4", "C5", "Mendeleev", "Vitan Plaza"];
 const FLOORS = ["ground_floor", "first_floor", "hotel"];
 const EMPTY: Partial<Company> = {
   name: "", area_m2: 0, headcount_default: 1, building: "C4", floor: "ground_floor",
@@ -62,7 +63,9 @@ export default function CompaniesPage() {
           <input value={form.name || ""} onChange={(e) => f("name", e.target.value)} className={inputCls} />
         </FormRow>
         <FormRow label={tr("companies.building", lang)}>
-          <input value={form.building || ""} onChange={(e) => f("building", e.target.value)} className={inputCls} />
+          <select value={form.building || "C4"} onChange={(e) => f("building", e.target.value)} className={inputCls}>
+            {BUILDINGS.map((b) => <option key={b} value={b}>{b}</option>)}
+          </select>
         </FormRow>
         <FormRow label={tr("companies.floor", lang)}>
           <select value={form.floor || "ground_floor"} onChange={(e) => f("floor", e.target.value)} className={inputCls}>
