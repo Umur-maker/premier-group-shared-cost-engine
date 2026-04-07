@@ -11,13 +11,13 @@ import type { MonthlyInput, AllocationResult, Company } from "@/types";
 const ALL_COST_KEYS: (keyof MonthlyInput)[] = [
   "electricity_total", "water_total", "garbage_total",
   "hotel_gas_total", "ground_floor_gas_total", "first_floor_gas_total",
-  "consumables_total", "drinking_water_total", "printer_total",
+  "consumables_total", "printer_total",
   "internet_total", "cleaning_cost", "security_cameras_cost",
 ];
 const ALL_COST_I18N = [
   "field.electricity", "field.water", "field.garbage",
   "field.hotel_gas", "field.gf_gas", "field.ff_gas",
-  "field.consumables", "field.drinking_water", "field.printer",
+  "field.consumables", "field.printer",
   "field.internet", "field.cleaning", "field.security_cameras",
 ];
 const EXTERNAL_KEYS: (keyof MonthlyInput)[] = [
@@ -101,7 +101,6 @@ export default function MonthlyInputPage() {
     { key: "gas_ground_floor", header: tr("table.gas_gf", lang), align: "right" as const, render: (r: AllocationResult) => formatRon(r.gas_ground_floor) },
     { key: "gas_first_floor", header: tr("table.gas_ff", lang), align: "right" as const, render: (r: AllocationResult) => formatRon(r.gas_first_floor) },
     { key: "consumables", header: tr("table.consum", lang), align: "right" as const, render: (r: AllocationResult) => formatRon(r.consumables) },
-    { key: "drinking_water", header: tr("table.dw", lang), align: "right" as const, render: (r: AllocationResult) => formatRon(r.drinking_water) },
     { key: "printer", header: tr("table.printer", lang), align: "right" as const, render: (r: AllocationResult) => formatRon(r.printer) },
     { key: "internet", header: tr("table.internet", lang), align: "right" as const, render: (r: AllocationResult) => formatRon(r.internet) },
     { key: "maintenance", header: tr("table.maint", lang), align: "right" as const, render: (r: AllocationResult) => formatRon(r.maintenance) },
@@ -228,7 +227,6 @@ export default function MonthlyInputPage() {
                   ["garbage", tr("field.garbage", lang)],
                   ["gas_hotel", "Gas (Hotel)"], ["gas_ground_floor", "Gas (GF)"], ["gas_first_floor", "Gas (1F)"],
                   ["consumables", tr("field.consumables", lang)],
-                  ["drinking_water", tr("field.drinking_water", lang)],
                   ["printer", tr("field.printer", lang)],
                   ["internet", tr("field.internet", lang)],
                   ["maintenance", "Maintenance"], ["rent", tr("table.rent", lang)],

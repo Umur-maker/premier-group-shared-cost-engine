@@ -15,13 +15,6 @@
       "eligible": "custom",
       "include_companies": ["premier-capital", "premier-rise", "premier-vision", "paul-george-cata"]
     },
-    "drinking_water": {
-      "amount_type": "input",
-      "allocation": "equal",
-      "eligible": "custom",
-      "exclude_companies": ["gbcs"],
-      "exclude_floors": ["ground_floor"]
-    },
     "printer": {
       "amount_type": "input",
       "allocation": "equal",

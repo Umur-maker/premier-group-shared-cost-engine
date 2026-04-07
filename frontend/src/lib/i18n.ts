@@ -109,7 +109,7 @@ const dict: Record<string, Record<string, string>> = {
     "field.cleaning": "Cleaning",
     "field.security_cameras": "Security Cameras",
     "companies.rent": "Monthly Rent (EUR)",
-    "companies.maint_rate": "Maintenance (EUR/m²)",
+    "companies.maint_rate": "Maintenance (EUR)",
     "settings.eur_rate_note": "Used for maintenance and rent calculations (EUR to RON conversion).",
     "monthly.tab_summary": "Summary",
     "monthly.tab_detailed": "Detailed Breakdown",

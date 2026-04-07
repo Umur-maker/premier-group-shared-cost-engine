@@ -176,14 +176,6 @@ def allocate_costs(companies, ratios, monthly_input, settings=None, headcount_ov
     consumables_shares = _distribute(consumables_amount, consumables_eligible,
         cons_ratios["sqm_weight"], cons_ratios["headcount_weight"], overrides)
 
-    # Drinking Water (equal split, exclude GF + GBCS)
-    drinking_water_amount = monthly_input.get("drinking_water_total", 0)
-    dw_config = cats.get("drinking_water", {
-        "eligible": "custom", "exclude_companies": ["gbcs"], "exclude_floors": ["ground_floor"]
-    })
-    drinking_water_eligible = _filter_eligible(active, dw_config)
-    drinking_water_shares = _equal_split(drinking_water_amount, drinking_water_eligible)
-
     # Printer (equal split, specific companies)
     printer_amount = monthly_input.get("printer_total", 0)
     printer_config = cats.get("printer", {
@@ -202,12 +194,12 @@ def allocate_costs(companies, ratios, monthly_input, settings=None, headcount_ov
     internet_eligible = _filter_eligible(active, internet_config)
     internet_shares = _equal_split(internet_amount, internet_eligible)
 
-    # Maintenance (per company: maintenance_rate_eur × area_m2 × eur_rate)
+    # Maintenance (fixed EUR per company → RON)
     maintenance_shares = {}
     for c in active:
-        maint_rate = c.get("maintenance_rate_eur", 0)
-        if maint_rate > 0:
-            maintenance_shares[c["id"]] = round(maint_rate * c["area_m2"] * eur_rate, 2)
+        maint_eur = c.get("maintenance_rate_eur", 0)
+        if maint_eur > 0:
+            maintenance_shares[c["id"]] = round(maint_eur * eur_rate, 2)
 
     # ── COMPANY RENT (fixed per company, EUR → RON) ──
     rent_shares = {}
@@ -230,7 +222,6 @@ def allocate_costs(companies, ratios, monthly_input, settings=None, headcount_ov
             "gas_ground_floor": gf_gas_shares.get(cid, 0.0),
             "gas_first_floor": ff_gas_shares.get(cid, 0.0),
             "consumables": consumables_shares.get(cid, 0.0),
-            "drinking_water": drinking_water_shares.get(cid, 0.0),
             "printer": printer_shares.get(cid, 0.0),
             "internet": internet_shares.get(cid, 0.0),
             "maintenance": maintenance_shares.get(cid, 0.0),
@@ -261,7 +252,7 @@ def allocate_costs(companies, ratios, monthly_input, settings=None, headcount_ov
             }
             sublet_total = 0.0
             for result_key in ["electricity", "water", "garbage", "gas_hotel", "gas_ground_floor",
-                               "gas_first_floor", "consumables", "drinking_water", "printer",
+                               "gas_first_floor", "consumables", "printer",
                                "internet", "maintenance", "rent"]:
                 # Check if this cost type is in the applies_to list
                 applies = result_key in applies_to

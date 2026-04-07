@@ -18,8 +18,8 @@
     "beginning_date": "16.02.2024",
     "expiration_date": "16.02.2027",
     "notes": "",
-    "monthly_rent_eur": 0,
-    "maintenance_rate_eur": 2
+    "monthly_rent_eur": 535.02,
+    "maintenance_rate_eur": 89.17
   },
   {
     "id": "mikazen",
@@ -40,8 +40,8 @@
     "beginning_date": "20.06.2024",
     "expiration_date": "21.04.2026",
     "notes": "Centrul Mikazen SRL - Kids Therapy",
-    "monthly_rent_eur": 0,
-    "maintenance_rate_eur": 2
+    "monthly_rent_eur": 428.68,
+    "maintenance_rate_eur": 71.32
   },
   {
     "id": "vendor",
@@ -62,8 +62,8 @@
     "beginning_date": "01.02.2024",
     "expiration_date": "01.02.2027",
     "notes": "",
-    "monthly_rent_eur": 0,
-    "maintenance_rate_eur": 2
+    "monthly_rent_eur": 400.72,
+    "maintenance_rate_eur": 60.08
   },
   {
     "id": "balkan",
@@ -84,8 +84,8 @@
     "beginning_date": "17.10.2022",
     "expiration_date": "16.10.2027",
     "notes": "Balkan Media Impex SRL",
-    "monthly_rent_eur": 0,
-    "maintenance_rate_eur": 2
+    "monthly_rent_eur": 300,
+    "maintenance_rate_eur": 33.94
   },
   {
     "id": "altay",
@@ -106,8 +106,8 @@
     "beginning_date": "07.07.2025",
     "expiration_date": "07.07.2028",
     "notes": "Altay Electro Mechanical",
-    "monthly_rent_eur": 0,
-    "maintenance_rate_eur": 2
+    "monthly_rent_eur": 297.62,
+    "maintenance_rate_eur": 37.38
   },
   {
     "id": "windoor",
@@ -128,8 +128,8 @@
     "beginning_date": "17.06.2025",
     "expiration_date": "17.06.2027",
     "notes": "",
-    "monthly_rent_eur": 0,
-    "maintenance_rate_eur": 2
+    "monthly_rent_eur": 297.62,
+    "maintenance_rate_eur": 37.38
   },
   {
     "id": "kolnberg",
@@ -149,9 +149,9 @@
     "email": "bahadir.dehmen@kolnberg.com.tr",
     "beginning_date": "07.10.2025",
     "expiration_date": "07.10.2028",
-    "notes": "",
-    "monthly_rent_eur": 0,
-    "maintenance_rate_eur": 2
+    "notes": "Warehouse: 400 EUR/month (included in maintenance field)",
+    "monthly_rent_eur": 100,
+    "maintenance_rate_eur": 400
   },
   {
     "id": "gbcs",
@@ -172,8 +172,8 @@
     "beginning_date": "01.11.2022",
     "expiration_date": "30.10.2027",
     "notes": "GBCS Financial Consulting SRL",
-    "monthly_rent_eur": 0,
-    "maintenance_rate_eur": 2
+    "monthly_rent_eur": 577.92,
+    "maintenance_rate_eur": 50
   },
   {
     "id": "premier-capital",
@@ -216,8 +216,8 @@
     "beginning_date": "15.04.2024",
     "expiration_date": "15.04.2027",
     "notes": "Premier Rise SRL",
-    "monthly_rent_eur": 0,
-    "maintenance_rate_eur": 2
+    "monthly_rent_eur": 443.75,
+    "maintenance_rate_eur": 59.17
   },
   {
     "id": "premier-vision",
@@ -238,8 +238,8 @@
     "beginning_date": "12.12.2025",
     "expiration_date": "12.12.2028",
     "notes": "",
-    "monthly_rent_eur": 0,
-    "maintenance_rate_eur": 2
+    "monthly_rent_eur": 375,
+    "maintenance_rate_eur": 75
   },
   {
     "id": "paul-george-cata",
@@ -288,7 +288,7 @@
   {
     "id": "pyragony",
     "name": "Pyragony",
-    "area_m2": 0,
+    "area_m2": 100.28,
     "headcount_default": 0,
     "building": "Mendeleev",
     "floor": "ground_floor",
@@ -304,13 +304,13 @@
     "beginning_date": "",
     "expiration_date": "",
     "notes": "Separate bills - not included in shared cost allocation",
-    "monthly_rent_eur": 0,
+    "monthly_rent_eur": 2247.82,
     "maintenance_rate_eur": 0
   },
   {
     "id": "vellea-home",
     "name": "Vellea Home",
-    "area_m2": 0,
+    "area_m2": 430,
     "headcount_default": 0,
     "building": "Vitan Plaza",
     "floor": "ground_floor",
@@ -326,7 +326,7 @@
     "beginning_date": "",
     "expiration_date": "",
     "notes": "Separate bills - not included in shared cost allocation",
-    "monthly_rent_eur": 0,
+    "monthly_rent_eur": 4700,
     "maintenance_rate_eur": 0
   }
 ]
