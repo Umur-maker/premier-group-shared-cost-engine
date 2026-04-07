@@ -77,7 +77,9 @@ export interface AllocationResult {
   printer: number;
   internet: number;
   maintenance: number;
+  maintenance_vat: number;
   rent: number;
+  rent_vat: number;
   total: number;
 }
 

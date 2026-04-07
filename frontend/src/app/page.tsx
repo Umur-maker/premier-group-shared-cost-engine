@@ -103,8 +103,10 @@ export default function MonthlyInputPage() {
     { key: "consumables", header: tr("table.consum", lang), align: "right" as const, render: (r: AllocationResult) => formatRon(r.consumables) },
     { key: "printer", header: tr("table.printer", lang), align: "right" as const, render: (r: AllocationResult) => formatRon(r.printer) },
     { key: "internet", header: tr("table.internet", lang), align: "right" as const, render: (r: AllocationResult) => formatRon(r.internet) },
-    { key: "maintenance", header: tr("table.maint", lang), align: "right" as const, render: (r: AllocationResult) => formatRon(r.maintenance) },
-    { key: "rent", header: tr("table.rent", lang), align: "right" as const, render: (r: AllocationResult) => formatRon(r.rent) },
+    { key: "maintenance", header: tr("table.maint", lang), align: "right" as const,
+      render: (r: AllocationResult) => formatRon(r.maintenance + (r.maintenance_vat || 0)) },
+    { key: "rent", header: tr("table.rent", lang), align: "right" as const,
+      render: (r: AllocationResult) => formatRon(r.rent + (r.rent_vat || 0)) },
     { key: "total", header: tr("table.total", lang), align: "right" as const, bold: true, render: (r: AllocationResult) => formatRon(r.total) },
   ];
 
