@@ -78,31 +78,14 @@ export default function SettingsPage() {
 
       <SectionCard title={tr("settings.financial", lang)}>
         <p className="text-xs text-gray-400 mb-4">{tr("settings.financial_help", lang)}</p>
-        <div className="grid grid-cols-3 gap-4">
-          <div>
-            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
-              {tr("settings.eur_rate", lang)}
-            </label>
-            <input type="number" step="0.01" value={pending.eur_ron_rate}
-              onChange={(e) => setFinancial("eur_ron_rate", +e.target.value)}
-              className="w-full border dark:border-gray-600 rounded px-3 py-1.5 text-sm bg-white dark:bg-gray-700" />
-          </div>
-          <div>
-            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
-              {tr("settings.maint_rate", lang)}
-            </label>
-            <input type="number" step="0.1" value={pending.maintenance_rate_eur}
-              onChange={(e) => setFinancial("maintenance_rate_eur", +e.target.value)}
-              className="w-full border dark:border-gray-600 rounded px-3 py-1.5 text-sm bg-white dark:bg-gray-700" />
-          </div>
-          <div>
-            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
-              {tr("settings.hotel_rent", lang)}
-            </label>
-            <input type="number" step="50" value={pending.hotel_rent_eur}
-              onChange={(e) => setFinancial("hotel_rent_eur", +e.target.value)}
-              className="w-full border dark:border-gray-600 rounded px-3 py-1.5 text-sm bg-white dark:bg-gray-700" />
-          </div>
+        <div>
+          <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
+            {tr("settings.eur_rate", lang)}
+          </label>
+          <input type="number" step="0.01" value={pending.eur_ron_rate}
+            onChange={(e) => setFinancial("eur_ron_rate", +e.target.value)}
+            className="w-48 border dark:border-gray-600 rounded px-3 py-1.5 text-sm bg-white dark:bg-gray-700" />
+          <p className="text-xs text-gray-400 mt-2">{tr("settings.eur_rate_note", lang)}</p>
         </div>
       </SectionCard>
 
