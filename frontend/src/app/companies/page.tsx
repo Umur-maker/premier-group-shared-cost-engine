@@ -7,11 +7,11 @@ import { tr, floorLabel } from "@/lib/i18n";
 import { PageLayout, SectionCard, FormRow, Button } from "@/components";
 import type { Company } from "@/types";
 
-const FLOORS = ["ground_floor", "first_floor", "mezzanine", "hotel"];
+const FLOORS = ["ground_floor", "first_floor", "hotel"];
 const EMPTY: Partial<Company> = {
   name: "", area_m2: 0, headcount_default: 1, building: "C4", floor: "ground_floor",
   has_heating: true, electricity_eligible: true, water_eligible: true, garbage_eligible: true,
-  office_location: "", contact_person: "", phone: "", email: "",
+  office_no: "", contact_person: "", phone: "", email: "",
   beginning_date: "", expiration_date: "", notes: "",
 };
 
@@ -118,8 +118,8 @@ export default function CompaniesPage() {
           <input value={form.email || ""} onChange={(e) => f("email", e.target.value)}
             className="w-full border dark:border-gray-600 rounded px-2 py-1.5 text-sm bg-white dark:bg-gray-700" />
         </FormRow>
-        <FormRow label={tr("companies.office", lang)}>
-          <input value={form.office_location || ""} onChange={(e) => f("office_location", e.target.value)}
+        <FormRow label={tr("companies.office_no", lang)}>
+          <input value={form.office_no || ""} onChange={(e) => f("office_no", e.target.value)}
             className="w-full border dark:border-gray-600 rounded px-2 py-1.5 text-sm bg-white dark:bg-gray-700" />
         </FormRow>
         <FormRow label={tr("companies.begin_date", lang)}>

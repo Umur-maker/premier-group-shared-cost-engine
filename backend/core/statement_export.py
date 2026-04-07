@@ -49,9 +49,9 @@ def generate_statement(filepath, company, result, month, year, monthly_input, la
     ws.cell(row=row, column=2, value=company["name"]).font = Font(bold=True, size=12)
     row += 1
 
-    if company.get("office_location"):
-        ws.cell(row=row, column=1, value=t("office_location", lang))
-        ws.cell(row=row, column=2, value=company["office_location"])
+    if company.get("office_no"):
+        ws.cell(row=row, column=1, value=t("office_no", lang))
+        ws.cell(row=row, column=2, value=company["office_no"])
         row += 1
 
     if company.get("contact_person"):
