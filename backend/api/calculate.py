@@ -196,6 +196,24 @@ def company_statement_pdf(body: StatementRequest):
         filename=filename, background=BackgroundTask(os.unlink, tmp_path))
 
 
+# ── Agreement PDF ──
+
+@router.get("/agreement/{company_id}")
+def company_agreement(company_id: str, language: str = "en"):
+    """Generate a cost sharing agreement PDF for a company."""
+    from backend.core.agreement_pdf import generate_agreement_pdf
+    companies = load_companies()
+    settings = load_settings()
+    company = next((c for c in companies if c["id"] == company_id and c["active"]), None)
+    if not company:
+        raise HTTPException(404, f"Active company '{company_id}' not found.")
+    filename = f"Agreement_{safe_name(company['name'])}.pdf"
+    tmp_path = os.path.join(tempfile.gettempdir(), filename)
+    generate_agreement_pdf(tmp_path, company, settings, language)
+    return FileResponse(tmp_path, media_type="application/pdf",
+        filename=filename, background=BackgroundTask(os.unlink, tmp_path))
+
+
 # ── Excel download ──
 
 @router.get("/{run_id}/excel")
