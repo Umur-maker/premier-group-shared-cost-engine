@@ -246,4 +246,45 @@ def allocate_costs(companies, ratios, monthly_input, settings=None, headcount_ov
         r["total"] = round(sum(v for k, v in r.items() if k not in ("company_id", "company_name")), 2)
         results.append(r)
 
+    # ── HOTEL SUBLET POST-PROCESSING ──
+    sublet = (settings or {}).get("hotel_sublet", {})
+    if sublet.get("active") and sublet.get("percentage", 0) > 0:
+        pct = sublet["percentage"] / 100.0
+        applies_to = sublet.get("applies_to", [])
+
+        # Find hotel result
+        hotel_result = next((r for r in results if r["company_id"] == "hotel"), None)
+        if hotel_result:
+            sublet_entry = {
+                "company_id": "hotel-sublet",
+                "company_name": sublet.get("name", "Hotel Sublet"),
+            }
+            # Map applies_to keys to result keys
+            key_map = {
+                "electricity": "electricity",
+                "water": "water",
+                "garbage": "garbage",
+                "gas_hotel": "gas_hotel",
+            }
+            sublet_total = 0.0
+            for result_key in ["electricity", "water", "garbage", "gas_hotel", "gas_ground_floor",
+                               "gas_first_floor", "consumables", "drinking_water", "printer",
+                               "internet", "maintenance", "hotel_rent"]:
+                # Check if this cost type is in the applies_to list
+                applies = result_key in applies_to
+                if applies and hotel_result.get(result_key, 0) > 0:
+                    amount = round(hotel_result[result_key] * pct, 2)
+                    sublet_entry[result_key] = amount
+                    hotel_result[result_key] = round(hotel_result[result_key] - amount, 2)
+                    sublet_total += amount
+                else:
+                    sublet_entry[result_key] = 0.0
+
+            sublet_entry["total"] = round(sublet_total, 2)
+            # Recalculate hotel total
+            hotel_result["total"] = round(sum(
+                v for k, v in hotel_result.items() if k not in ("company_id", "company_name")
+            ), 2)
+            results.append(sublet_entry)
+
     return results
