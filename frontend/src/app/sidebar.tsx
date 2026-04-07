@@ -13,8 +13,10 @@ export function Sidebar() {
   const nav = [
     { href: "/", label: tr("nav.monthly", lang) },
     { href: "/companies", label: tr("nav.companies", lang) },
-    { href: "/settings", label: tr("nav.settings", lang) },
     { href: "/history", label: tr("nav.history", lang) },
+    { href: "/reports", label: tr("nav.reports", lang) },
+    { href: "/manager", label: tr("nav.manager", lang) },
+    { href: "/settings", label: tr("nav.settings", lang) },
   ];
 
   return (
@@ -47,7 +49,7 @@ export function Sidebar() {
       </nav>
 
       <div className="px-5 pb-4 text-[10px] text-blue-300/30 font-medium">
-        v2.0
+        v3.0
       </div>
     </aside>
   );

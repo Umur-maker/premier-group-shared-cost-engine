@@ -7,7 +7,7 @@ import { tr } from "@/lib/i18n";
 import { PageLayout, SectionCard, Button } from "@/components";
 import type { Settings } from "@/types";
 
-const EXPENSE_TYPES = ["electricity", "gas", "water", "garbage"] as const;
+const RATIO_TYPES = ["electricity", "gas", "water", "garbage", "consumables"] as const;
 
 export default function SettingsPage() {
   const { lang, setLang, theme, setTheme } = useApp();
@@ -25,13 +25,18 @@ export default function SettingsPage() {
   if (error && !settings) return <p className="p-6 text-red-600">{error}</p>;
   if (!settings || !pending) return <p className="p-6 text-gray-500">Loading...</p>;
 
-  const changed = JSON.stringify(settings.ratios) !== JSON.stringify(pending.ratios);
+  const changed = JSON.stringify(settings) !== JSON.stringify(pending);
 
   const setSqm = (type: string, val: number) => {
     setPending((prev) => prev ? {
       ...prev,
       ratios: { ...prev.ratios, [type]: { sqm_weight: val, headcount_weight: 100 - val } },
     } : prev);
+    setSaved(false);
+  };
+
+  const setFinancial = (key: keyof Settings, val: number) => {
+    setPending((prev) => prev ? { ...prev, [key]: val } : prev);
     setSaved(false);
   };
 
@@ -51,8 +56,9 @@ export default function SettingsPage() {
       <SectionCard title={tr("settings.ratios", lang)}>
         <p className="text-xs text-gray-400 mb-4">{tr("settings.ratios_help", lang)}</p>
         <div className="space-y-3">
-          {EXPENSE_TYPES.map((et) => {
+          {RATIO_TYPES.map((et) => {
             const r = pending.ratios[et];
+            if (!r) return null;
             return (
               <div key={et} className="flex items-center gap-4">
                 <span className="w-28 text-sm capitalize font-medium">{et}</span>
@@ -68,14 +74,45 @@ export default function SettingsPage() {
             );
           })}
         </div>
-        {changed && (
-          <div className="mt-4 pt-3 border-t dark:border-gray-700">
-            <p className="text-yellow-600 text-xs mb-2">{tr("settings.unsaved", lang)}</p>
-            <Button onClick={handleSave}>{tr("settings.save", lang)}</Button>
-          </div>
-        )}
-        {saved && <p className="text-green-600 text-xs mt-2">{tr("settings.saved", lang)}</p>}
       </SectionCard>
+
+      <SectionCard title={tr("settings.financial", lang)}>
+        <p className="text-xs text-gray-400 mb-4">{tr("settings.financial_help", lang)}</p>
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
+              {tr("settings.eur_rate", lang)}
+            </label>
+            <input type="number" step="0.01" value={pending.eur_ron_rate}
+              onChange={(e) => setFinancial("eur_ron_rate", +e.target.value)}
+              className="w-full border dark:border-gray-600 rounded px-3 py-1.5 text-sm bg-white dark:bg-gray-700" />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
+              {tr("settings.maint_rate", lang)}
+            </label>
+            <input type="number" step="0.1" value={pending.maintenance_rate_eur}
+              onChange={(e) => setFinancial("maintenance_rate_eur", +e.target.value)}
+              className="w-full border dark:border-gray-600 rounded px-3 py-1.5 text-sm bg-white dark:bg-gray-700" />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
+              {tr("settings.hotel_rent", lang)}
+            </label>
+            <input type="number" step="50" value={pending.hotel_rent_eur}
+              onChange={(e) => setFinancial("hotel_rent_eur", +e.target.value)}
+              className="w-full border dark:border-gray-600 rounded px-3 py-1.5 text-sm bg-white dark:bg-gray-700" />
+          </div>
+        </div>
+      </SectionCard>
+
+      {changed && (
+        <div className="flex items-center gap-3">
+          <p className="text-yellow-600 text-xs">{tr("settings.unsaved", lang)}</p>
+          <Button onClick={handleSave}>{tr("settings.save", lang)}</Button>
+        </div>
+      )}
+      {saved && <p className="text-green-600 text-xs">{tr("settings.saved", lang)}</p>}
 
       <SectionCard title={tr("settings.language", lang)}>
         <p className="text-xs text-gray-400 mb-2">{tr("settings.language_help", lang)}</p>
