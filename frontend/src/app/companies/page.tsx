@@ -40,9 +40,7 @@ export default function CompaniesPage() {
     } catch (e: unknown) { setError(e instanceof Error ? e.message : "Error"); }
   };
 
-  const startEdit = (c: Company) => {
-    setEditId(c.id); setForm({ ...c });
-  };
+  const startEdit = (c: Company) => { setEditId(c.id); setForm({ ...c }); };
 
   const handleSave = async () => {
     if (!editId) return;
@@ -53,35 +51,35 @@ export default function CompaniesPage() {
     } catch (e: unknown) { setError(e instanceof Error ? e.message : "Error"); }
   };
 
+  const inputCls = "w-full border dark:border-gray-600 rounded px-2 py-1.5 text-sm bg-white dark:bg-gray-700";
+
   const renderForm = (isEdit: boolean) => (
     <div className="space-y-4">
       <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">{tr("companies.basic", lang)}</p>
-      <div className="grid grid-cols-4 gap-3">
-        <FormRow label={tr("companies.name", lang)}>
-          <input value={form.name || ""} onChange={(e) => f("name", e.target.value)}
-            className="w-full border dark:border-gray-600 rounded px-2 py-1.5 text-sm bg-white dark:bg-gray-700" />
+      <div className="grid grid-cols-6 gap-3">
+        <FormRow label={tr("companies.name", lang)} className="col-span-2">
+          <input value={form.name || ""} onChange={(e) => f("name", e.target.value)} className={inputCls} />
         </FormRow>
-        <FormRow label={tr("companies.area", lang)}>
-          <input type="number" step="0.01" value={form.area_m2 || 0}
-            onChange={(e) => f("area_m2", parseFloat(e.target.value))}
-            className="w-full border dark:border-gray-600 rounded px-2 py-1.5 text-sm bg-white dark:bg-gray-700" />
-        </FormRow>
-        <FormRow label={tr("companies.persons", lang)}>
-          <input type="number" min={0} value={form.headcount_default || 0}
-            onChange={(e) => f("headcount_default", parseInt(e.target.value))}
-            className="w-full border dark:border-gray-600 rounded px-2 py-1.5 text-sm bg-white dark:bg-gray-700" />
+        <FormRow label={tr("companies.building", lang)}>
+          <input value={form.building || ""} onChange={(e) => f("building", e.target.value)} className={inputCls} />
         </FormRow>
         <FormRow label={tr("companies.floor", lang)}>
-          <select value={form.floor || "ground_floor"} onChange={(e) => f("floor", e.target.value)}
-            className="w-full border dark:border-gray-600 rounded px-2 py-1.5 text-sm bg-white dark:bg-gray-700">
+          <select value={form.floor || "ground_floor"} onChange={(e) => f("floor", e.target.value)} className={inputCls}>
             {FLOORS.map((fl) => <option key={fl} value={fl}>{floorLabel(fl, lang)}</option>)}
           </select>
         </FormRow>
+        <FormRow label={tr("companies.office_no", lang)}>
+          <input value={form.office_no || ""} onChange={(e) => f("office_no", e.target.value)} className={inputCls} />
+        </FormRow>
+        <FormRow label={tr("companies.area", lang)}>
+          <input type="number" step="0.01" value={form.area_m2 || 0}
+            onChange={(e) => f("area_m2", parseFloat(e.target.value))} className={inputCls} />
+        </FormRow>
       </div>
-      <div className="grid grid-cols-4 gap-3">
-        <FormRow label={tr("companies.building", lang)}>
-          <input value={form.building || ""} onChange={(e) => f("building", e.target.value)}
-            className="w-full border dark:border-gray-600 rounded px-2 py-1.5 text-sm bg-white dark:bg-gray-700" />
+      <div className="grid grid-cols-6 gap-3">
+        <FormRow label={tr("companies.persons", lang)}>
+          <input type="number" min={0} value={form.headcount_default || 0}
+            onChange={(e) => f("headcount_default", parseInt(e.target.value))} className={inputCls} />
         </FormRow>
       </div>
 
@@ -107,32 +105,23 @@ export default function CompaniesPage() {
       <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">{tr("companies.contact_details", lang)}</p>
       <div className="grid grid-cols-4 gap-3">
         <FormRow label={tr("companies.contact", lang)}>
-          <input value={form.contact_person || ""} onChange={(e) => f("contact_person", e.target.value)}
-            className="w-full border dark:border-gray-600 rounded px-2 py-1.5 text-sm bg-white dark:bg-gray-700" />
+          <input value={form.contact_person || ""} onChange={(e) => f("contact_person", e.target.value)} className={inputCls} />
         </FormRow>
         <FormRow label={tr("companies.phone", lang)}>
-          <input value={form.phone || ""} onChange={(e) => f("phone", e.target.value)}
-            className="w-full border dark:border-gray-600 rounded px-2 py-1.5 text-sm bg-white dark:bg-gray-700" />
+          <input value={form.phone || ""} onChange={(e) => f("phone", e.target.value)} className={inputCls} />
         </FormRow>
         <FormRow label={tr("companies.email", lang)}>
-          <input value={form.email || ""} onChange={(e) => f("email", e.target.value)}
-            className="w-full border dark:border-gray-600 rounded px-2 py-1.5 text-sm bg-white dark:bg-gray-700" />
+          <input value={form.email || ""} onChange={(e) => f("email", e.target.value)} className={inputCls} />
         </FormRow>
-        <FormRow label={tr("companies.office_no", lang)}>
-          <input value={form.office_no || ""} onChange={(e) => f("office_no", e.target.value)}
-            className="w-full border dark:border-gray-600 rounded px-2 py-1.5 text-sm bg-white dark:bg-gray-700" />
-        </FormRow>
+        <div />
         <FormRow label={tr("companies.begin_date", lang)}>
-          <input value={form.beginning_date || ""} onChange={(e) => f("beginning_date", e.target.value)}
-            className="w-full border dark:border-gray-600 rounded px-2 py-1.5 text-sm bg-white dark:bg-gray-700" />
+          <input value={form.beginning_date || ""} onChange={(e) => f("beginning_date", e.target.value)} className={inputCls} />
         </FormRow>
         <FormRow label={tr("companies.end_date", lang)}>
-          <input value={form.expiration_date || ""} onChange={(e) => f("expiration_date", e.target.value)}
-            className="w-full border dark:border-gray-600 rounded px-2 py-1.5 text-sm bg-white dark:bg-gray-700" />
+          <input value={form.expiration_date || ""} onChange={(e) => f("expiration_date", e.target.value)} className={inputCls} />
         </FormRow>
         <FormRow label={tr("companies.notes", lang)} className="col-span-2">
-          <textarea value={form.notes || ""} onChange={(e) => f("notes", e.target.value)} rows={2}
-            className="w-full border dark:border-gray-600 rounded px-2 py-1.5 text-sm bg-white dark:bg-gray-700" />
+          <textarea value={form.notes || ""} onChange={(e) => f("notes", e.target.value)} rows={2} className={inputCls} />
         </FormRow>
       </div>
 
@@ -172,39 +161,46 @@ export default function CompaniesPage() {
       )}
 
       <SectionCard title={tr("companies.title", lang)}>
-        <table className="w-full text-sm border-collapse">
-          <thead>
-            <tr className="bg-gray-50 dark:bg-gray-700">
-              <th className="text-left p-2 border-b dark:border-gray-600">#</th>
-              <th className="text-left p-2 border-b dark:border-gray-600">{tr("companies.name", lang)}</th>
-              <th className="text-right p-2 border-b dark:border-gray-600">{tr("companies.area", lang)}</th>
-              <th className="text-right p-2 border-b dark:border-gray-600">{tr("companies.persons", lang)}</th>
-              <th className="text-left p-2 border-b dark:border-gray-600">{tr("companies.floor", lang)}</th>
-              <th className="text-center p-2 border-b dark:border-gray-600">{tr("companies.heating", lang)}</th>
-              <th className="text-center p-2 border-b dark:border-gray-600">{tr("companies.active", lang)}</th>
-              <th className="p-2 border-b dark:border-gray-600"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {companies.map((c, i) => (
-              <tr key={c.id} className={`hover:bg-gray-50 dark:hover:bg-gray-700 ${!c.active ? "opacity-50" : ""}`}>
-                <td className="p-2 border-b dark:border-gray-700 text-gray-400">{i + 1}</td>
-                <td className="p-2 border-b dark:border-gray-700 font-medium">{c.name}</td>
-                <td className="p-2 border-b dark:border-gray-700 text-right">{c.area_m2} m²</td>
-                <td className="p-2 border-b dark:border-gray-700 text-right">{c.headcount_default}</td>
-                <td className="p-2 border-b dark:border-gray-700">{floorLabel(c.floor, lang)}</td>
-                <td className="p-2 border-b dark:border-gray-700 text-center">{c.has_heating ? "✓" : "—"}</td>
-                <td className="p-2 border-b dark:border-gray-700 text-center">{c.active ? "🟢" : "🔴"}</td>
-                <td className="p-2 border-b dark:border-gray-700">
-                  <button onClick={() => startEdit(c)}
-                    className="text-xs text-blue-600 hover:underline">
-                    {tr("companies.edit", lang)}
-                  </button>
-                </td>
+        <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr className="bg-navy text-white">
+                <th className="p-2.5 text-left text-xs uppercase tracking-wide">#</th>
+                <th className="p-2.5 text-left text-xs uppercase tracking-wide">{tr("companies.name", lang)}</th>
+                <th className="p-2.5 text-left text-xs uppercase tracking-wide">{tr("companies.building", lang)}</th>
+                <th className="p-2.5 text-left text-xs uppercase tracking-wide">{tr("companies.floor", lang)}</th>
+                <th className="p-2.5 text-left text-xs uppercase tracking-wide">{tr("companies.office_no", lang)}</th>
+                <th className="p-2.5 text-right text-xs uppercase tracking-wide">{tr("companies.area", lang)}</th>
+                <th className="p-2.5 text-right text-xs uppercase tracking-wide">{tr("companies.persons", lang)}</th>
+                <th className="p-2.5 text-center text-xs uppercase tracking-wide">{tr("companies.active", lang)}</th>
+                <th className="p-2.5 text-xs uppercase tracking-wide"></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {companies.map((c, i) => (
+                <tr key={c.id}
+                  className={`${i % 2 === 0 ? "bg-white dark:bg-card-dark" : "bg-gray-50/60 dark:bg-gray-800/40"}
+                    hover:bg-blue-50/50 dark:hover:bg-navy-light/10 transition-colors
+                    ${!c.active ? "opacity-50" : ""}`}>
+                  <td className="p-2.5 border-b border-gray-100 dark:border-gray-700 text-gray-400">{i + 1}</td>
+                  <td className="p-2.5 border-b border-gray-100 dark:border-gray-700 font-medium">{c.name}</td>
+                  <td className="p-2.5 border-b border-gray-100 dark:border-gray-700">{c.building}</td>
+                  <td className="p-2.5 border-b border-gray-100 dark:border-gray-700">{floorLabel(c.floor, lang)}</td>
+                  <td className="p-2.5 border-b border-gray-100 dark:border-gray-700">{c.office_no || "—"}</td>
+                  <td className="p-2.5 border-b border-gray-100 dark:border-gray-700 text-right tabular-nums">{c.area_m2} m²</td>
+                  <td className="p-2.5 border-b border-gray-100 dark:border-gray-700 text-right tabular-nums">{c.headcount_default}</td>
+                  <td className="p-2.5 border-b border-gray-100 dark:border-gray-700 text-center">{c.active ? "🟢" : "🔴"}</td>
+                  <td className="p-2.5 border-b border-gray-100 dark:border-gray-700">
+                    <button onClick={() => startEdit(c)}
+                      className="text-xs text-blue-600 hover:underline">
+                      {tr("companies.edit", lang)}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </SectionCard>
     </PageLayout>
   );

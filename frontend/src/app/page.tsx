@@ -44,6 +44,7 @@ export default function MonthlyInputPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [frozenInput, setFrozenInput] = useState<MonthlyInput | null>(null);
+  const [previewTab, setPreviewTab] = useState("summary");
 
   useEffect(() => {
     getCompanies().then(setCompanies).catch(() => setError(tr("error.backend_down", lang)));
@@ -145,9 +146,75 @@ export default function MonthlyInputPage() {
 
       {results && (
         <>
-          <SectionCard title={tr("monthly.preview", lang)}>
-            <DataTable columns={cols} data={results} keyField="company_id" />
+          {/* In-app preview tabs */}
+          <SectionCard>
+            <div className="flex gap-2 mb-4">
+              {["summary", "detailed", "totals"].map((tab) => (
+                <button key={tab} onClick={() => setPreviewTab(tab)}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                    previewTab === tab
+                      ? "bg-navy text-white"
+                      : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200"
+                  }`}>
+                  {tab === "summary" ? tr("monthly.tab_summary", lang)
+                    : tab === "detailed" ? tr("monthly.tab_detailed", lang)
+                    : tr("monthly.tab_totals", lang)}
+                </button>
+              ))}
+            </div>
+
+            {previewTab === "summary" && (
+              <DataTable
+                columns={[
+                  { key: "company_name", header: tr("table.company", lang) },
+                  { key: "total", header: tr("table.total", lang), align: "right", bold: true,
+                    render: (r: AllocationResult) => formatRon(r.total) },
+                ]}
+                data={results}
+                keyField="company_id"
+              />
+            )}
+
+            {previewTab === "detailed" && (
+              <DataTable columns={cols} data={results} keyField="company_id" />
+            )}
+
+            {previewTab === "totals" && (
+              <div className="space-y-3">
+                {[
+                  ["electricity", tr("field.electricity", lang)],
+                  ["water", tr("field.water", lang)],
+                  ["garbage", tr("field.garbage", lang)],
+                  ["gas_hotel", "Gas (Hotel)"],
+                  ["gas_ground_floor", "Gas (GF)"],
+                  ["gas_first_floor", "Gas (1F)"],
+                  ["consumables", tr("field.consumables", lang)],
+                  ["drinking_water", tr("field.drinking_water", lang)],
+                  ["printer", tr("field.printer", lang)],
+                  ["internet", tr("field.internet", lang)],
+                  ["maintenance", "Maintenance"],
+                  ["hotel_rent", "Hotel Rent"],
+                ].map(([key, label]) => {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  const total = results.reduce((s, r) => s + ((r as any)[key] || 0), 0);
+                  if (total === 0) return null;
+                  return (
+                    <div key={key} className="flex justify-between items-center py-1 border-b border-gray-100 dark:border-gray-700">
+                      <span className="text-sm">{label}</span>
+                      <span className="text-sm font-medium tabular-nums">{formatRon(total)}</span>
+                    </div>
+                  );
+                })}
+                <div className="flex justify-between items-center py-2 border-t-2 border-navy dark:border-blue-400">
+                  <span className="text-sm font-bold text-navy dark:text-white">{tr("table.total", lang)}</span>
+                  <span className="text-lg font-bold text-navy dark:text-white tabular-nums">
+                    {formatRon(results.reduce((s, r) => s + r.total, 0))}
+                  </span>
+                </div>
+              </div>
+            )}
           </SectionCard>
+
           <ExportPanel results={results} companies={companies} runId={runId}
             filename={filename} month={month} year={year} language={lang}
             monthlyInput={frozenInput!} />
