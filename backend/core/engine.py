@@ -20,7 +20,6 @@ def _distribute(amount, eligible_companies, sqm_weight, headcount_weight, headco
     overrides = headcount_overrides or {}
     total_hc = sum(overrides.get(c["id"], c["headcount_default"]) for c in eligible_companies)
 
-    # Rebalance weights if one dimension is zero
     if total_sqm == 0 and total_hc == 0:
         n = len(eligible_companies)
         result = {c["id"]: round(amount / n, 2) for c in eligible_companies}
@@ -51,6 +50,21 @@ def _distribute(amount, eligible_companies, sqm_weight, headcount_weight, headco
     return result
 
 
+def _equal_split(amount, eligible_companies):
+    """Split amount equally among eligible companies with rounding reconciliation."""
+    if not eligible_companies or amount <= 0:
+        return {}
+    amount = round(amount, 2)
+    n = len(eligible_companies)
+    result = {c["id"]: round(amount / n, 2) for c in eligible_companies}
+    distributed = sum(result.values())
+    diff = round(amount - distributed, 2)
+    if diff != 0:
+        first_id = next(iter(result))
+        result[first_id] = round(result[first_id] + diff, 2)
+    return result
+
+
 def _net_amount(total, external):
     """Calculate net amount after external usage. Raises ValueError if negative."""
     net = total - external
@@ -59,19 +73,42 @@ def _net_amount(total, external):
     return net
 
 
-def allocate_costs(companies, ratios, monthly_input, headcount_overrides=None):
+def _filter_eligible(active, category_config):
+    """Filter companies based on cost category eligibility rules."""
+    eligible = list(active)
+
+    if category_config.get("eligible") == "custom":
+        include = category_config.get("include_companies")
+        if include:
+            eligible = [c for c in eligible if c["id"] in include]
+        exclude = category_config.get("exclude_companies", [])
+        if exclude:
+            eligible = [c for c in eligible if c["id"] not in exclude]
+
+    exclude_floors = category_config.get("exclude_floors", [])
+    if exclude_floors:
+        eligible = [c for c in eligible if c["floor"] not in exclude_floors]
+
+    return eligible
+
+
+def allocate_costs(companies, ratios, monthly_input, settings=None, headcount_overrides=None):
     """Main allocation function. Pure function: no I/O, no side effects.
 
-    monthly_input fields:
-        electricity_total, garbage_total, water_total,
-        hotel_gas_total, ground_floor_gas_total, first_floor_gas_total,
-        external_electricity, external_water, external_garbage,
-        external_hotel_gas, external_gf_gas, external_ff_gas
+    Args:
+        companies: list of company dicts
+        ratios: dict with expense type keys, each having sqm_weight/headcount_weight
+        monthly_input: dict with all invoice totals and external usage values
+        settings: full settings dict (for cost_categories, eur_ron_rate, etc.)
+        headcount_overrides: optional dict of {company_id: headcount}
 
-    Also supports legacy field names (external_water_deduction, external_electricity_contribution).
+    Returns:
+        list of dicts, one per active company, with per-expense and total amounts.
     """
     active = [c for c in companies if c["active"]]
     overrides = headcount_overrides or {}
+    cats = (settings or {}).get("cost_categories", {})
+    eur_rate = (settings or {}).get("eur_ron_rate", 5.1)
 
     def _ext(key, legacy_key=None):
         val = monthly_input.get(key, 0)
@@ -79,82 +116,134 @@ def allocate_costs(companies, ratios, monthly_input, headcount_overrides=None):
             val = monthly_input.get(legacy_key, 0)
         return val
 
+    # ── EXISTING UTILITY COSTS ──
+
     # Electricity
-    elec_eligible = [c for c in active if c["electricity_eligible"]]
+    elec_eligible = [c for c in active if c.get("electricity_eligible", True)]
     elec_amount = _net_amount(
-        monthly_input["electricity_total"],
+        monthly_input.get("electricity_total", 0),
         _ext("external_electricity", "external_electricity_contribution"),
     )
     elec_shares = _distribute(elec_amount, elec_eligible,
         ratios["electricity"]["sqm_weight"], ratios["electricity"]["headcount_weight"], overrides)
 
     # Water
-    water_eligible = [c for c in active if c["water_eligible"]]
+    water_eligible = [c for c in active if c.get("water_eligible", True)]
     water_amount = _net_amount(
-        monthly_input["water_total"],
+        monthly_input.get("water_total", 0),
         _ext("external_water", "external_water_deduction"),
     )
     water_shares = _distribute(water_amount, water_eligible,
         ratios["water"]["sqm_weight"], ratios["water"]["headcount_weight"], overrides)
 
     # Garbage
-    garbage_eligible = [c for c in active if c["garbage_eligible"]]
+    garbage_eligible = [c for c in active if c.get("garbage_eligible", True)]
     garbage_amount = _net_amount(
-        monthly_input["garbage_total"],
+        monthly_input.get("garbage_total", 0),
         _ext("external_garbage"),
     )
     garbage_shares = _distribute(garbage_amount, garbage_eligible,
         ratios["garbage"]["sqm_weight"], ratios["garbage"]["headcount_weight"], overrides)
 
     # Gas Hotel
-    hotel_gas_eligible = [c for c in active if c["floor"] == "hotel" and c["has_heating"]]
+    hotel_gas_eligible = [c for c in active if c["floor"] == "hotel" and c.get("has_heating", False)]
     hotel_gas_amount = _net_amount(
-        monthly_input["hotel_gas_total"],
-        _ext("external_hotel_gas"),
-    )
+        monthly_input.get("hotel_gas_total", 0), _ext("external_hotel_gas"))
     hotel_gas_shares = _distribute(hotel_gas_amount, hotel_gas_eligible,
         ratios["gas"]["sqm_weight"], ratios["gas"]["headcount_weight"], overrides)
 
     # Gas Ground Floor
-    gf_gas_eligible = [c for c in active if c["floor"] == "ground_floor" and c["has_heating"]]
+    gf_gas_eligible = [c for c in active if c["floor"] == "ground_floor" and c.get("has_heating", False)]
     gf_gas_amount = _net_amount(
-        monthly_input["ground_floor_gas_total"],
-        _ext("external_gf_gas"),
-    )
+        monthly_input.get("ground_floor_gas_total", 0), _ext("external_gf_gas"))
     gf_gas_shares = _distribute(gf_gas_amount, gf_gas_eligible,
         ratios["gas"]["sqm_weight"], ratios["gas"]["headcount_weight"], overrides)
 
     # Gas First Floor
-    ff_gas_eligible = [c for c in active if c["floor"] == "first_floor" and c["has_heating"]]
+    ff_gas_eligible = [c for c in active if c["floor"] == "first_floor" and c.get("has_heating", False)]
     ff_gas_amount = _net_amount(
-        monthly_input["first_floor_gas_total"],
-        _ext("external_ff_gas"),
-    )
+        monthly_input.get("first_floor_gas_total", 0), _ext("external_ff_gas"))
     ff_gas_shares = _distribute(ff_gas_amount, ff_gas_eligible,
         ratios["gas"]["sqm_weight"], ratios["gas"]["headcount_weight"], overrides)
 
-    # Build result
+    # ── NEW COST CATEGORIES ──
+
+    # Consumables (weighted, monthly input)
+    consumables_amount = monthly_input.get("consumables_total", 0)
+    consumables_eligible = _filter_eligible(active, cats.get("consumables", {"eligible": "all"}))
+    r_key = cats.get("consumables", {}).get("ratio_key", "consumables")
+    cons_ratios = ratios.get(r_key, {"sqm_weight": 50, "headcount_weight": 50})
+    consumables_shares = _distribute(consumables_amount, consumables_eligible,
+        cons_ratios["sqm_weight"], cons_ratios["headcount_weight"], overrides)
+
+    # Drinking Water (equal split, exclude GF + GBCS)
+    drinking_water_amount = monthly_input.get("drinking_water_total", 0)
+    dw_config = cats.get("drinking_water", {
+        "eligible": "custom", "exclude_companies": ["gbcs"], "exclude_floors": ["ground_floor"]
+    })
+    drinking_water_eligible = _filter_eligible(active, dw_config)
+    drinking_water_shares = _equal_split(drinking_water_amount, drinking_water_eligible)
+
+    # Printer (equal split, specific companies)
+    printer_amount = monthly_input.get("printer_total", 0)
+    printer_config = cats.get("printer", {
+        "eligible": "custom",
+        "include_companies": ["premier-capital", "premier-vision", "paul-george-cata"]
+    })
+    printer_eligible = _filter_eligible(active, printer_config)
+    printer_shares = _equal_split(printer_amount, printer_eligible)
+
+    # Internet (equal split, specific companies)
+    internet_amount = monthly_input.get("internet_total", 0)
+    internet_config = cats.get("internet", {
+        "eligible": "custom",
+        "include_companies": ["premier-capital", "premier-rise", "premier-vision", "paul-george-cata"]
+    })
+    internet_eligible = _filter_eligible(active, internet_config)
+    internet_shares = _equal_split(internet_amount, internet_eligible)
+
+    # Maintenance (per m², EUR → RON, exclude Premier Capital + PGC + Hotel)
+    maint_config = cats.get("maintenance", {
+        "eligible": "custom",
+        "exclude_companies": ["premier-capital", "paul-george-cata", "hotel"]
+    })
+    maint_rate = (settings or {}).get("maintenance_rate_eur", 2)
+    maint_eligible = _filter_eligible(active, maint_config)
+    maintenance_shares = {}
+    for c in maint_eligible:
+        maintenance_shares[c["id"]] = round(maint_rate * c["area_m2"] * eur_rate, 2)
+
+    # Hotel Rent (fixed EUR → RON, hotel only)
+    hotel_rent_eur = (settings or {}).get("hotel_rent_eur", 5250)
+    hotel_rent_config = cats.get("hotel_rent", {
+        "eligible": "custom", "include_companies": ["hotel"]
+    })
+    hotel_rent_eligible = _filter_eligible(active, hotel_rent_config)
+    hotel_rent_shares = {}
+    for c in hotel_rent_eligible:
+        hotel_rent_shares[c["id"]] = round(hotel_rent_eur * eur_rate, 2)
+
+    # ── BUILD RESULTS ──
     results = []
     for c in active:
         cid = c["id"]
-        electricity = elec_shares.get(cid, 0.0)
-        water = water_shares.get(cid, 0.0)
-        garbage = garbage_shares.get(cid, 0.0)
-        gas_hotel = hotel_gas_shares.get(cid, 0.0)
-        gas_gf = gf_gas_shares.get(cid, 0.0)
-        gas_ff = ff_gas_shares.get(cid, 0.0)
-        total = round(electricity + water + garbage + gas_hotel + gas_gf + gas_ff, 2)
-
-        results.append({
+        r = {
             "company_id": cid,
             "company_name": c["name"],
-            "electricity": electricity,
-            "water": water,
-            "garbage": garbage,
-            "gas_hotel": gas_hotel,
-            "gas_ground_floor": gas_gf,
-            "gas_first_floor": gas_ff,
-            "total": total,
-        })
+            "electricity": elec_shares.get(cid, 0.0),
+            "water": water_shares.get(cid, 0.0),
+            "garbage": garbage_shares.get(cid, 0.0),
+            "gas_hotel": hotel_gas_shares.get(cid, 0.0),
+            "gas_ground_floor": gf_gas_shares.get(cid, 0.0),
+            "gas_first_floor": ff_gas_shares.get(cid, 0.0),
+            "consumables": consumables_shares.get(cid, 0.0),
+            "drinking_water": drinking_water_shares.get(cid, 0.0),
+            "printer": printer_shares.get(cid, 0.0),
+            "internet": internet_shares.get(cid, 0.0),
+            "maintenance": maintenance_shares.get(cid, 0.0),
+            "hotel_rent": hotel_rent_shares.get(cid, 0.0),
+        }
+        r["total"] = round(sum(v for k, v in r.items() if k not in ("company_id", "company_name")), 2)
+        results.append(r)
 
     return results

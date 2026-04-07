@@ -101,9 +101,9 @@ def test_first_floor_gas_only_to_first_floor(companies, ratios, monthly_input):
 
 def test_total_is_sum_of_all_expenses(companies, ratios, monthly_input):
     result = allocate_costs(companies, ratios, monthly_input)
+    non_total_keys = ("company_id", "company_name", "total")
     for r in result:
-        expected = round(r["electricity"] + r["water"] + r["garbage"]
-                         + r["gas_hotel"] + r["gas_ground_floor"] + r["gas_first_floor"], 2)
+        expected = round(sum(v for k, v in r.items() if k not in non_total_keys), 2)
         assert r["total"] == expected
 
 

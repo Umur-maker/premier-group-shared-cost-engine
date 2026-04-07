@@ -7,6 +7,7 @@ from backend.api.companies import router as companies_router
 from backend.api.settings import router as settings_router
 from backend.api.calculate import router as calculate_router
 from backend.api.history import router as history_router
+from backend.api.payments import router as payments_router
 
 app = FastAPI(
     title="Premier Business Center - Shared Cost Engine",
@@ -28,6 +29,7 @@ app.include_router(companies_router)
 app.include_router(settings_router)
 app.include_router(calculate_router)
 app.include_router(history_router)
+app.include_router(payments_router)
 
 
 @app.get("/api/health")
