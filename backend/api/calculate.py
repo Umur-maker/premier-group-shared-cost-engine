@@ -31,6 +31,11 @@ class MonthlyInput(BaseModel):
     external_hotel_gas: float = 0
     external_gf_gas: float = 0
     external_ff_gas: float = 0
+    # New cost categories
+    consumables_total: float = 0
+    drinking_water_total: float = 0
+    printer_total: float = 0
+    internet_total: float = 0
 
 
 class CalculateRequest(BaseModel):
@@ -70,7 +75,7 @@ def calculate(body: CalculateRequest):
             raise HTTPException(400, f"{label}: external usage ({mi[ext_key]}) exceeds total ({mi[total_key]}).")
 
     try:
-        results = allocate_costs(companies, settings["ratios"], mi)
+        results = allocate_costs(companies, settings["ratios"], mi, settings=settings)
     except ValueError as e:
         raise HTTPException(400, str(e))
 
@@ -119,7 +124,7 @@ def _get_company_result(body: StatementRequest):
         raise HTTPException(404, f"Active company '{body.company_id}' not found.")
 
     try:
-        results = allocate_costs(companies, settings["ratios"], mi)
+        results = allocate_costs(companies, settings["ratios"], mi, settings=settings)
     except ValueError as e:
         raise HTTPException(400, str(e))
 

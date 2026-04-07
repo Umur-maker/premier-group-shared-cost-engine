@@ -5,12 +5,12 @@ export interface Company {
   headcount_default: number;
   building: string;
   floor: string;
+  office_no: string;
   has_heating: boolean;
   electricity_eligible: boolean;
   water_eligible: boolean;
   garbage_eligible: boolean;
   active: boolean;
-  office_no: string;
   contact_person: string;
   phone: string;
   email: string;
@@ -25,12 +25,24 @@ export interface RatioWeight {
 }
 
 export interface Settings {
-  ratios: {
-    electricity: RatioWeight;
-    gas: RatioWeight;
-    water: RatioWeight;
-    garbage: RatioWeight;
-  };
+  ratios: Record<string, RatioWeight>;
+  eur_ron_rate: number;
+  maintenance_rate_eur: number;
+  hotel_rent_eur: number;
+  cleaning_fixed_ron: number;
+  cost_categories: Record<string, CostCategory>;
+}
+
+export interface CostCategory {
+  amount_type: string;
+  allocation?: string;
+  ratio_key?: string;
+  eligible: string;
+  include_companies?: string[];
+  exclude_companies?: string[];
+  exclude_floors?: string[];
+  rate_eur?: number;
+  amount_eur?: number;
 }
 
 export interface MonthlyInput {
@@ -46,6 +58,10 @@ export interface MonthlyInput {
   external_hotel_gas: number;
   external_gf_gas: number;
   external_ff_gas: number;
+  consumables_total: number;
+  drinking_water_total: number;
+  printer_total: number;
+  internet_total: number;
 }
 
 export interface AllocationResult {
@@ -57,6 +73,12 @@ export interface AllocationResult {
   gas_hotel: number;
   gas_ground_floor: number;
   gas_first_floor: number;
+  consumables: number;
+  drinking_water: number;
+  printer: number;
+  internet: number;
+  maintenance: number;
+  hotel_rent: number;
   total: number;
 }
 
@@ -74,6 +96,17 @@ export interface HistoryEntry {
   generated_at: string;
   excel_file: string;
   monthly_input: MonthlyInput;
-  ratios: Settings["ratios"];
+  ratios: Record<string, RatioWeight>;
   company_count: number;
+}
+
+export interface PaymentStatus {
+  paid: boolean;
+  paid_amount: number;
+  paid_date: string;
+}
+
+export interface OutstandingBalance {
+  total_outstanding: number;
+  unpaid_months: { year: number; month: number; amount: number; partial: boolean }[];
 }

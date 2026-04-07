@@ -19,6 +19,8 @@ import type {
   CalculateResponse,
   HistoryEntry,
   AllocationResult,
+  PaymentStatus,
+  OutstandingBalance,
 } from "@/types";
 
 // Companies
@@ -42,7 +44,7 @@ export const deactivateCompany = (id: string) =>
 // Settings
 export const getSettings = () => request<Settings>("/api/settings");
 
-export const saveSettings = (data: Settings) =>
+export const saveSettings = (data: Partial<Settings>) =>
   request<{ status: string }>("/api/settings", {
     method: "PUT",
     body: JSON.stringify(data),
@@ -78,3 +80,17 @@ export const getRunDetail = (runId: string) =>
 
 export const getHistoryStatementPdfUrl = (runId: string, companyId: string) =>
   `${API_BASE}/api/history/${runId}/statement-pdf?company_id=${encodeURIComponent(companyId)}`;
+
+// Payments
+export const getPayments = (year: number, month: number) =>
+  request<Record<string, PaymentStatus>>(`/api/payments/${year}/${month}`);
+
+export const updatePayment = (year: number, month: number, data: {
+  company_id: string; paid: boolean; paid_amount?: number; paid_date?: string;
+}) => request<{ status: string }>(`/api/payments/${year}/${month}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+
+export const getBalances = (year: number, month: number) =>
+  request<Record<string, OutstandingBalance>>(`/api/payments/balances/${year}/${month}`);
