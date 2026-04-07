@@ -194,19 +194,28 @@ def allocate_costs(companies, ratios, monthly_input, settings=None, headcount_ov
     internet_eligible = _filter_eligible(active, internet_config)
     internet_shares = _equal_split(internet_amount, internet_eligible)
 
-    # Maintenance (fixed EUR per company → RON)
+    # Maintenance (fixed EUR per company → RON + 21% VAT)
+    VAT_RATE = 0.21
     maintenance_shares = {}
+    maintenance_vat_shares = {}
     for c in active:
         maint_eur = c.get("maintenance_rate_eur", 0)
         if maint_eur > 0:
-            maintenance_shares[c["id"]] = round(maint_eur * eur_rate, 2)
+            net = round(maint_eur * eur_rate, 2)
+            vat = round(net * VAT_RATE, 2)
+            maintenance_shares[c["id"]] = net
+            maintenance_vat_shares[c["id"]] = vat
 
-    # ── COMPANY RENT (fixed per company, EUR → RON) ──
+    # ── COMPANY RENT (fixed per company, EUR → RON + 21% VAT) ──
     rent_shares = {}
+    rent_vat_shares = {}
     for c in active:
         rent_eur = c.get("monthly_rent_eur", 0)
         if rent_eur > 0:
-            rent_shares[c["id"]] = round(rent_eur * eur_rate, 2)
+            net = round(rent_eur * eur_rate, 2)
+            vat = round(net * VAT_RATE, 2)
+            rent_shares[c["id"]] = net
+            rent_vat_shares[c["id"]] = vat
 
     # ── BUILD RESULTS ──
     results = []
@@ -225,7 +234,9 @@ def allocate_costs(companies, ratios, monthly_input, settings=None, headcount_ov
             "printer": printer_shares.get(cid, 0.0),
             "internet": internet_shares.get(cid, 0.0),
             "maintenance": maintenance_shares.get(cid, 0.0),
+            "maintenance_vat": maintenance_vat_shares.get(cid, 0.0),
             "rent": rent_shares.get(cid, 0.0),
+            "rent_vat": rent_vat_shares.get(cid, 0.0),
         }
         r["total"] = round(sum(v for k, v in r.items() if k not in ("company_id", "company_name")), 2)
         results.append(r)
