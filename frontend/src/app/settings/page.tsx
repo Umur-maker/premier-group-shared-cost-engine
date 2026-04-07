@@ -120,6 +120,7 @@ export default function SettingsPage() {
           className="border dark:border-gray-600 rounded px-3 py-1.5 text-sm bg-white dark:bg-gray-700">
           <option value="en">English</option>
           <option value="ro">Romana</option>
+          <option value="tr">Turkce</option>
         </select>
       </SectionCard>
 
