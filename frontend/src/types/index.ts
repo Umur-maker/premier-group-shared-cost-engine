@@ -10,7 +10,7 @@ export interface Company {
   water_eligible: boolean;
   garbage_eligible: boolean;
   active: boolean;
-  office_location: string;
+  office_no: string;
   contact_person: string;
   phone: string;
   email: string;

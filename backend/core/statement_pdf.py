@@ -91,7 +91,7 @@ def generate_statement_pdf(filepath, company, result, month, year, monthly_input
     info_rows = []
     label_map = [
         ("excel_company", "name"),
-        ("office_location", "office_location"),
+        ("office_location", "office_no"),
         ("contact_person", "contact_person"),
     ]
     for tkey, ckey in label_map:
