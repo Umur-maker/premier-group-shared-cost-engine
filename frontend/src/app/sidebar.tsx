@@ -12,6 +12,7 @@ export function Sidebar() {
 
   const nav = [
     { href: "/", label: tr("nav.monthly", lang) },
+    { href: "/payments", label: tr("nav.payments", lang) },
     { href: "/companies", label: tr("nav.companies", lang) },
     { href: "/history", label: tr("nav.history", lang) },
     { href: "/reports", label: tr("nav.reports", lang) },

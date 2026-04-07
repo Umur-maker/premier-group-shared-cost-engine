@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { calculatePreview, saveOfficial, checkMonth, getCompanies, getRunPayments, addPaymentEntry, deletePaymentEntry, getAllBalances } from "@/lib/api";
+import { calculatePreview, saveOfficial, checkMonth, getCompanies } from "@/lib/api";
 import { formatRon, parseRonInput } from "@/lib/formatting";
 import { useApp } from "@/lib/AppContext";
 import { tr, monthNames } from "@/lib/i18n";
 import { PageLayout, SectionCard, MoneyInput, DataTable, Button, ExportPanel } from "@/components";
-import type { MonthlyInput, AllocationResult, Company, PaymentEntry } from "@/types";
+import type { MonthlyInput, AllocationResult, Company } from "@/types";
 
 const INVOICE_KEYS: (keyof MonthlyInput)[] = [
   "electricity_total", "water_total", "garbage_total",
@@ -49,14 +49,6 @@ export default function MonthlyInputPage() {
   const [pageState, setPageState] = useState<PageState>("input");
   const [previewTab, setPreviewTab] = useState("summary");
 
-  // Payment state
-  const [payments, setPayments] = useState<PaymentEntry[]>([]);
-  const [balances, setBalances] = useState<Record<string, number>>({});
-  const [newPayment, setNewPayment] = useState<{ companyId: string; amount: string; date: string; note: string }>({
-    companyId: "", amount: "", date: new Date().toISOString().slice(0, 10), note: "",
-  });
-  const [showConfirm, setShowConfirm] = useState(false);
-
   useEffect(() => {
     getCompanies().then(setCompanies).catch(() => setError(tr("error.backend_down", lang)));
   }, [lang]);
@@ -96,42 +88,9 @@ export default function MonthlyInputPage() {
       const res = await saveOfficial({ month, year, language: lang, monthly_input: frozenInput });
       setRunId(res.run_id); setFilename(res.filename); setResults(res.results);
       setPageState("saved");
-      // Load payments + balances
-      const [payData, balData] = await Promise.all([
-        getRunPayments(res.run_id),
-        getAllBalances(),
-      ]);
-      setPayments(payData);
-      setBalances(balData);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Error");
     } finally { setLoading(false); }
-  };
-
-  // Add payment entry
-  const handleAddPayment = async () => {
-    if (!runId || !newPayment.companyId || !newPayment.amount) return;
-    try {
-      const amount = parseRonInput(newPayment.amount);
-      await addPaymentEntry(runId, {
-        company_id: newPayment.companyId, amount, date: newPayment.date, note: newPayment.note,
-      });
-      setNewPayment({ companyId: "", amount: "", date: new Date().toISOString().slice(0, 10), note: "" });
-      setShowConfirm(false);
-      const [payData, balData] = await Promise.all([getRunPayments(runId), getAllBalances()]);
-      setPayments(payData);
-      setBalances(balData);
-    } catch (e: unknown) { setError(e instanceof Error ? e.message : "Error"); }
-  };
-
-  const handleDeletePayment = async (paymentId: string) => {
-    if (!confirm(tr("monthly.delete_payment_confirm", lang))) return;
-    try {
-      await deletePaymentEntry(paymentId);
-      const [payData, balData] = await Promise.all([getRunPayments(runId), getAllBalances()]);
-      setPayments(payData);
-      setBalances(balData);
-    } catch (e: unknown) { setError(e instanceof Error ? e.message : "Error"); }
   };
 
   const months = monthNames(lang);
@@ -151,8 +110,6 @@ export default function MonthlyInputPage() {
     { key: "hotel_rent", header: tr("table.rent", lang), align: "right" as const, render: (r: AllocationResult) => formatRon(r.hotel_rent) },
     { key: "total", header: tr("table.total", lang), align: "right" as const, bold: true, render: (r: AllocationResult) => formatRon(r.total) },
   ];
-
-  const activeCompaniesWithDue = results?.filter(r => r.total > 0) || [];
 
   return (
     <PageLayout title={tr("monthly.title", lang)}>
@@ -315,110 +272,6 @@ export default function MonthlyInputPage() {
               monthlyInput={frozenInput} />
           )}
 
-          {/* Payment tracking — only when saved */}
-          {pageState === "saved" && runId && (
-            <SectionCard title={tr("monthly.payments", lang)}>
-              {/* Existing payments */}
-              {payments.length > 0 && (
-                <div className="mb-4">
-                  <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="bg-navy text-white">
-                          <th className="p-2.5 text-left text-xs uppercase">{tr("table.company", lang)}</th>
-                          <th className="p-2.5 text-right text-xs uppercase">{tr("monthly.paid_amount", lang)}</th>
-                          <th className="p-2.5 text-left text-xs uppercase">{tr("monthly.pay_date", lang)}</th>
-                          <th className="p-2.5 text-left text-xs uppercase">{tr("monthly.pay_note", lang)}</th>
-                          <th className="p-2.5 text-xs uppercase"></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {payments.map((p, i) => {
-                          const companyName = results.find(r => r.company_id === p.company_id)?.company_name || p.company_id;
-                          return (
-                            <tr key={p.id} className={i % 2 === 0 ? "bg-white dark:bg-card-dark" : "bg-gray-50/60 dark:bg-gray-800/40"}>
-                              <td className="p-2.5 border-b border-gray-100 dark:border-gray-700">{companyName}</td>
-                              <td className="p-2.5 border-b border-gray-100 dark:border-gray-700 text-right tabular-nums">{formatRon(p.amount)}</td>
-                              <td className="p-2.5 border-b border-gray-100 dark:border-gray-700">{p.date}</td>
-                              <td className="p-2.5 border-b border-gray-100 dark:border-gray-700 text-gray-500">{p.note}</td>
-                              <td className="p-2.5 border-b border-gray-100 dark:border-gray-700">
-                                <button onClick={() => handleDeletePayment(p.id)}
-                                  className="text-xs text-red-600 hover:underline">✕</button>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-
-              {/* Balance summary */}
-              <div className="mb-4 grid grid-cols-2 md:grid-cols-4 gap-3">
-                {activeCompaniesWithDue.slice(0, 8).map(r => {
-                  const bal = balances[r.company_id] || 0;
-                  const paid = payments.filter(p => p.company_id === r.company_id).reduce((s, p) => s + p.amount, 0);
-                  return (
-                    <div key={r.company_id} className="text-xs border dark:border-gray-700 rounded p-2">
-                      <div className="font-medium truncate">{r.company_name}</div>
-                      <div className="text-gray-500">{tr("monthly.amount_due", lang)}: {formatRon(r.total)}</div>
-                      <div className="text-green-600">{tr("manager.paid", lang)}: {formatRon(paid)}</div>
-                      <div className={bal > 0 ? "text-red-600 font-semibold" : "text-green-600 font-semibold"}>
-                        {bal > 0 ? formatRon(bal) : bal < 0 ? `${tr("monthly.credit", lang)}: ${formatRon(Math.abs(bal))}` : tr("manager.paid", lang)}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Add payment form */}
-              {!showConfirm ? (
-                <div className="flex items-end gap-3 flex-wrap">
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">{tr("table.company", lang)}</label>
-                    <select value={newPayment.companyId} onChange={(e) => setNewPayment(p => ({ ...p, companyId: e.target.value }))}
-                      className="border dark:border-gray-600 rounded px-2 py-1.5 text-sm bg-white dark:bg-gray-700 min-w-[180px]">
-                      <option value="">...</option>
-                      {activeCompaniesWithDue.map(r => (
-                        <option key={r.company_id} value={r.company_id}>{r.company_name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">{tr("monthly.paid_amount", lang)} (RON)</label>
-                    <input value={newPayment.amount} onChange={(e) => setNewPayment(p => ({ ...p, amount: e.target.value }))}
-                      placeholder="0" className="border dark:border-gray-600 rounded px-2 py-1.5 text-sm w-28 bg-white dark:bg-gray-700" />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">{tr("monthly.pay_date", lang)}</label>
-                    <input type="date" value={newPayment.date} onChange={(e) => setNewPayment(p => ({ ...p, date: e.target.value }))}
-                      className="border dark:border-gray-600 rounded px-2 py-1.5 text-sm bg-white dark:bg-gray-700" />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">{tr("monthly.pay_note", lang)}</label>
-                    <input value={newPayment.note} onChange={(e) => setNewPayment(p => ({ ...p, note: e.target.value }))}
-                      placeholder="bank, cash..." className="border dark:border-gray-600 rounded px-2 py-1.5 text-sm w-32 bg-white dark:bg-gray-700" />
-                  </div>
-                  <Button disabled={!newPayment.companyId || !newPayment.amount}
-                    onClick={() => setShowConfirm(true)}>
-                    {tr("monthly.review_payment", lang)}
-                  </Button>
-                </div>
-              ) : (
-                <div className="border-2 border-navy dark:border-blue-400 rounded-lg p-4">
-                  <p className="text-sm font-medium mb-2">{tr("monthly.confirm_payment", lang)}</p>
-                  <p className="text-sm">
-                    {results.find(r => r.company_id === newPayment.companyId)?.company_name}: <strong>{formatRon(parseRonInput(newPayment.amount))}</strong> — {newPayment.date} {newPayment.note && `(${newPayment.note})`}
-                  </p>
-                  <div className="flex gap-2 mt-3">
-                    <Button onClick={handleAddPayment}>{tr("monthly.confirm_save", lang)}</Button>
-                    <Button variant="secondary" onClick={() => setShowConfirm(false)}>{tr("companies.cancel", lang)}</Button>
-                  </div>
-                </div>
-              )}
-            </SectionCard>
-          )}
         </>
       )}
     </PageLayout>
