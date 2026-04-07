@@ -58,7 +58,6 @@ export interface MonthlyInput {
   external_gf_gas: number;
   external_ff_gas: number;
   consumables_total: number;
-  drinking_water_total: number;
   printer_total: number;
   internet_total: number;
   cleaning_cost: number;
@@ -75,7 +74,6 @@ export interface AllocationResult {
   gas_ground_floor: number;
   gas_first_floor: number;
   consumables: number;
-  drinking_water: number;
   printer: number;
   internet: number;
   maintenance: number;

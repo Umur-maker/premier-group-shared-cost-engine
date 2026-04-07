@@ -32,7 +32,6 @@ class MonthlyInput(BaseModel):
     external_gf_gas: float = 0
     external_ff_gas: float = 0
     consumables_total: float = 0
-    drinking_water_total: float = 0
     printer_total: float = 0
     internet_total: float = 0
     # Outgoing costs (Premier Capital pays these)

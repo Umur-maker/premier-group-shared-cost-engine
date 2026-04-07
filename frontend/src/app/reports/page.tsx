@@ -10,7 +10,7 @@ import type { HistoryEntry, AllocationResult } from "@/types";
 
 const EXPENSE_KEYS = [
   "electricity", "water", "garbage", "gas_hotel", "gas_ground_floor", "gas_first_floor",
-  "consumables", "drinking_water", "printer", "internet", "maintenance", "hotel_rent",
+  "consumables", "printer", "internet", "maintenance", "rent",
 ] as const;
 
 export default function ReportsPage() {

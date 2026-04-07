@@ -145,7 +145,6 @@ export default function HistoryPage() {
                         ["gas_ground_floor", "Gas (GF)"],
                         ["gas_first_floor", "Gas (1F)"],
                         ["consumables", tr("field.consumables", lang)],
-                        ["drinking_water", tr("field.drinking_water", lang)],
                         ["printer", tr("field.printer", lang)],
                         ["internet", tr("field.internet", lang)],
                         ["maintenance", "Maintenance"],
