@@ -13,7 +13,7 @@ const EMPTY: Partial<Company> = {
   name: "", area_m2: 0, headcount_default: 1, building: "C4", floor: "ground_floor",
   has_heating: true, electricity_eligible: true, water_eligible: true, garbage_eligible: true,
   office_no: "", contact_person: "", phone: "", email: "",
-  beginning_date: "", expiration_date: "", notes: "",
+  beginning_date: "", expiration_date: "", notes: "", monthly_rent_eur: 0,
 };
 
 export default function CompaniesPage() {
@@ -81,6 +81,10 @@ export default function CompaniesPage() {
         <FormRow label={tr("companies.persons", lang)}>
           <input type="number" min={0} value={form.headcount_default || 0}
             onChange={(e) => f("headcount_default", parseInt(e.target.value))} className={inputCls} />
+        </FormRow>
+        <FormRow label={tr("companies.rent", lang)}>
+          <input type="number" step="1" min={0} value={form.monthly_rent_eur || 0}
+            onChange={(e) => f("monthly_rent_eur", parseFloat(e.target.value) || 0)} className={inputCls} />
         </FormRow>
       </div>
 

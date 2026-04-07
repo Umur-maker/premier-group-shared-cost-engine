@@ -35,6 +35,9 @@ class MonthlyInput(BaseModel):
     drinking_water_total: float = 0
     printer_total: float = 0
     internet_total: float = 0
+    # Outgoing costs (Premier Capital pays these)
+    cleaning_cost: float = 0
+    security_cameras_cost: float = 0
 
 
 class CalculateRequest(BaseModel):

@@ -19,6 +19,9 @@ const EXTERNAL_KEYS: (keyof MonthlyInput)[] = [
 const NEW_COST_KEYS: (keyof MonthlyInput)[] = [
   "consumables_total", "drinking_water_total", "printer_total", "internet_total",
 ];
+const OUTGOING_KEYS: (keyof MonthlyInput)[] = [
+  "cleaning_cost", "security_cameras_cost",
+];
 const INVOICE_I18N = [
   "field.electricity", "field.water", "field.garbage",
   "field.hotel_gas", "field.gf_gas", "field.ff_gas",
@@ -29,6 +32,9 @@ const EXTERNAL_I18N = [
 ];
 const NEW_COST_I18N = [
   "field.consumables", "field.drinking_water", "field.printer", "field.internet",
+];
+const OUTGOING_I18N = [
+  "field.cleaning", "field.security_cameras",
 ];
 
 type PageState = "input" | "preview" | "saved";
@@ -55,7 +61,7 @@ export default function MonthlyInputPage() {
 
   const buildInput = (): MonthlyInput => {
     const mi: Record<string, number> = {};
-    for (const k of [...INVOICE_KEYS, ...EXTERNAL_KEYS, ...NEW_COST_KEYS]) mi[k] = parseRonInput(raw[k] || "");
+    for (const k of [...INVOICE_KEYS, ...EXTERNAL_KEYS, ...NEW_COST_KEYS, ...OUTGOING_KEYS]) mi[k] = parseRonInput(raw[k] || "");
     return mi as unknown as MonthlyInput;
   };
 
@@ -107,7 +113,8 @@ export default function MonthlyInputPage() {
     { key: "printer", header: tr("table.printer", lang), align: "right" as const, render: (r: AllocationResult) => formatRon(r.printer) },
     { key: "internet", header: tr("table.internet", lang), align: "right" as const, render: (r: AllocationResult) => formatRon(r.internet) },
     { key: "maintenance", header: tr("table.maint", lang), align: "right" as const, render: (r: AllocationResult) => formatRon(r.maintenance) },
-    { key: "hotel_rent", header: tr("table.rent", lang), align: "right" as const, render: (r: AllocationResult) => formatRon(r.hotel_rent) },
+    { key: "hotel_rent", header: "H.Rent", align: "right" as const, render: (r: AllocationResult) => formatRon(r.hotel_rent) },
+    { key: "rent", header: tr("table.rent", lang), align: "right" as const, render: (r: AllocationResult) => formatRon(r.rent) },
     { key: "total", header: tr("table.total", lang), align: "right" as const, bold: true, render: (r: AllocationResult) => formatRon(r.total) },
   ];
 
@@ -168,6 +175,17 @@ export default function MonthlyInputPage() {
               ))}
             </div>
             <p className="text-xs text-gray-400 mt-3">{tr("monthly.auto_costs_note", lang)}</p>
+          </SectionCard>
+
+          <SectionCard title={tr("monthly.outgoing_costs", lang)}>
+            <div className="grid grid-cols-2 gap-4">
+              {OUTGOING_KEYS.map((k, i) => (
+                <MoneyInput key={k} label={tr(OUTGOING_I18N[i], lang)}
+                  value={raw[k] || ""} onChange={(v) => setRaw((p) => ({ ...p, [k]: v }))}
+                  placeholder="0" />
+              ))}
+            </div>
+            <p className="text-xs text-gray-400 mt-3">{tr("monthly.outgoing_note", lang)}</p>
           </SectionCard>
 
           <Button onClick={handlePreview} disabled={loading}>
@@ -243,7 +261,7 @@ export default function MonthlyInputPage() {
                   ["drinking_water", tr("field.drinking_water", lang)],
                   ["printer", tr("field.printer", lang)],
                   ["internet", tr("field.internet", lang)],
-                  ["maintenance", "Maintenance"], ["hotel_rent", "Hotel Rent"],
+                  ["maintenance", "Maintenance"], ["hotel_rent", "Hotel Rent"], ["rent", tr("table.rent", lang)],
                 ].map(([key, label]) => {
                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   const total = results.reduce((s, r) => s + ((r as any)[key] || 0), 0);
