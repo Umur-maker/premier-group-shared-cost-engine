@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { calculate, getCompanies } from "@/lib/api";
+import { calculate, getCompanies, getPayments, updatePayment, getBalances } from "@/lib/api";
 import { formatRon, parseRonInput } from "@/lib/formatting";
 import { useApp } from "@/lib/AppContext";
 import { tr, monthNames } from "@/lib/i18n";
 import { PageLayout, SectionCard, MoneyInput, DataTable, Button, ExportPanel } from "@/components";
-import type { MonthlyInput, AllocationResult, Company } from "@/types";
+import type { MonthlyInput, AllocationResult, Company, PaymentStatus, OutstandingBalance } from "@/types";
 
 const INVOICE_KEYS: (keyof MonthlyInput)[] = [
   "electricity_total", "water_total", "garbage_total",
@@ -45,6 +45,9 @@ export default function MonthlyInputPage() {
   const [loading, setLoading] = useState(false);
   const [frozenInput, setFrozenInput] = useState<MonthlyInput | null>(null);
   const [previewTab, setPreviewTab] = useState("summary");
+  const [payments, setPayments] = useState<Record<string, PaymentStatus>>({});
+  const [balances, setBalances] = useState<Record<string, OutstandingBalance>>({});
+  const [paidInputs, setPaidInputs] = useState<Record<string, string>>({});
 
   useEffect(() => {
     getCompanies().then(setCompanies).catch(() => setError(tr("error.backend_down", lang)));
@@ -63,6 +66,20 @@ export default function MonthlyInputPage() {
       const res = await calculate({ month, year, language: lang, monthly_input: mi });
       setResults(res.results); setRunId(res.run_id); setFilename(res.filename);
       setFrozenInput(mi);
+      // Load payment status for this month
+      try {
+        const payData = await getPayments(year, month);
+        setPayments(payData);
+        const balData = await getBalances(year, month);
+        setBalances(balData);
+        // Pre-fill paid inputs from existing data
+        const inputs: Record<string, string> = {};
+        for (const r of res.results) {
+          const p = payData[r.company_id];
+          if (p?.paid_amount) inputs[r.company_id] = String(p.paid_amount);
+        }
+        setPaidInputs(inputs);
+      } catch { /* payments system optional */ }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Error");
     } finally { setLoading(false); }
@@ -213,6 +230,127 @@ export default function MonthlyInputPage() {
                 </div>
               </div>
             )}
+          </SectionCard>
+
+          {/* Payment tracking */}
+          <SectionCard title={tr("monthly.payments", lang)}>
+            <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-navy text-white">
+                    <th className="p-2.5 text-left text-xs uppercase">{tr("table.company", lang)}</th>
+                    <th className="p-2.5 text-right text-xs uppercase">{tr("monthly.amount_due", lang)}</th>
+                    <th className="p-2.5 text-right text-xs uppercase">{tr("monthly.prev_balance", lang)}</th>
+                    <th className="p-2.5 text-right text-xs uppercase">{tr("monthly.total_due", lang)}</th>
+                    <th className="p-2.5 text-center text-xs uppercase">{tr("monthly.paid_amount", lang)}</th>
+                    <th className="p-2.5 text-right text-xs uppercase">{tr("monthly.net_balance", lang)}</th>
+                    <th className="p-2.5 text-center text-xs uppercase"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {results.filter(r => r.total > 0).map((r, i) => {
+                    const prevBal = balances[r.company_id]?.total_outstanding || 0;
+                    const totalDue = r.total + prevBal;
+                    const paidStr = paidInputs[r.company_id] || "";
+                    const paidAmt = parseFloat(paidStr.replace(",", ".")) || 0;
+                    const netBalance = Math.round((totalDue - paidAmt) * 100) / 100;
+                    const isPaid = payments[r.company_id]?.paid || false;
+
+                    return (
+                      <tr key={r.company_id}
+                        className={`${i % 2 === 0 ? "bg-white dark:bg-card-dark" : "bg-gray-50/60 dark:bg-gray-800/40"}
+                          hover:bg-blue-50/50 dark:hover:bg-navy-light/10`}>
+                        <td className="p-2.5 border-b border-gray-100 dark:border-gray-700 font-medium">
+                          {r.company_name}
+                        </td>
+                        <td className="p-2.5 border-b border-gray-100 dark:border-gray-700 text-right tabular-nums">
+                          {formatRon(r.total)}
+                        </td>
+                        <td className="p-2.5 border-b border-gray-100 dark:border-gray-700 text-right tabular-nums">
+                          {prevBal > 0 ? (
+                            <span className="text-red-600">{formatRon(prevBal)}</span>
+                          ) : (
+                            <span className="text-gray-400">—</span>
+                          )}
+                        </td>
+                        <td className="p-2.5 border-b border-gray-100 dark:border-gray-700 text-right tabular-nums font-semibold">
+                          {formatRon(totalDue)}
+                        </td>
+                        <td className="p-2.5 border-b border-gray-100 dark:border-gray-700 text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <input
+                              type="text"
+                              value={paidStr}
+                              onChange={(e) => setPaidInputs(p => ({ ...p, [r.company_id]: e.target.value }))}
+                              placeholder="0"
+                              className="w-28 border dark:border-gray-600 rounded px-2 py-1 text-sm text-right
+                                         bg-white dark:bg-gray-700 tabular-nums"
+                            />
+                            <span className="text-xs text-gray-400">RON</span>
+                          </div>
+                        </td>
+                        <td className="p-2.5 border-b border-gray-100 dark:border-gray-700 text-right tabular-nums">
+                          <span className={netBalance > 0 ? "text-red-600 font-semibold" : "text-green-600 font-semibold"}>
+                            {netBalance <= 0 ? tr("manager.paid", lang) : formatRon(netBalance)}
+                          </span>
+                        </td>
+                        <td className="p-2.5 border-b border-gray-100 dark:border-gray-700 text-center">
+                          <Button
+                            variant={isPaid ? "secondary" : "primary"}
+                            className="text-xs px-2 py-1"
+                            onClick={async () => {
+                              try {
+                                await updatePayment(year, month, {
+                                  company_id: r.company_id,
+                                  paid: !isPaid,
+                                  paid_amount: paidAmt || r.total,
+                                  paid_date: !isPaid ? new Date().toISOString().slice(0, 10) : "",
+                                });
+                                const payData = await getPayments(year, month);
+                                setPayments(payData);
+                                const balData = await getBalances(year, month);
+                                setBalances(balData);
+                              } catch { /* ignore */ }
+                            }}
+                          >
+                            {isPaid ? "✓" : tr("monthly.save_payment", lang)}
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot>
+                  <tr className="bg-gray-50 dark:bg-gray-800 font-semibold">
+                    <td className="p-2.5 border-t-2 border-navy dark:border-blue-400">{tr("table.total", lang)}</td>
+                    <td className="p-2.5 border-t-2 border-navy dark:border-blue-400 text-right tabular-nums">
+                      {formatRon(results.reduce((s, r) => s + r.total, 0))}
+                    </td>
+                    <td className="p-2.5 border-t-2 border-navy dark:border-blue-400 text-right tabular-nums text-red-600">
+                      {formatRon(results.reduce((s, r) => s + (balances[r.company_id]?.total_outstanding || 0), 0))}
+                    </td>
+                    <td className="p-2.5 border-t-2 border-navy dark:border-blue-400 text-right tabular-nums">
+                      {formatRon(results.reduce((s, r) => s + r.total + (balances[r.company_id]?.total_outstanding || 0), 0))}
+                    </td>
+                    <td className="p-2.5 border-t-2 border-navy dark:border-blue-400 text-right tabular-nums">
+                      {formatRon(results.filter(r => r.total > 0).reduce((s, r) => {
+                        const v = parseFloat((paidInputs[r.company_id] || "0").replace(",", ".")) || 0;
+                        return s + v;
+                      }, 0))}
+                    </td>
+                    <td className="p-2.5 border-t-2 border-navy dark:border-blue-400 text-right tabular-nums">
+                      {formatRon(results.filter(r => r.total > 0).reduce((s, r) => {
+                        const prevBal = balances[r.company_id]?.total_outstanding || 0;
+                        const totalDue = r.total + prevBal;
+                        const paidAmt = parseFloat((paidInputs[r.company_id] || "0").replace(",", ".")) || 0;
+                        return s + Math.max(0, totalDue - paidAmt);
+                      }, 0))}
+                    </td>
+                    <td className="p-2.5 border-t-2 border-navy dark:border-blue-400"></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
           </SectionCard>
 
           <ExportPanel results={results} companies={companies} runId={runId}
