@@ -17,6 +17,7 @@ export interface Company {
   beginning_date: string;
   expiration_date: string;
   notes: string;
+  monthly_rent_eur: number;
 }
 
 export interface RatioWeight {
@@ -62,6 +63,8 @@ export interface MonthlyInput {
   drinking_water_total: number;
   printer_total: number;
   internet_total: number;
+  cleaning_cost: number;
+  security_cameras_cost: number;
 }
 
 export interface AllocationResult {
@@ -79,6 +82,7 @@ export interface AllocationResult {
   internet: number;
   maintenance: number;
   hotel_rent: number;
+  rent: number;
   total: number;
 }
 

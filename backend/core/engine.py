@@ -223,6 +223,13 @@ def allocate_costs(companies, ratios, monthly_input, settings=None, headcount_ov
     for c in hotel_rent_eligible:
         hotel_rent_shares[c["id"]] = round(hotel_rent_eur * eur_rate, 2)
 
+    # ── COMPANY RENT (fixed per company, EUR → RON) ──
+    rent_shares = {}
+    for c in active:
+        rent_eur = c.get("monthly_rent_eur", 0)
+        if rent_eur > 0:
+            rent_shares[c["id"]] = round(rent_eur * eur_rate, 2)
+
     # ── BUILD RESULTS ──
     results = []
     for c in active:
@@ -242,6 +249,7 @@ def allocate_costs(companies, ratios, monthly_input, settings=None, headcount_ov
             "internet": internet_shares.get(cid, 0.0),
             "maintenance": maintenance_shares.get(cid, 0.0),
             "hotel_rent": hotel_rent_shares.get(cid, 0.0),
+            "rent": rent_shares.get(cid, 0.0),
         }
         r["total"] = round(sum(v for k, v in r.items() if k not in ("company_id", "company_name")), 2)
         results.append(r)
@@ -269,7 +277,7 @@ def allocate_costs(companies, ratios, monthly_input, settings=None, headcount_ov
             sublet_total = 0.0
             for result_key in ["electricity", "water", "garbage", "gas_hotel", "gas_ground_floor",
                                "gas_first_floor", "consumables", "drinking_water", "printer",
-                               "internet", "maintenance", "hotel_rent"]:
+                               "internet", "maintenance", "hotel_rent", "rent"]:
                 # Check if this cost type is in the applies_to list
                 applies = result_key in applies_to
                 if applies and hotel_result.get(result_key, 0) > 0:
