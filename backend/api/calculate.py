@@ -11,7 +11,7 @@ from backend.core.excel_export import generate_excel
 from backend.core.statement_export import generate_statement
 from backend.core.statement_pdf import generate_statement_pdf
 from backend.core.data_manager import load_companies, load_settings
-from backend.core.history import save_run, get_excel_path, list_runs
+from backend.core.history import save_or_replace_run, find_run_for_month, get_excel_path, list_runs
 from backend.core.translations import month_name
 from backend.core.safe_filename import safe_name
 
@@ -31,7 +31,6 @@ class MonthlyInput(BaseModel):
     external_hotel_gas: float = 0
     external_gf_gas: float = 0
     external_ff_gas: float = 0
-    # New cost categories
     consumables_total: float = 0
     drinking_water_total: float = 0
     printer_total: float = 0
@@ -52,8 +51,8 @@ def _validate_period(month: int, year: int):
         raise HTTPException(400, "Year must be between 2020 and 2100.")
 
 
-@router.post("")
-def calculate(body: CalculateRequest):
+def _run_allocation(body: CalculateRequest):
+    """Shared allocation logic for preview and save."""
     _validate_period(body.month, body.year)
     if body.language not in ("en", "ro"):
         raise HTTPException(400, "Language must be 'en' or 'ro'.")
@@ -82,27 +81,69 @@ def calculate(body: CalculateRequest):
     if not results:
         raise HTTPException(400, "No active companies found.")
 
+    return companies, settings, mi, results
+
+
+# ── Preview only (no save) ──
+
+@router.post("")
+def calculate_preview(body: CalculateRequest):
+    """Calculate allocation preview — nothing saved to history."""
+    companies, settings, mi, results = _run_allocation(body)
+    mn = month_name(body.month, body.language)
+    filename = f"Premier_BC_{body.year}_{body.month:02d}_{mn}.xlsx"
+    return {
+        "results": results,
+        "filename": filename,
+    }
+
+
+# ── Save as official report ──
+
+@router.post("/save")
+def save_official(body: CalculateRequest):
+    """Save calculation as official report. Replaces existing if any."""
+    companies, settings, mi, results = _run_allocation(body)
+
     active = [c for c in companies if c["active"]]
     mn = month_name(body.month, body.language)
     filename = f"Premier_BC_{body.year}_{body.month:02d}_{mn}.xlsx"
     tmp_path = os.path.join(tempfile.gettempdir(), filename)
     generate_excel(tmp_path, results, mi, settings["ratios"], active, body.language)
 
-    entry = save_run(body.month, body.year, body.language, mi,
-                     settings["ratios"], companies, results, tmp_path)
+    entry, old_run_id = save_or_replace_run(
+        body.month, body.year, body.language, mi,
+        settings["ratios"], companies, results, tmp_path
+    )
 
-    # Clean up temp file (history has its own copy)
     try:
         os.unlink(tmp_path)
     except OSError:
         pass
 
     return {
-        "results": results,
-        "filename": filename,
         "run_id": entry["id"],
+        "filename": filename,
+        "replaced": old_run_id,
+        "results": results,
     }
 
+
+# ── Check if month has official report ──
+
+@router.get("/check/{year}/{month}")
+def check_month(year: int, month: int):
+    existing = find_run_for_month(year, month)
+    if existing:
+        return {
+            "exists": True,
+            "run_id": existing["id"],
+            "generated_at": existing["generated_at"],
+        }
+    return {"exists": False}
+
+
+# ── Statement exports ──
 
 class StatementRequest(BaseModel):
     company_id: str
@@ -113,7 +154,6 @@ class StatementRequest(BaseModel):
 
 
 def _get_company_result(body: StatementRequest):
-    """Shared logic for statement endpoints."""
     _validate_period(body.month, body.year)
     companies = load_companies()
     settings = load_settings()
@@ -155,6 +195,8 @@ def company_statement_pdf(body: StatementRequest):
     return FileResponse(tmp_path, media_type="application/pdf",
         filename=filename, background=BackgroundTask(os.unlink, tmp_path))
 
+
+# ── Excel download ──
 
 @router.get("/{run_id}/excel")
 def download_excel(run_id: str):
