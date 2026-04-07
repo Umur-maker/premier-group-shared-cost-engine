@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getCompanies, createCompany, updateCompany } from "@/lib/api";
+import { getCompanies, createCompany, updateCompany, API_BASE } from "@/lib/api";
 import { useApp } from "@/lib/AppContext";
 import { tr, floorLabel } from "@/lib/i18n";
 import { PageLayout, SectionCard, FormRow, Button } from "@/components";
@@ -191,11 +191,17 @@ export default function CompaniesPage() {
                   <td className="p-2.5 border-b border-gray-100 dark:border-gray-700 text-right tabular-nums">{c.area_m2} m²</td>
                   <td className="p-2.5 border-b border-gray-100 dark:border-gray-700 text-right tabular-nums">{c.headcount_default}</td>
                   <td className="p-2.5 border-b border-gray-100 dark:border-gray-700 text-center">{c.active ? "🟢" : "🔴"}</td>
-                  <td className="p-2.5 border-b border-gray-100 dark:border-gray-700">
+                  <td className="p-2.5 border-b border-gray-100 dark:border-gray-700 space-x-2">
                     <button onClick={() => startEdit(c)}
                       className="text-xs text-blue-600 hover:underline">
                       {tr("companies.edit", lang)}
                     </button>
+                    {c.active && c.electricity_eligible && (
+                      <a href={`${API_BASE}/api/calculate/agreement/${c.id}?language=${lang}`}
+                        download className="text-xs text-navy dark:text-blue-300 hover:underline">
+                        {tr("companies.agreement", lang)}
+                      </a>
+                    )}
                   </td>
                 </tr>
               ))}
