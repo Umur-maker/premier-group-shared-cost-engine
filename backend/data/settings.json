@@ -50,5 +50,15 @@
       "eligible": "custom",
       "include_companies": ["hotel"]
     }
+  },
+  "hotel_sublet": {
+    "active": true,
+    "name": "Simona Baciu",
+    "apartment": "No. 8",
+    "percentage": 10,
+    "applies_to": ["electricity", "water", "garbage", "gas_hotel"],
+    "contact_person": "Simona Baciu",
+    "phone": "",
+    "email": ""
   }
 }
