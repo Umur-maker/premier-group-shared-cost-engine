@@ -254,19 +254,15 @@ def allocate_costs(companies, ratios, monthly_input, settings=None, headcount_ov
                 "company_id": "hotel-sublet",
                 "company_name": sublet.get("name", "Hotel Sublet"),
             }
-            # Map applies_to keys to result keys
-            key_map = {
-                "electricity": "electricity",
-                "water": "water",
-                "garbage": "garbage",
-                "gas_hotel": "gas_hotel",
-            }
+            # VAT keys automatically follow their parent cost
+            vat_parents = {"maintenance_vat": "maintenance", "rent_vat": "rent"}
             sublet_total = 0.0
             for result_key in ["electricity", "water", "garbage", "gas_hotel", "gas_ground_floor",
                                "gas_first_floor", "consumables", "printer",
-                               "internet", "maintenance", "rent"]:
-                # Check if this cost type is in the applies_to list
-                applies = result_key in applies_to
+                               "internet", "maintenance", "maintenance_vat", "rent", "rent_vat"]:
+                # VAT keys follow their parent; other keys check applies_to directly
+                parent = vat_parents.get(result_key)
+                applies = (parent in applies_to) if parent else (result_key in applies_to)
                 if applies and hotel_result.get(result_key, 0) > 0:
                     amount = round(hotel_result[result_key] * pct, 2)
                     sublet_entry[result_key] = amount

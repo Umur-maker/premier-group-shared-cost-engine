@@ -55,8 +55,8 @@ export default function HistoryPage() {
     { key: "gas_hotel", header: tr("table.gas_h", lang), align: "right" as const, render: (r: AllocationResult) => formatRon(r.gas_hotel) },
     { key: "gas_ground_floor", header: tr("table.gas_gf", lang), align: "right" as const, render: (r: AllocationResult) => formatRon(r.gas_ground_floor) },
     { key: "gas_first_floor", header: tr("table.gas_ff", lang), align: "right" as const, render: (r: AllocationResult) => formatRon(r.gas_first_floor) },
-    { key: "maintenance", header: tr("table.maint", lang), align: "right" as const, render: (r: AllocationResult) => formatRon(r.maintenance || 0) },
-    { key: "rent", header: tr("table.rent", lang), align: "right" as const, render: (r: AllocationResult) => formatRon(r.rent || 0) },
+    { key: "maintenance", header: tr("table.maint", lang), align: "right" as const, render: (r: AllocationResult) => formatRon((r.maintenance || 0) + (r.maintenance_vat || 0)) },
+    { key: "rent", header: tr("table.rent", lang), align: "right" as const, render: (r: AllocationResult) => formatRon((r.rent || 0) + (r.rent_vat || 0)) },
     { key: "total", header: tr("table.total", lang), align: "right" as const, bold: true, render: (r: AllocationResult) => formatRon(r.total) },
   ];
 
@@ -147,11 +147,14 @@ export default function HistoryPage() {
                         ["consumables", tr("field.consumables", lang)],
                         ["printer", tr("field.printer", lang)],
                         ["internet", tr("field.internet", lang)],
-                        ["maintenance", "Maintenance"],
-                        ["hotel_rent", "Hotel Rent"],
+                        ["maintenance", tr("table.maint", lang)],
+                        ["rent", tr("table.rent", lang)],
                       ].map(([key, label]) => {
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        const total = runDetail.results.reduce((s, r) => s + ((r as any)[key] || 0), 0);
+                        let total = runDetail.results.reduce((s, r) => s + ((r as any)[key] || 0), 0);
+                        // Include VAT for maintenance and rent
+                        if (key === "maintenance") total += runDetail.results.reduce((s, r) => s + (r.maintenance_vat || 0), 0);
+                        if (key === "rent") total += runDetail.results.reduce((s, r) => s + (r.rent_vat || 0), 0);
                         if (total === 0) return null;
                         return (
                           <div key={key} className="flex justify-between items-center py-1 border-b border-gray-100 dark:border-gray-700">
