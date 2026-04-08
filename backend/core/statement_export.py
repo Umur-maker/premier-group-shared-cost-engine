@@ -50,6 +50,11 @@ def generate_statement(filepath, company, result, month, year, monthly_input, la
     ws.cell(row=row, column=2, value=company["name"]).font = Font(bold=True, size=12)
     row += 1
 
+    if company.get("building"):
+        ws.cell(row=row, column=1, value=t("building", lang))
+        ws.cell(row=row, column=2, value=company["building"])
+        row += 1
+
     if company.get("office_no"):
         ws.cell(row=row, column=1, value=t("office_no", lang))
         ws.cell(row=row, column=2, value=company["office_no"])

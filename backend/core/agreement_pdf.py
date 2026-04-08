@@ -98,7 +98,8 @@ def generate_agreement_pdf(filepath, company, settings, lang="en"):
 
     # Company info table
     lbl = ["Company / Firma", "Building / Bina", "Floor / Kat",
-           "Office / Ofis", "Area / Alan", "Persons / Kisi"]
+           "Office / Ofis", "Area / Alan", "Persons / Kisi",
+           "Rent / Kira (EUR)", "Maintenance / Bakim (EUR)"]
     floor_labels = {"ground_floor": "Ground Floor / Zemin Kat", "first_floor": "First Floor / 1. Kat",
                     "hotel": "Hotel / Otel"}
     info_data = [
@@ -109,6 +110,12 @@ def generate_agreement_pdf(filepath, company, settings, lang="en"):
         [lbl[4], f"{company.get('area_m2', 0)} m\u00b2"],
         [lbl[5], str(company.get("headcount_default", 0))],
     ]
+    rent_eur = company.get("monthly_rent_eur", 0)
+    maint_eur = company.get("maintenance_rate_eur", 0)
+    if rent_eur > 0:
+        info_data.append([lbl[6], f"{rent_eur:,.2f} EUR"])
+    if maint_eur > 0:
+        info_data.append([lbl[7], f"{maint_eur:,.2f} EUR"])
     info_table = Table(info_data, colWidths=[45*mm, CONTENT_W - 45*mm])
     info_table.setStyle(TableStyle([
         ("FONTNAME", (0, 0), (0, -1), "Helvetica"),
@@ -165,7 +172,7 @@ def generate_agreement_pdf(filepath, company, settings, lang="en"):
     ratio_header = ["Cost Type", "sqm %", "person %"] if is_en else (
         ["Gider Tipi", "m\u00b2 %", "kisi %"] if is_tr else ["Tip Cost", "mp %", "pers %"])
     ratio_data = [ratio_header]
-    for key in ["electricity", "gas", "water", "garbage"]:
+    for key in ["electricity", "gas", "water", "garbage", "consumables"]:
         r = ratios.get(key, {})
         ratio_data.append([key.capitalize(), f"{r.get('sqm_weight', 50)}%", f"{r.get('headcount_weight', 50)}%"])
 
@@ -185,40 +192,45 @@ def generate_agreement_pdf(filepath, company, settings, lang="en"):
     elements.append(Spacer(1, 3*mm))
 
     # ── COST CATEGORIES ──
+    eur_rate = settings.get("eur_ron_rate", 5.1)
+
     if is_en:
         elements.append(Paragraph("3. Cost Categories", s_h2))
         categories_text = [
-            "Electricity, Water, Garbage - shared among all eligible companies",
-            "Gas - split per floor (ground floor / first floor / hotel)",
-            "Consumables - shared among eligible companies",
-            "Drinking Water - shared (excluding ground floor and GBCS)",
-            "Printer - shared among Premier Capital, Premier Vision, Paul George Cata",
-            "Internet - shared among Premier Capital, Premier Rise, Premier Vision, Paul George Cata",
-            f"Maintenance - {settings.get('maintenance_rate_eur', 2)} EUR/m\u00b2 (includes cleaning and security cameras)",
+            "Electricity, Water, Garbage - shared among all eligible companies by weighted formula",
+            "Gas - split per floor (ground floor / first floor / hotel) by weighted formula",
+            "Consumables (tea, coffee, water) - shared among eligible companies",
+            "Printer - equally shared among Premier Capital, Premier Vision, Paul George Cata",
+            "Internet - equally shared among Premier Capital, Premier Rise, Premier Vision, Paul George Cata",
+            f"Maintenance - fixed EUR amount per company, converted at EUR/RON rate ({eur_rate})",
+            f"Rent - fixed EUR amount per company, converted at EUR/RON rate ({eur_rate})",
+            "21% VAT is applied on top of Maintenance and Rent amounts",
             "External usage amounts are deducted from invoice totals before allocation",
         ]
     elif is_tr:
         elements.append(Paragraph("3. Gider Kategorileri", s_h2))
         categories_text = [
-            "Elektrik, Su, Cop - tum uygun firmalar arasinda paylasılır",
-            "Dogalgaz - kat bazinda bolunur (zemin kat / 1. kat / otel)",
-            "Sarf Malzeme - uygun firmalar arasinda paylasılır",
-            "Icme Suyu - paylasılır (zemin kat ve GBCS haric)",
-            "Yazici - Premier Capital, Premier Vision, Paul George Cata arasinda paylasılır",
-            "Internet - Premier Capital, Premier Rise, Premier Vision, Paul George Cata arasinda paylasılır",
-            f"Bakim - {settings.get('maintenance_rate_eur', 2)} EUR/m\u00b2 (temizlik ve guvenlik kameralari dahil)",
-            "Dis kullanim tutarlari dagitim oncesi fatura toplamlanndan dusulur",
+            "Elektrik, Su, \u00c7\u00f6p - t\u00fcm uygun firmalar aras\u0131nda a\u011f\u0131rl\u0131kl\u0131 form\u00fclle payla\u015f\u0131l\u0131r",
+            "Do\u011falgaz - kat baz\u0131nda b\u00f6l\u00fcn\u00fcr (zemin kat / 1. kat / otel)",
+            "Sarf Malzeme (\u00e7ay, kahve, su) - uygun firmalar aras\u0131nda payla\u015f\u0131l\u0131r",
+            "Yaz\u0131c\u0131 - Premier Capital, Premier Vision, Paul George Cata aras\u0131nda e\u015fit payla\u015f\u0131l\u0131r",
+            "\u0130nternet - Premier Capital, Premier Rise, Premier Vision, Paul George Cata aras\u0131nda e\u015fit payla\u015f\u0131l\u0131r",
+            f"Bak\u0131m - firma ba\u015f\u0131na sabit EUR tutar\u0131, EUR/RON kuru ({eur_rate}) ile \u00e7evrilir",
+            f"Kira - firma ba\u015f\u0131na sabit EUR tutar\u0131, EUR/RON kuru ({eur_rate}) ile \u00e7evrilir",
+            "Bak\u0131m ve Kira tutarlar\u0131 \u00fczerine %21 KDV uygulan\u0131r",
+            "Harici kullan\u0131m tutarlar\u0131 da\u011f\u0131t\u0131m \u00f6ncesi fatura toplamlar\u0131ndan d\u00fc\u015f\u00fcl\u00fcr",
         ]
     else:
         elements.append(Paragraph("3. Categorii de Costuri", s_h2))
         categories_text = [
-            "Electricitate, Apa, Gunoi - impartite intre toate companiile eligibile",
-            "Gaz - impartit pe etaj (parter / etaj 1 / hotel)",
-            "Consumabile - impartite intre companiile eligibile",
-            "Apa potabila - impartita (excluzand parterul si GBCS)",
-            "Imprimanta - impartita intre Premier Capital, Premier Vision, Paul George Cata",
-            "Internet - impartit intre Premier Capital, Premier Rise, Premier Vision, Paul George Cata",
-            f"Intretinere - {settings.get('maintenance_rate_eur', 2)} EUR/m\u00b2 (include curatenie si camere de supraveghere)",
+            "Electricitate, Apa, Gunoi - impartite intre toate companiile eligibile prin formula ponderata",
+            "Gaz - impartit pe etaj (parter / etaj 1 / hotel) prin formula ponderata",
+            "Consumabile (ceai, cafea, apa) - impartite intre companiile eligibile",
+            "Imprimanta - impartita egal intre Premier Capital, Premier Vision, Paul George Cata",
+            "Internet - impartit egal intre Premier Capital, Premier Rise, Premier Vision, Paul George Cata",
+            f"Intretinere - suma fixa EUR per companie, convertita la cursul EUR/RON ({eur_rate})",
+            f"Chirie - suma fixa EUR per companie, convertita la cursul EUR/RON ({eur_rate})",
+            "TVA 21% se aplica pe sumele de Intretinere si Chirie",
             "Sumele de consum extern sunt deduse din totalul facturilor inainte de alocare",
         ]
 
@@ -243,8 +255,12 @@ def generate_agreement_pdf(filepath, company, settings, lang="en"):
     elig_items = []
     if company.get("electricity_eligible"): elig_items.append("Electricity / Elektrik / Electricitate")
     if company.get("water_eligible"): elig_items.append("Water / Su / Apa")
-    if company.get("garbage_eligible"): elig_items.append("Garbage / Cop / Gunoi")
-    if company.get("has_heating"): elig_items.append("Gas / Dogalgaz / Gaz")
+    if company.get("garbage_eligible"): elig_items.append("Garbage / \u00c7\u00f6p / Gunoi")
+    if company.get("has_heating"): elig_items.append("Gas / Do\u011falgaz / Gaz")
+    if company.get("maintenance_rate_eur", 0) > 0:
+        elig_items.append(f"Maintenance / Bak\u0131m / Intretinere ({company['maintenance_rate_eur']:.2f} EUR/month)")
+    if company.get("monthly_rent_eur", 0) > 0:
+        elig_items.append(f"Rent / Kira / Chirie ({company['monthly_rent_eur']:.2f} EUR/month)")
     for item in elig_items:
         elements.append(Paragraph(f"\u2022  {item}", s_body))
 
