@@ -43,7 +43,8 @@ def generate_statement_pdf(filepath, company, result, month, year, monthly_input
     elements = []
 
     # ── HEADER: logo left, text right ──
-    stmt_title = "Monthly Shared Expense Statement" if lang == "en" else "Extras Lunar Costuri Comune"
+    _stmt_titles = {"en": "Monthly Shared Expense Statement", "ro": "Extras Lunar Costuri Comune", "tr": "Aylık Ortak Gider Ekstresi"}
+    stmt_title = _stmt_titles.get(lang, _stmt_titles["en"])
     mn = month_name(month, lang)
 
     header_right = [
@@ -85,7 +86,8 @@ def generate_statement_pdf(filepath, company, result, month, year, monthly_input
     elements.append(Spacer(1, 6*mm))
 
     # ── COMPANY INFO ──
-    info_label = "Company Information" if lang == "en" else "Informatii Companie"
+    _info_labels = {"en": "Company Information", "ro": "Informatii Companie", "tr": "Firma Bilgileri"}
+    info_label = _info_labels.get(lang, _info_labels["en"])
     elements.append(Paragraph(info_label, s_section))
 
     info_rows = []
@@ -118,12 +120,15 @@ def generate_statement_pdf(filepath, company, result, month, year, monthly_input
     elements.append(Spacer(1, 8*mm))
 
     # ── EXPENSE BREAKDOWN ──
-    breakdown_label = "Expense Breakdown" if lang == "en" else "Detaliere Cheltuieli"
+    _breakdown_labels = {"en": "Expense Breakdown", "ro": "Detaliere Cheltuieli", "tr": "Gider Dağılımı"}
+    breakdown_label = _breakdown_labels.get(lang, _breakdown_labels["en"])
     elements.append(Paragraph(breakdown_label, s_section))
 
+    _cat_headers = {"en": "Expense Category", "ro": "Categorie Cheltuiala", "tr": "Gider Kategorisi"}
+    _amt_headers = {"en": "Amount (RON)", "ro": "Suma (RON)", "tr": "Tutar (RON)"}
     header_row = [
-        "Expense Category" if lang == "en" else "Categorie Cheltuiala",
-        "Amount (RON)" if lang == "en" else "Suma (RON)",
+        _cat_headers.get(lang, _cat_headers["en"]),
+        _amt_headers.get(lang, _amt_headers["en"]),
     ]
     expense_rows = []
     expenses = [
@@ -133,6 +138,13 @@ def generate_statement_pdf(filepath, company, result, month, year, monthly_input
         (t("excel_gas_hotel", lang), result["gas_hotel"]),
         (t("excel_gas_gf", lang), result["gas_ground_floor"]),
         (t("excel_gas_ff", lang), result["gas_first_floor"]),
+        (t("consumables", lang), result.get("consumables", 0)),
+        (t("printer", lang), result.get("printer", 0)),
+        (t("internet", lang), result.get("internet", 0)),
+        (t("maintenance", lang), result.get("maintenance", 0)),
+        (t("maintenance_vat", lang), result.get("maintenance_vat", 0)),
+        (t("rent", lang), result.get("rent", 0)),
+        (t("rent_vat", lang), result.get("rent_vat", 0)),
     ]
     for label, amount in expenses:
         if amount > 0:
@@ -183,20 +195,27 @@ def generate_statement_pdf(filepath, company, result, month, year, monthly_input
     elements.append(total_table)
 
     # ── FOOTER NOTE ──
-    if lang == "en":
-        note = (
+    _notes = {
+        "en": (
             "This statement reflects your share of the shared building costs "
             "for the above period. Amounts are calculated based on your allocated "
             "area (m\u00b2) and number of persons, according to the cost sharing "
             "agreement of Premier Business Center."
-        )
-    else:
-        note = (
+        ),
+        "ro": (
             "Acest extras reflecta cota dumneavoastra din costurile comune ale "
             "cladirii pentru perioada de mai sus. Sumele sunt calculate pe baza "
             "suprafetei alocate (m\u00b2) si a numarului de persoane, conform "
             "acordului de partajare a costurilor al Premier Business Center."
-        )
+        ),
+        "tr": (
+            "Bu ekstre, yukar\u0131daki d\u00f6nem i\u00e7in ortak bina giderlerinden "
+            "size d\u00fc\u015fen pay\u0131 yans\u0131tmaktad\u0131r. Tutarlar, Premier Business Center "
+            "maliyet payla\u015f\u0131m s\u00f6zle\u015fmesine g\u00f6re tahsis edilen alan\u0131n\u0131za (m\u00b2) "
+            "ve ki\u015fi say\u0131n\u0131za g\u00f6re hesaplanm\u0131\u015ft\u0131r."
+        ),
+    }
+    note = _notes.get(lang, _notes["en"])
     elements.append(Paragraph(note, s_note))
 
     doc.build(elements)

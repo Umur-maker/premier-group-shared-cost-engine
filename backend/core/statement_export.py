@@ -25,7 +25,8 @@ def generate_statement(filepath, company, result, month, year, monthly_input, la
     wb = openpyxl.Workbook()
     ws = wb.active
 
-    title = "Cost Sharing Statement" if lang == "en" else "Extras Costuri Comune"
+    _titles = {"en": "Cost Sharing Statement", "ro": "Extras Costuri Comune", "tr": "Ortak Gider Ekstresi"}
+    title = _titles.get(lang, _titles["en"])
     ws.title = title
 
     # Header
@@ -62,9 +63,11 @@ def generate_statement(filepath, company, result, month, year, monthly_input, la
     row += 1
 
     # Expense breakdown table
+    _cat_h = {"en": "Expense Category", "ro": "Categorie Cheltuiala", "tr": "Gider Kategorisi"}
+    _amt_h = {"en": "Amount (RON)", "ro": "Suma (RON)", "tr": "Tutar (RON)"}
     headers = [
-        "Expense Category" if lang == "en" else "Categorie Cheltuiala",
-        "Amount (RON)" if lang == "en" else "Suma (RON)",
+        _cat_h.get(lang, _cat_h["en"]),
+        _amt_h.get(lang, _amt_h["en"]),
     ]
     for col, h in enumerate(headers, 1):
         c = ws.cell(row=row, column=col, value=h)
@@ -81,6 +84,13 @@ def generate_statement(filepath, company, result, month, year, monthly_input, la
         (t("excel_gas_hotel", lang), result["gas_hotel"]),
         (t("excel_gas_gf", lang), result["gas_ground_floor"]),
         (t("excel_gas_ff", lang), result["gas_first_floor"]),
+        (t("consumables", lang), result.get("consumables", 0)),
+        (t("printer", lang), result.get("printer", 0)),
+        (t("internet", lang), result.get("internet", 0)),
+        (t("maintenance", lang), result.get("maintenance", 0)),
+        (t("maintenance_vat", lang), result.get("maintenance_vat", 0)),
+        (t("rent", lang), result.get("rent", 0)),
+        (t("rent_vat", lang), result.get("rent_vat", 0)),
     ]
 
     for label, amount in expenses:
@@ -104,18 +114,24 @@ def generate_statement(filepath, company, result, month, year, monthly_input, la
     row += 2
 
     # Explanation
-    if lang == "en":
-        note = (
+    _notes = {
+        "en": (
             "This statement reflects your share of the shared building costs "
             "for the above period. Amounts are calculated based on your allocated "
             "area (m²) and number of persons, according to the cost sharing agreement."
-        )
-    else:
-        note = (
+        ),
+        "ro": (
             "Acest extras reflecta cota dumneavoastra din costurile comune ale cladirii "
             "pentru perioada de mai sus. Sumele sunt calculate pe baza suprafetei alocate "
             "(m²) si a numarului de persoane, conform acordului de partajare a costurilor."
-        )
+        ),
+        "tr": (
+            "Bu ekstre, yukarıdaki dönem için ortak bina giderlerinden size düşen payı "
+            "yansıtmaktadır. Tutarlar, maliyet paylaşım sözleşmesine göre tahsis edilen "
+            "alanınıza (m²) ve kişi sayınıza göre hesaplanmıştır."
+        ),
+    }
+    note = _notes.get(lang, _notes["en"])
 
     ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=2)
     c = ws.cell(row=row, column=1, value=note)

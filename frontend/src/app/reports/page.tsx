@@ -10,7 +10,7 @@ import type { HistoryEntry, AllocationResult } from "@/types";
 
 const EXPENSE_KEYS = [
   "electricity", "water", "garbage", "gas_hotel", "gas_ground_floor", "gas_first_floor",
-  "consumables", "printer", "internet", "maintenance", "rent",
+  "consumables", "printer", "internet", "maintenance", "maintenance_vat", "rent", "rent_vat",
 ] as const;
 
 export default function ReportsPage() {
@@ -98,13 +98,24 @@ export default function ReportsPage() {
 
   const cols = [
     { key: "company_name", header: tr("table.company", lang) },
-    ...EXPENSE_KEYS.map((k) => ({
-      key: k,
-      header: k.replace("_", " ").slice(0, 8),
-      align: "right" as const,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      render: (r: AllocationResult) => formatRon((r as any)[k] || 0),
-    })),
+    ...EXPENSE_KEYS.map((k) => {
+      const headerMap: Record<string, string> = {
+        electricity: tr("table.elec", lang), water: tr("table.water", lang),
+        garbage: tr("table.garb", lang), gas_hotel: tr("table.gas_h", lang),
+        gas_ground_floor: tr("table.gas_gf", lang), gas_first_floor: tr("table.gas_ff", lang),
+        consumables: tr("table.consum", lang), printer: tr("table.printer", lang),
+        internet: tr("table.internet", lang), maintenance: tr("table.maint", lang),
+        maintenance_vat: tr("table.maint_vat", lang), rent: tr("table.rent", lang),
+        rent_vat: tr("table.rent_vat", lang),
+      };
+      return {
+        key: k,
+        header: headerMap[k] || k,
+        align: "right" as const,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        render: (r: AllocationResult) => formatRon((r as any)[k] || 0),
+      };
+    }),
     { key: "total", header: tr("table.total", lang), align: "right" as const, bold: true,
       render: (r: AllocationResult) => formatRon(r.total) },
   ];

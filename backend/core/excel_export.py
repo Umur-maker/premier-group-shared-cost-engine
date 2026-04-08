@@ -64,13 +64,18 @@ def _write_detailed_sheet(wb, results, lang):
     ws = wb.create_sheet(t("excel_detail", lang))
     headers = [t("excel_company", lang), t("electricity", lang), t("water", lang),
                t("garbage", lang), t("excel_gas_hotel", lang),
-               t("excel_gas_gf", lang), t("excel_gas_ff", lang), t("excel_total", lang)]
+               t("excel_gas_gf", lang), t("excel_gas_ff", lang),
+               t("consumables", lang), t("printer", lang), t("internet", lang),
+               t("maintenance", lang), t("maintenance_vat", lang),
+               t("rent", lang), t("rent_vat", lang), t("excel_total", lang)]
     for col, h in enumerate(headers, 1):
         ws.cell(row=1, column=col, value=h)
     _style_header(ws, 1, len(headers))
 
     keys = ["electricity", "water", "garbage",
-            "gas_hotel", "gas_ground_floor", "gas_first_floor", "total"]
+            "gas_hotel", "gas_ground_floor", "gas_first_floor",
+            "consumables", "printer", "internet",
+            "maintenance", "maintenance_vat", "rent", "rent_vat", "total"]
 
     for i, r in enumerate(results, 2):
         _write_cell(ws, i, 1, r["company_name"])

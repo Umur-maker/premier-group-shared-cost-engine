@@ -5,83 +5,273 @@ import { getHistory, getRunDetail, getRunPayments, getAllBalances } from "@/lib/
 import { formatRon } from "@/lib/formatting";
 import { useApp } from "@/lib/AppContext";
 import { tr, monthNames } from "@/lib/i18n";
-import { PageLayout, SectionCard } from "@/components";
-import type { HistoryEntry, AllocationResult, PaymentEntry } from "@/types";
+import { PageLayout, SectionCard, Button } from "@/components";
+import type { HistoryEntry, AllocationResult, PaymentEntry, MonthlyInput } from "@/types";
+
+function StatRow({ label, value, bold, color }: { label: string; value: number; bold?: boolean; color?: string }) {
+  return (
+    <div className={`flex justify-between items-center py-1.5 ${bold ? "border-t-2 border-navy dark:border-blue-400 pt-2 mt-1" : "border-b border-gray-100 dark:border-gray-700"}`}>
+      <span className={`text-sm ${bold ? "font-bold text-navy dark:text-white" : ""}`}>{label}</span>
+      <span className={`text-sm tabular-nums ${bold ? "text-lg font-bold" : "font-medium"} ${color || (bold ? "text-navy dark:text-white" : "")}`}>
+        {formatRon(value)}
+      </span>
+    </div>
+  );
+}
+
+interface PeriodData {
+  results: AllocationResult[];
+  inputs: MonthlyInput[];
+  payments: PaymentEntry[];
+  monthCount: number;
+}
 
 export default function ManagerPage() {
   const { lang } = useApp();
+  const now = new Date();
   const [runs, setRuns] = useState<HistoryEntry[]>([]);
-  const [selectedRun, setSelectedRun] = useState("");
-  const [results, setResults] = useState<AllocationResult[]>([]);
-  const [payments, setPayments] = useState<PaymentEntry[]>([]);
+  const [fromMonth, setFromMonth] = useState(1);
+  const [fromYear, setFromYear] = useState(now.getFullYear());
+  const [toMonth, setToMonth] = useState(now.getMonth() + 1);
+  const [toYear, setToYear] = useState(now.getFullYear());
+  const [data, setData] = useState<PeriodData | null>(null);
   const [balances, setBalances] = useState<Record<string, number>>({});
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const months = monthNames(lang);
 
   useEffect(() => {
     getHistory().then(setRuns).catch(() => setError(tr("error.backend_down", lang)));
   }, [lang]);
 
-  const loadRun = async (runId: string) => {
-    setSelectedRun(runId);
+  const handleLoad = async () => {
+    setLoading(true);
     setError("");
+    setData(null);
     try {
-      const detail = await getRunDetail(runId);
-      setResults(detail.results || []);
-      const [payData, balData] = await Promise.all([
-        getRunPayments(runId),
+      const from = fromYear * 100 + fromMonth;
+      const to = toYear * 100 + toMonth;
+      const filtered = runs.filter((r) => {
+        const v = r.year * 100 + r.month;
+        return v >= from && v <= to;
+      });
+
+      if (filtered.length === 0) {
+        setError(tr("manager.no_data", lang));
+        setLoading(false);
+        return;
+      }
+
+      const [details, balData] = await Promise.all([
+        Promise.all(filtered.map((r) => getRunDetail(r.id))),
         getAllBalances(),
       ]);
-      setPayments(payData);
+
+      // Aggregate results across all months
+      const aggregated = new Map<string, AllocationResult>();
+      const allInputs: MonthlyInput[] = [];
+      let allPayments: PaymentEntry[] = [];
+
+      for (const detail of details) {
+        if (detail.monthly_input) allInputs.push(detail.monthly_input);
+        for (const r of detail.results || []) {
+          const existing = aggregated.get(r.company_id);
+          if (existing) {
+            existing.electricity += r.electricity;
+            existing.water += r.water;
+            existing.garbage += r.garbage;
+            existing.gas_hotel += r.gas_hotel;
+            existing.gas_ground_floor += r.gas_ground_floor;
+            existing.gas_first_floor += r.gas_first_floor;
+            existing.consumables += r.consumables;
+            existing.printer += r.printer;
+            existing.internet += r.internet;
+            existing.maintenance += r.maintenance;
+            existing.maintenance_vat += r.maintenance_vat;
+            existing.rent += r.rent;
+            existing.rent_vat += r.rent_vat;
+            existing.total += r.total;
+          } else {
+            aggregated.set(r.company_id, { ...r });
+          }
+        }
+      }
+
+      // Load payments for each run
+      const paymentResults = await Promise.all(filtered.map((r) => getRunPayments(r.id)));
+      allPayments = paymentResults.flat();
+
+      setData({
+        results: Array.from(aggregated.values()),
+        inputs: allInputs,
+        payments: allPayments,
+        monthCount: filtered.length,
+      });
       setBalances(balData);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Error");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const totalBilled = results.reduce((s, r) => s + r.total, 0);
-  const totalPaid = payments.reduce((s, p) => s + p.amount, 0);
-  const totalOutstanding = Object.values(balances).reduce((s, b) => s + Math.max(0, b), 0);
-  const totalCredit = Object.values(balances).reduce((s, b) => s + Math.min(0, b), 0);
+  // Compute financials from aggregated data
+  const computeFinancials = () => {
+    if (!data) return null;
+    const { results, inputs } = data;
+
+    // REVENUE: what companies are billed
+    const utilityIncome = results.reduce(
+      (s, r) => s + r.electricity + r.water + r.garbage + r.gas_hotel + r.gas_ground_floor + r.gas_first_floor + r.consumables + r.printer + r.internet, 0
+    );
+    const maintenanceIncome = results.reduce((s, r) => s + r.maintenance, 0);
+    const rentIncome = results.reduce((s, r) => s + r.rent, 0);
+    const vatCollected = results.reduce((s, r) => s + (r.maintenance_vat || 0) + (r.rent_vat || 0), 0);
+    const totalRevenue = results.reduce((s, r) => s + r.total, 0);
+
+    // COSTS: what Premier actually pays (from monthly_input)
+    const utilityCosts = inputs.reduce(
+      (s, mi) =>
+        s + (mi.electricity_total || 0) + (mi.water_total || 0) + (mi.garbage_total || 0) +
+        (mi.hotel_gas_total || 0) + (mi.ground_floor_gas_total || 0) + (mi.first_floor_gas_total || 0) +
+        (mi.consumables_total || 0) + (mi.printer_total || 0) + (mi.internet_total || 0),
+      0
+    );
+    const serviceCosts = inputs.reduce(
+      (s, mi) => s + (mi.cleaning_cost || 0) + (mi.security_cameras_cost || 0),
+      0
+    );
+    const totalCosts = utilityCosts + serviceCosts;
+
+    // PROFIT/LOSS
+    const netResult = totalRevenue - totalCosts;
+
+    // COLLECTION
+    const totalBilled = totalRevenue;
+    const totalPaid = data.payments.reduce((s, p) => s + p.amount, 0);
+    const totalOutstanding = Object.values(balances).reduce((s, b) => s + Math.max(0, b), 0);
+    const totalCredit = Object.values(balances).reduce((s, b) => s + Math.min(0, b), 0);
+
+    return {
+      utilityIncome, maintenanceIncome, rentIncome, vatCollected, totalRevenue,
+      utilityCosts, serviceCosts, totalCosts,
+      netResult,
+      totalBilled, totalPaid, totalOutstanding, totalCredit,
+    };
+  };
+
+  const fin = computeFinancials();
 
   return (
     <PageLayout title={tr("manager.title", lang)}>
       {error && <p className="text-red-600 text-sm">{error}</p>}
 
-      <SectionCard title={tr("manager.select_month", lang)}>
-        <select value={selectedRun} onChange={(e) => loadRun(e.target.value)}
-          className="border dark:border-gray-600 rounded px-3 py-1.5 text-sm bg-white dark:bg-gray-700 min-w-[250px]">
-          <option value="">{tr("manager.select_month", lang)}...</option>
-          {runs.map((r) => (
-            <option key={r.id} value={r.id}>
-              {months[r.month - 1]} {r.year} ({r.generated_at.slice(0, 10)})
-            </option>
-          ))}
-        </select>
+      {/* Period selector */}
+      <SectionCard title={tr("manager.select_period", lang)}>
+        <div className="flex items-end gap-4 flex-wrap">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">{tr("manager.from", lang)}</label>
+            <div className="flex gap-2">
+              <select value={fromMonth} onChange={(e) => setFromMonth(+e.target.value)}
+                className="border dark:border-gray-600 rounded px-2 py-1.5 text-sm bg-white dark:bg-gray-700">
+                {months.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+              </select>
+              <input type="number" value={fromYear} onChange={(e) => setFromYear(+e.target.value)}
+                className="border dark:border-gray-600 rounded px-2 py-1.5 text-sm w-20 bg-white dark:bg-gray-700" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">{tr("manager.to", lang)}</label>
+            <div className="flex gap-2">
+              <select value={toMonth} onChange={(e) => setToMonth(+e.target.value)}
+                className="border dark:border-gray-600 rounded px-2 py-1.5 text-sm bg-white dark:bg-gray-700">
+                {months.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+              </select>
+              <input type="number" value={toYear} onChange={(e) => setToYear(+e.target.value)}
+                className="border dark:border-gray-600 rounded px-2 py-1.5 text-sm w-20 bg-white dark:bg-gray-700" />
+            </div>
+          </div>
+          <Button onClick={handleLoad} disabled={loading}>
+            {loading ? "..." : tr("manager.generate", lang)}
+          </Button>
+        </div>
       </SectionCard>
 
-      {selectedRun && results.length > 0 && (
+      {data && fin && (
         <>
+          {/* Period badge */}
+          <div className="text-xs text-gray-500 text-right">
+            {data.monthCount} {tr("manager.months_loaded", lang)}
+          </div>
+
+          {/* Top-level KPI cards */}
           <div className="grid grid-cols-4 gap-4">
             <SectionCard>
-              <p className="text-xs text-gray-500 uppercase">{tr("manager.total_billed", lang)}</p>
-              <p className="text-2xl font-bold text-navy dark:text-white mt-1">{formatRon(totalBilled)}</p>
+              <p className="text-xs text-gray-500 uppercase">{tr("manager.total_revenue", lang)}</p>
+              <p className="text-2xl font-bold text-navy dark:text-white mt-1">{formatRon(fin.totalRevenue)}</p>
             </SectionCard>
             <SectionCard>
-              <p className="text-xs text-gray-500 uppercase">{tr("manager.total_paid", lang)}</p>
-              <p className="text-2xl font-bold text-green-600 mt-1">{formatRon(totalPaid)}</p>
+              <p className="text-xs text-gray-500 uppercase">{tr("manager.total_costs", lang)}</p>
+              <p className="text-2xl font-bold text-gray-700 dark:text-gray-300 mt-1">{formatRon(fin.totalCosts)}</p>
+            </SectionCard>
+            <SectionCard>
+              <p className="text-xs text-gray-500 uppercase">{tr("manager.net_result", lang)}</p>
+              <p className={`text-2xl font-bold mt-1 ${fin.netResult >= 0 ? "text-green-600" : "text-red-600"}`}>
+                {fin.netResult >= 0 ? "+" : ""}{formatRon(fin.netResult)}
+              </p>
             </SectionCard>
             <SectionCard>
               <p className="text-xs text-gray-500 uppercase">{tr("manager.total_outstanding", lang)}</p>
-              <p className="text-2xl font-bold text-red-600 mt-1">{formatRon(totalOutstanding)}</p>
-            </SectionCard>
-            <SectionCard>
-              <p className="text-xs text-gray-500 uppercase">{tr("monthly.credit", lang)}</p>
-              <p className="text-2xl font-bold text-blue-600 mt-1">{formatRon(Math.abs(totalCredit))}</p>
+              <p className="text-2xl font-bold text-red-600 mt-1">{formatRon(fin.totalOutstanding)}</p>
             </SectionCard>
           </div>
 
-          <SectionCard title={tr("manager.payment_status", lang)}>
+          {/* Revenue + Costs side by side */}
+          <div className="grid grid-cols-2 gap-4">
+            {/* Revenue breakdown */}
+            <SectionCard title={tr("manager.revenue", lang)}>
+              <div className="space-y-0">
+                <StatRow label={tr("manager.utility_income", lang)} value={fin.utilityIncome} />
+                <StatRow label={tr("manager.maintenance_income", lang)} value={fin.maintenanceIncome} />
+                <StatRow label={tr("manager.rent_income", lang)} value={fin.rentIncome} />
+                <StatRow label={tr("manager.vat_collected", lang)} value={fin.vatCollected} />
+                <StatRow label={tr("manager.total_revenue", lang)} value={fin.totalRevenue} bold />
+              </div>
+            </SectionCard>
+
+            {/* Costs breakdown */}
+            <SectionCard title={tr("manager.costs", lang)}>
+              <div className="space-y-0">
+                <StatRow label={tr("manager.utility_costs", lang)} value={fin.utilityCosts} />
+                <StatRow label={tr("manager.service_costs", lang)} value={fin.serviceCosts} />
+                <StatRow label={tr("manager.total_costs", lang)} value={fin.totalCosts} bold />
+              </div>
+              <p className="text-xs text-gray-400 mt-3 italic">{tr("manager.passthrough_note", lang)}</p>
+            </SectionCard>
+          </div>
+
+          {/* Collection status */}
+          <SectionCard title={tr("manager.collection", lang)}>
+            <div className="grid grid-cols-4 gap-4 mb-4">
+              <div className="text-center">
+                <p className="text-xs text-gray-500 uppercase">{tr("manager.total_billed", lang)}</p>
+                <p className="text-lg font-bold text-navy dark:text-white">{formatRon(fin.totalBilled)}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xs text-gray-500 uppercase">{tr("manager.total_paid", lang)}</p>
+                <p className="text-lg font-bold text-green-600">{formatRon(fin.totalPaid)}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xs text-gray-500 uppercase">{tr("manager.total_outstanding", lang)}</p>
+                <p className="text-lg font-bold text-red-600">{formatRon(fin.totalOutstanding)}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xs text-gray-500 uppercase">{tr("monthly.credit", lang)}</p>
+                <p className="text-lg font-bold text-blue-600">{formatRon(Math.abs(fin.totalCredit))}</p>
+              </div>
+            </div>
+
+            {/* Per-company table */}
             <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
               <table className="w-full text-sm">
                 <thead>
@@ -94,8 +284,8 @@ export default function ManagerPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {results.filter(r => r.total > 0).map((r, i) => {
-                    const companyPayments = payments.filter(p => p.company_id === r.company_id);
+                  {data.results.filter(r => r.total > 0).map((r, i) => {
+                    const companyPayments = data.payments.filter(p => p.company_id === r.company_id);
                     const paid = companyPayments.reduce((s, p) => s + p.amount, 0);
                     const bal = balances[r.company_id] || 0;
 
@@ -126,7 +316,7 @@ export default function ManagerPage() {
         </>
       )}
 
-      {selectedRun && results.length === 0 && (
+      {!data && !loading && runs.length === 0 && (
         <SectionCard>
           <p className="text-gray-500 text-sm">{tr("manager.no_runs", lang)}</p>
         </SectionCard>

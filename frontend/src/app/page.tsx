@@ -227,14 +227,17 @@ export default function MonthlyInputPage() {
                   ["electricity", tr("field.electricity", lang)],
                   ["water", tr("field.water", lang)],
                   ["garbage", tr("field.garbage", lang)],
-                  ["gas_hotel", "Gas (Hotel)"], ["gas_ground_floor", "Gas (GF)"], ["gas_first_floor", "Gas (1F)"],
+                  ["gas_hotel", tr("field.hotel_gas", lang)], ["gas_ground_floor", tr("field.gf_gas", lang)], ["gas_first_floor", tr("field.ff_gas", lang)],
                   ["consumables", tr("field.consumables", lang)],
                   ["printer", tr("field.printer", lang)],
                   ["internet", tr("field.internet", lang)],
-                  ["maintenance", "Maintenance"], ["rent", tr("table.rent", lang)],
+                  ["maintenance", tr("table.maint", lang)], ["rent", tr("table.rent", lang)],
                 ].map(([key, label]) => {
                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  const total = results.reduce((s, r) => s + ((r as any)[key] || 0), 0);
+                  let total = results.reduce((s, r) => s + ((r as any)[key] || 0), 0);
+                  // Include VAT for maintenance and rent
+                  if (key === "maintenance") total += results.reduce((s, r) => s + (r.maintenance_vat || 0), 0);
+                  if (key === "rent") total += results.reduce((s, r) => s + (r.rent_vat || 0), 0);
                   if (total === 0) return null;
                   return (
                     <div key={key} className="flex justify-between items-center py-1 border-b border-gray-100 dark:border-gray-700">
