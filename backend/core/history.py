@@ -6,7 +6,7 @@ import shutil
 import threading
 from datetime import datetime
 
-DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
+from backend.core.config import DATA_DIR
 HISTORY_DIR = os.path.join(DATA_DIR, "history")
 HISTORY_INDEX = os.path.join(HISTORY_DIR, "index.json")
 

@@ -9,12 +9,23 @@ from backend.api.calculate import router as calculate_router
 from backend.api.history import router as history_router
 from backend.api.payments import router as payments_router
 
+from contextlib import asynccontextmanager
+from backend.core.config import ensure_data_dir
+
+
+@asynccontextmanager
+async def lifespan(application: FastAPI):
+    ensure_data_dir()
+    yield
+
 app = FastAPI(
     title="Premier Business Center - Shared Cost Engine",
-    version="2.0.0",
+    version="3.0.0",
+    lifespan=lifespan,
 )
 
-cors_origins = os.environ.get(
+_is_electron = os.environ.get("PREMIER_ELECTRON") == "1"
+cors_origins = ["*"] if _is_electron else os.environ.get(
     "CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000"
 ).split(",")
 
