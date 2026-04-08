@@ -222,30 +222,69 @@ export default function MonthlyInputPage() {
               <DataTable columns={cols} data={results} keyField="company_id" />
             )}
             {previewTab === "totals" && (
-              <div className="space-y-3">
-                {[
-                  ["electricity", tr("field.electricity", lang)],
-                  ["water", tr("field.water", lang)],
-                  ["garbage", tr("field.garbage", lang)],
-                  ["gas_hotel", tr("field.hotel_gas", lang)], ["gas_ground_floor", tr("field.gf_gas", lang)], ["gas_first_floor", tr("field.ff_gas", lang)],
-                  ["consumables", tr("field.consumables", lang)],
-                  ["printer", tr("field.printer", lang)],
-                  ["internet", tr("field.internet", lang)],
-                  ["maintenance", tr("table.maint", lang)], ["rent", tr("table.rent", lang)],
-                ].map(([key, label]) => {
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  let total = results.reduce((s, r) => s + ((r as any)[key] || 0), 0);
-                  // Include VAT for maintenance and rent
-                  if (key === "maintenance") total += results.reduce((s, r) => s + (r.maintenance_vat || 0), 0);
-                  if (key === "rent") total += results.reduce((s, r) => s + (r.rent_vat || 0), 0);
-                  if (total === 0) return null;
-                  return (
-                    <div key={key} className="flex justify-between items-center py-1 border-b border-gray-100 dark:border-gray-700">
-                      <span className="text-sm">{label}</span>
-                      <span className="text-sm font-medium tabular-nums">{formatRon(total)}</span>
-                    </div>
-                  );
-                })}
+              <div className="space-y-4">
+                {/* Utilities */}
+                <div>
+                  <h4 className="text-[10px] text-gray-500 uppercase tracking-wider mb-1.5 font-semibold">{tr("manager.utility_income", lang)}</h4>
+                  {[
+                    ["electricity", tr("field.electricity", lang)],
+                    ["water", tr("field.water", lang)],
+                    ["garbage", tr("field.garbage", lang)],
+                    ["gas_hotel", tr("field.hotel_gas", lang)],
+                    ["gas_ground_floor", tr("field.gf_gas", lang)],
+                    ["gas_first_floor", tr("field.ff_gas", lang)],
+                  ].map(([key, label]) => {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const total = results.reduce((s, r) => s + ((r as any)[key] || 0), 0);
+                    if (total === 0) return null;
+                    return (
+                      <div key={key} className="flex justify-between items-center py-1 border-b border-gray-100 dark:border-gray-700">
+                        <span className="text-sm">{label}</span>
+                        <span className="text-sm font-medium tabular-nums text-blue-600">{formatRon(total)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                {/* Services */}
+                <div>
+                  <h4 className="text-[10px] text-gray-500 uppercase tracking-wider mb-1.5 font-semibold">{tr("manager.service_costs", lang)}</h4>
+                  {[
+                    ["consumables", tr("field.consumables", lang)],
+                    ["printer", tr("field.printer", lang)],
+                    ["internet", tr("field.internet", lang)],
+                  ].map(([key, label]) => {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const total = results.reduce((s, r) => s + ((r as any)[key] || 0), 0);
+                    if (total === 0) return null;
+                    return (
+                      <div key={key} className="flex justify-between items-center py-1 border-b border-gray-100 dark:border-gray-700">
+                        <span className="text-sm">{label}</span>
+                        <span className="text-sm font-medium tabular-nums text-emerald-600">{formatRon(total)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                {/* Fixed Costs */}
+                <div>
+                  <h4 className="text-[10px] text-gray-500 uppercase tracking-wider mb-1.5 font-semibold">{tr("table.maint", lang)} & {tr("table.rent", lang)}</h4>
+                  {[
+                    ["maintenance", tr("table.maint", lang)],
+                    ["rent", tr("table.rent", lang)],
+                  ].map(([key, label]) => {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    let total = results.reduce((s, r) => s + ((r as any)[key] || 0), 0);
+                    if (key === "maintenance") total += results.reduce((s, r) => s + (r.maintenance_vat || 0), 0);
+                    if (key === "rent") total += results.reduce((s, r) => s + (r.rent_vat || 0), 0);
+                    if (total === 0) return null;
+                    return (
+                      <div key={key} className="flex justify-between items-center py-1 border-b border-gray-100 dark:border-gray-700">
+                        <span className="text-sm">{label} <span className="text-xs text-gray-400">(+21% VAT)</span></span>
+                        <span className="text-sm font-medium tabular-nums text-amber-600">{formatRon(total)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                {/* Grand Total */}
                 <div className="flex justify-between items-center py-2 border-t-2 border-navy dark:border-blue-400">
                   <span className="text-sm font-bold text-navy dark:text-white">{tr("table.total", lang)}</span>
                   <span className="text-lg font-bold text-navy dark:text-white tabular-nums">
