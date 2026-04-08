@@ -78,22 +78,29 @@ export default function ManagerPage() {
         for (const r of detail.results || []) {
           const existing = aggregated.get(r.company_id);
           if (existing) {
-            existing.electricity += r.electricity;
-            existing.water += r.water;
-            existing.garbage += r.garbage;
-            existing.gas_hotel += r.gas_hotel;
-            existing.gas_ground_floor += r.gas_ground_floor;
-            existing.gas_first_floor += r.gas_first_floor;
-            existing.consumables += r.consumables;
-            existing.printer += r.printer;
-            existing.internet += r.internet;
-            existing.maintenance += r.maintenance;
-            existing.maintenance_vat += r.maintenance_vat;
-            existing.rent += r.rent;
-            existing.rent_vat += r.rent_vat;
-            existing.total += r.total;
+            existing.electricity += r.electricity || 0;
+            existing.water += r.water || 0;
+            existing.garbage += r.garbage || 0;
+            existing.gas_hotel += r.gas_hotel || 0;
+            existing.gas_ground_floor += r.gas_ground_floor || 0;
+            existing.gas_first_floor += r.gas_first_floor || 0;
+            existing.consumables += r.consumables || 0;
+            existing.printer += r.printer || 0;
+            existing.internet += r.internet || 0;
+            existing.maintenance += r.maintenance || 0;
+            existing.maintenance_vat += r.maintenance_vat || 0;
+            existing.rent += r.rent || 0;
+            existing.rent_vat += r.rent_vat || 0;
+            existing.total += r.total || 0;
           } else {
-            aggregated.set(r.company_id, { ...r });
+            aggregated.set(r.company_id, {
+              ...r,
+              electricity: r.electricity || 0, water: r.water || 0, garbage: r.garbage || 0,
+              gas_hotel: r.gas_hotel || 0, gas_ground_floor: r.gas_ground_floor || 0, gas_first_floor: r.gas_first_floor || 0,
+              consumables: r.consumables || 0, printer: r.printer || 0, internet: r.internet || 0,
+              maintenance: r.maintenance || 0, maintenance_vat: r.maintenance_vat || 0,
+              rent: r.rent || 0, rent_vat: r.rent_vat || 0, total: r.total || 0,
+            });
           }
         }
       }
@@ -121,14 +128,14 @@ export default function ManagerPage() {
     if (!data) return null;
     const { results, inputs } = data;
 
-    // REVENUE: what companies are billed
+    // REVENUE: what companies are billed (use || 0 for old runs missing fields)
     const utilityIncome = results.reduce(
-      (s, r) => s + r.electricity + r.water + r.garbage + r.gas_hotel + r.gas_ground_floor + r.gas_first_floor + r.consumables + r.printer + r.internet, 0
+      (s, r) => s + (r.electricity || 0) + (r.water || 0) + (r.garbage || 0) + (r.gas_hotel || 0) + (r.gas_ground_floor || 0) + (r.gas_first_floor || 0) + (r.consumables || 0) + (r.printer || 0) + (r.internet || 0), 0
     );
-    const maintenanceIncome = results.reduce((s, r) => s + r.maintenance, 0);
-    const rentIncome = results.reduce((s, r) => s + r.rent, 0);
+    const maintenanceIncome = results.reduce((s, r) => s + (r.maintenance || 0), 0);
+    const rentIncome = results.reduce((s, r) => s + (r.rent || 0), 0);
     const vatCollected = results.reduce((s, r) => s + (r.maintenance_vat || 0) + (r.rent_vat || 0), 0);
-    const totalRevenue = results.reduce((s, r) => s + r.total, 0);
+    const totalRevenue = results.reduce((s, r) => s + (r.total || 0), 0);
 
     // COSTS: what Premier actually pays (from monthly_input)
     const utilityCosts = inputs.reduce(
