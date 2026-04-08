@@ -111,6 +111,7 @@ def save_official(body: CalculateRequest):
     mn = month_name(body.month, body.language)
     filename = f"Premier_BC_{body.year}_{body.month:02d}_{mn}.xlsx"
     tmp_path = os.path.join(tempfile.gettempdir(), filename)
+    mi["_eur_rate"] = settings.get("eur_ron_rate", 5.1)
     generate_excel(tmp_path, results, mi, settings["ratios"], active, body.language)
 
     entry, old_run_id = save_or_replace_run(
@@ -182,7 +183,8 @@ def company_statement(body: StatementRequest):
     company, result, mi = _get_company_result(body)
     filename = f"Statement_{safe_name(company['name'])}_{body.year}_{body.month:02d}.xlsx"
     tmp_path = os.path.join(tempfile.gettempdir(), filename)
-    generate_statement(tmp_path, company, result, body.month, body.year, mi, body.language)
+    settings = load_settings()
+    generate_statement(tmp_path, company, result, body.month, body.year, mi, body.language, eur_rate=settings.get("eur_ron_rate"))
     return FileResponse(tmp_path,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         filename=filename, background=BackgroundTask(os.unlink, tmp_path))
@@ -193,7 +195,8 @@ def company_statement_pdf(body: StatementRequest):
     company, result, mi = _get_company_result(body)
     filename = f"Statement_{safe_name(company['name'])}_{body.year}_{body.month:02d}.pdf"
     tmp_path = os.path.join(tempfile.gettempdir(), filename)
-    generate_statement_pdf(tmp_path, company, result, body.month, body.year, mi, body.language)
+    settings = load_settings()
+    generate_statement_pdf(tmp_path, company, result, body.month, body.year, mi, body.language, eur_rate=settings.get("eur_ron_rate"))
     return FileResponse(tmp_path, media_type="application/pdf",
         filename=filename, background=BackgroundTask(os.unlink, tmp_path))
 

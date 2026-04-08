@@ -90,6 +90,7 @@ def history_statement_pdf(run_id: str, company_id: str = Query(...)):
         raise HTTPException(404, f"No allocation result for '{company_id}' in this run.")
 
     lang = entry.get("language", "en")
+    settings = load_settings()
     filename = f"Statement_{safe_name(company['name'])}_{entry['year']}_{entry['month']:02d}.pdf"
     tmp_path = os.path.join(tempfile.gettempdir(), filename)
 
@@ -97,6 +98,7 @@ def history_statement_pdf(run_id: str, company_id: str = Query(...)):
         tmp_path, company, result,
         entry["month"], entry["year"],
         entry.get("monthly_input", {}), lang,
+        eur_rate=entry.get("ratios", {}).get("eur_ron_rate") or settings.get("eur_ron_rate"),
     )
 
     return FileResponse(tmp_path, media_type="application/pdf",
@@ -128,6 +130,7 @@ def recalculate_run(run_id: str):
     mn = month_name(entry["month"], lang)
     filename = f"Premier_BC_{entry['year']}_{entry['month']:02d}_{mn}.xlsx"
     tmp_path = os.path.join(tempfile.gettempdir(), filename)
+    mi["_eur_rate"] = settings.get("eur_ron_rate", 5.1)
     generate_excel(tmp_path, results, mi, settings["ratios"], active, lang)
 
     new_entry, old_id = save_or_replace_run(
@@ -156,6 +159,8 @@ def download_all_statements(run_id: str):
         raise HTTPException(400, "Snapshot data not available for this run.")
 
     lang = entry.get("language", "en")
+    settings = load_settings()
+    eur_rate = settings.get("eur_ron_rate")
     zip_filename = f"Statements_{entry['year']}_{entry['month']:02d}.zip"
     zip_path = os.path.join(tempfile.gettempdir(), zip_filename)
 
@@ -172,6 +177,7 @@ def download_all_statements(run_id: str):
                 pdf_path, company, result,
                 entry["month"], entry["year"],
                 entry.get("monthly_input", {}), lang,
+                eur_rate=eur_rate,
             )
             zf.write(pdf_path, pdf_name)
             try:

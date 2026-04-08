@@ -24,7 +24,7 @@ PAGE_W = A4[0]
 CONTENT_W = PAGE_W - 50 * mm  # 25mm margins each side
 
 
-def generate_statement_pdf(filepath, company, result, month, year, monthly_input, lang="en"):
+def generate_statement_pdf(filepath, company, result, month, year, monthly_input, lang="en", eur_rate=None):
     doc = SimpleDocTemplate(filepath, pagesize=A4,
         leftMargin=25*mm, rightMargin=25*mm, topMargin=20*mm, bottomMargin=20*mm)
 
@@ -141,9 +141,9 @@ def generate_statement_pdf(filepath, company, result, month, year, monthly_input
         (t("consumables", lang), result.get("consumables", 0)),
         (t("printer", lang), result.get("printer", 0)),
         (t("internet", lang), result.get("internet", 0)),
-        (t("maintenance", lang), result.get("maintenance", 0)),
+        (t("maintenance", lang) + (f" ({company.get('maintenance_rate_eur', 0):.2f} EUR \u00d7 {eur_rate})" if eur_rate and company.get("maintenance_rate_eur", 0) > 0 else ""), result.get("maintenance", 0)),
         (t("maintenance_vat", lang), result.get("maintenance_vat", 0)),
-        (t("rent", lang), result.get("rent", 0)),
+        (t("rent", lang) + (f" ({company.get('monthly_rent_eur', 0):.2f} EUR \u00d7 {eur_rate})" if eur_rate and company.get("monthly_rent_eur", 0) > 0 else ""), result.get("rent", 0)),
         (t("rent_vat", lang), result.get("rent_vat", 0)),
     ]
     for label, amount in expenses:
