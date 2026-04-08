@@ -1,12 +1,19 @@
 """History endpoints."""
 
 import os
+import json
+import shutil
 import tempfile
+import zipfile
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
-from backend.core.history import list_runs, get_excel_path, delete_run
+from backend.core.history import list_runs, get_excel_path, delete_run, save_or_replace_run
+from backend.core.engine import allocate_costs
+from backend.core.excel_export import generate_excel
 from backend.core.statement_pdf import generate_statement_pdf
+from backend.core.data_manager import load_companies, load_settings
+from backend.core.translations import month_name
 from backend.core.safe_filename import safe_name
 
 router = APIRouter(prefix="/api/history", tags=["history"])
@@ -94,3 +101,83 @@ def history_statement_pdf(run_id: str, company_id: str = Query(...)):
 
     return FileResponse(tmp_path, media_type="application/pdf",
         filename=filename, background=BackgroundTask(os.unlink, tmp_path))
+
+
+@router.post("/{run_id}/recalculate")
+def recalculate_run(run_id: str):
+    """Re-run allocation with stored monthly_input but current company data & settings."""
+    runs = list_runs()
+    entry = next((r for r in runs if r["id"] == run_id), None)
+    if not entry:
+        raise HTTPException(404, f"Run '{run_id}' not found.")
+
+    mi = entry.get("monthly_input")
+    if not mi:
+        raise HTTPException(400, "This run has no stored monthly input data.")
+
+    companies = load_companies()
+    settings = load_settings()
+    lang = entry.get("language", "en")
+
+    try:
+        results = allocate_costs(companies, settings["ratios"], mi, settings=settings)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+    active = [c for c in companies if c["active"]]
+    mn = month_name(entry["month"], lang)
+    filename = f"Premier_BC_{entry['year']}_{entry['month']:02d}_{mn}.xlsx"
+    tmp_path = os.path.join(tempfile.gettempdir(), filename)
+    generate_excel(tmp_path, results, mi, settings["ratios"], active, lang)
+
+    new_entry, old_id = save_or_replace_run(
+        entry["month"], entry["year"], lang, mi,
+        settings["ratios"], companies, results, tmp_path
+    )
+    try:
+        os.unlink(tmp_path)
+    except OSError:
+        pass
+
+    return {"run_id": new_entry["id"], "replaced": old_id, "results": results}
+
+
+@router.get("/{run_id}/statements-zip")
+def download_all_statements(run_id: str):
+    """Generate a ZIP with PDF statements for all companies in this run."""
+    runs = list_runs()
+    entry = next((r for r in runs if r["id"] == run_id), None)
+    if not entry:
+        raise HTTPException(404, f"Run '{run_id}' not found.")
+
+    results = entry.get("results")
+    companies = entry.get("companies")
+    if not results or not companies:
+        raise HTTPException(400, "Snapshot data not available for this run.")
+
+    lang = entry.get("language", "en")
+    zip_filename = f"Statements_{entry['year']}_{entry['month']:02d}.zip"
+    zip_path = os.path.join(tempfile.gettempdir(), zip_filename)
+
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+        for result in results:
+            if result.get("total", 0) <= 0:
+                continue
+            company = next((c for c in companies if c["id"] == result["company_id"]), None)
+            if not company:
+                continue
+            pdf_name = f"Statement_{safe_name(company['name'])}_{entry['year']}_{entry['month']:02d}.pdf"
+            pdf_path = os.path.join(tempfile.gettempdir(), pdf_name)
+            generate_statement_pdf(
+                pdf_path, company, result,
+                entry["month"], entry["year"],
+                entry.get("monthly_input", {}), lang,
+            )
+            zf.write(pdf_path, pdf_name)
+            try:
+                os.unlink(pdf_path)
+            except OSError:
+                pass
+
+    return FileResponse(zip_path, media_type="application/zip",
+        filename=zip_filename, background=BackgroundTask(os.unlink, zip_path))

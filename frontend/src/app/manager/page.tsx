@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getHistory, getRunDetail, getRunPayments, getAllBalances } from "@/lib/api";
+import { getHistory, getRunDetail, getRunPayments, getAllBalances, getCompanies } from "@/lib/api";
 import { formatRon } from "@/lib/formatting";
 import { useApp } from "@/lib/AppContext";
 import { tr, monthNames } from "@/lib/i18n";
 import { PageLayout, SectionCard, Button } from "@/components";
-import type { HistoryEntry, AllocationResult, PaymentEntry, MonthlyInput } from "@/types";
+import type { HistoryEntry, AllocationResult, PaymentEntry, MonthlyInput, Company } from "@/types";
 
 function StatRow({ label, value, bold, color }: { label: string; value: number; bold?: boolean; color?: string }) {
   return (
@@ -37,13 +37,27 @@ export default function ManagerPage() {
   const [data, setData] = useState<PeriodData | null>(null);
   const [balances, setBalances] = useState<Record<string, number>>({});
   const [selectedCompany, setSelectedCompany] = useState<string>("");
+  const [companies, setCompanies] = useState<Company[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const months = monthNames(lang);
 
+  const [autoLoaded, setAutoLoaded] = useState(false);
+
   useEffect(() => {
-    getHistory().then(setRuns).catch(() => setError(tr("error.backend_down", lang)));
-  }, [lang]);
+    getHistory().then((h) => {
+      setRuns(h);
+      if (!autoLoaded && h.length > 0) setAutoLoaded(true);
+    }).catch(() => setError(tr("error.backend_down", lang)));
+    getCompanies().then(setCompanies).catch(() => {});
+  }, [lang, autoLoaded]);
+
+  useEffect(() => {
+    if (autoLoaded && runs.length > 0 && !data && !loading) {
+      handleLoad();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoLoaded, runs]);
 
   const handleLoad = async () => {
     setLoading(true);
@@ -390,6 +404,41 @@ export default function ManagerPage() {
                       </div>
                     )}
                   </div>
+                </div>
+              </SectionCard>
+            );
+          })()}
+
+          {/* Contract expiration warnings */}
+          {(() => {
+            const today = new Date();
+            const warnings = companies
+              .filter((c) => c.active && c.expiration_date)
+              .map((c) => {
+                const parts = c.expiration_date.split(".");
+                if (parts.length !== 3) return null;
+                const exp = new Date(+parts[2], +parts[1] - 1, +parts[0]);
+                const days = Math.ceil((exp.getTime() - today.getTime()) / 86400000);
+                return { company: c.name, days, expired: days < 0 };
+              })
+              .filter((w) => w && w.days < 60)
+              .sort((a, b) => a!.days - b!.days) as { company: string; days: number; expired: boolean }[];
+
+            if (warnings.length === 0) return null;
+            return (
+              <SectionCard title={tr("manager.contract_expiring", lang)}>
+                <div className="space-y-2">
+                  {warnings.map((w) => (
+                    <div key={w.company} className={`flex justify-between items-center py-1.5 px-3 rounded text-sm ${w.expired ? "bg-red-50 dark:bg-red-900/20" : "bg-yellow-50 dark:bg-yellow-900/20"}`}>
+                      <span className="font-medium">{w.company}</span>
+                      <span className={`font-semibold ${w.expired ? "text-red-600" : "text-yellow-600"}`}>
+                        {w.expired
+                          ? `${tr("manager.expired", lang)} (${Math.abs(w.days)} ${tr("manager.days_left", lang)})`
+                          : `${w.days} ${tr("manager.days_left", lang)}`
+                        }
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </SectionCard>
             );

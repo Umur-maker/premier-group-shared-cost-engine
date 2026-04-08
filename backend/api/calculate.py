@@ -56,8 +56,8 @@ def _validate_period(month: int, year: int):
 def _run_allocation(body: CalculateRequest):
     """Shared allocation logic for preview and save."""
     _validate_period(body.month, body.year)
-    if body.language not in ("en", "ro"):
-        raise HTTPException(400, "Language must be 'en' or 'ro'.")
+    if body.language not in ("en", "ro", "tr"):
+        raise HTTPException(400, "Language must be 'en', 'ro', or 'tr'.")
 
     companies = load_companies()
     settings = load_settings()

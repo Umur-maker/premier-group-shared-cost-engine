@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getSettings, saveSettings } from "@/lib/api";
+import { getSettings, saveSettings, getBackupUrl } from "@/lib/api";
 import { useApp } from "@/lib/AppContext";
 import { tr } from "@/lib/i18n";
 import { PageLayout, SectionCard, Button } from "@/components";
@@ -120,6 +120,13 @@ export default function SettingsPage() {
             {tr("settings.dark", lang)}
           </label>
         </div>
+      </SectionCard>
+
+      <SectionCard title={tr("settings.backup", lang)}>
+        <p className="text-sm text-gray-500 mb-3">{tr("settings.backup_desc", lang)}</p>
+        <a href={getBackupUrl()} download>
+          <Button variant="secondary">{tr("settings.backup", lang)}</Button>
+        </a>
       </SectionCard>
     </PageLayout>
   );
