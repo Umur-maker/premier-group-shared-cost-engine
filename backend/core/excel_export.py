@@ -239,6 +239,35 @@ def _write_calculation_sheet(wb, results, monthly_input, ratios, companies, lang
             row += 1
         row += 1
 
+    # --- G. Fixed Costs (Maintenance & Rent — EUR → RON + 21% VAT) ---
+    eur_rate = monthly_input.get("_eur_rate", 5.1)  # fallback
+    ws.cell(row=row, column=1, value="G. " + t("maintenance", lang).upper() + " & " + t("rent", lang).upper() + " (EUR → RON + 21% VAT)").font = SECTION_FONT
+    row += 1
+
+    fix_headers = [t("excel_company", lang), t("maintenance", lang) + " (EUR)", t("maintenance", lang) + " (RON)", t("maintenance_vat", lang), t("rent", lang) + " (EUR)", t("rent", lang) + " (RON)", t("rent_vat", lang)]
+    for col, h in enumerate(fix_headers, 1):
+        ws.cell(row=row, column=col, value=h)
+    _style_header(ws, row, len(fix_headers))
+    row += 1
+
+    for c in active:
+        m_eur = c.get("maintenance_rate_eur", 0)
+        r_eur = c.get("monthly_rent_eur", 0)
+        if m_eur > 0 or r_eur > 0:
+            ws.cell(row=row, column=1, value=c["name"])
+            if m_eur > 0:
+                ws.cell(row=row, column=2, value=m_eur)
+                _ron_cell(ws, row, 3, round(m_eur * eur_rate, 2))
+                _ron_cell(ws, row, 4, round(m_eur * eur_rate * 0.21, 2))
+            if r_eur > 0:
+                ws.cell(row=row, column=5, value=r_eur)
+                _ron_cell(ws, row, 6, round(r_eur * eur_rate, 2))
+                _ron_cell(ws, row, 7, round(r_eur * eur_rate * 0.21, 2))
+            row += 1
+
+    ws.cell(row=row, column=1, value=f"EUR/RON Rate: {eur_rate}").font = Font(italic=True)
+    row += 2
+
     ws.column_dimensions["A"].width = 35
     for col in range(2, 9):
         ws.column_dimensions[get_column_letter(col)].width = 22

@@ -19,3 +19,11 @@
 body {
   font-family: "Inter", "Segoe UI", Arial, Helvetica, sans-serif;
 }
+
+@media print {
+  nav, aside, button, .no-print { display: none !important; }
+  body { background: white !important; color: black !important; font-size: 11px; }
+  main { padding: 0 !important; margin: 0 !important; }
+  table { page-break-inside: avoid; }
+  * { color-adjust: exact; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
