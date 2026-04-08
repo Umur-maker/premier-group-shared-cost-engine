@@ -18,6 +18,7 @@ export function Sidebar() {
     { href: "/reports", label: tr("nav.reports", lang) },
     { href: "/manager", label: tr("nav.manager", lang) },
     { href: "/settings", label: tr("nav.settings", lang) },
+    { href: "/guide", label: tr("nav.guide", lang) },
   ];
 
   return (
