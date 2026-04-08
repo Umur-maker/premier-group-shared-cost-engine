@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getHistory, deleteRun, getHistoryExcelUrl, getRunDetail, getHistoryStatementPdfUrl } from "@/lib/api";
+import { getHistory, deleteRun, getHistoryExcelUrl, getRunDetail, getHistoryStatementPdfUrl, recalculateRun, getStatementsZipUrl } from "@/lib/api";
 import { useApp } from "@/lib/AppContext";
 import { tr, monthNames } from "@/lib/i18n";
 import { formatRon } from "@/lib/formatting";
@@ -87,12 +87,26 @@ export default function HistoryPage() {
                     {r.company_count} {tr("history.companies_col", lang).toLowerCase()}
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <a href={getHistoryExcelUrl(r.id)} download>
                     <Button variant="secondary" className="text-xs px-3 py-1">
                       Excel
                     </Button>
                   </a>
+                  <a href={getStatementsZipUrl(r.id)} download>
+                    <Button variant="secondary" className="text-xs px-3 py-1">
+                      {tr("history.download_all", lang)}
+                    </Button>
+                  </a>
+                  <Button variant="secondary" className="text-xs px-3 py-1"
+                    onClick={async () => {
+                      if (!confirm(tr("history.recalculate_confirm", lang))) return;
+                      try { await recalculateRun(r.id); await load(); } catch (e: unknown) {
+                        setError(e instanceof Error ? e.message : "Error");
+                      }
+                    }}>
+                    {tr("history.recalculate", lang)}
+                  </Button>
                   <Button variant={expandedRun === r.id ? "primary" : "secondary"} className="text-xs px-3 py-1"
                     onClick={() => toggleExpand(r.id)}>
                     {expandedRun === r.id ? "▲ Close" : "▼ Details"}

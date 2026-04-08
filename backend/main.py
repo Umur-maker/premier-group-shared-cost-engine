@@ -43,3 +43,31 @@ def get_translations(lang: str):
     if lang not in TRANSLATIONS:
         lang = "en"
     return {"translations": TRANSLATIONS[lang], "months": MONTH_NAMES[lang]}
+
+
+@app.get("/api/backup")
+def data_backup():
+    """Export all data as a single JSON for backup."""
+    import json
+    import tempfile
+    import os
+    from datetime import datetime
+    from fastapi.responses import FileResponse
+    from starlette.background import BackgroundTask
+    from backend.core.data_manager import load_companies, load_settings
+    from backend.core.history import list_runs
+    from backend.core.payments import _load_payments
+
+    backup = {
+        "exported_at": datetime.now().isoformat(),
+        "companies": load_companies(),
+        "settings": load_settings(),
+        "history": list_runs(),
+        "payments": _load_payments(),
+    }
+    filename = f"premier_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    tmp_path = os.path.join(tempfile.gettempdir(), filename)
+    with open(tmp_path, "w", encoding="utf-8") as f:
+        json.dump(backup, f, indent=2, ensure_ascii=False)
+    return FileResponse(tmp_path, media_type="application/json",
+        filename=filename, background=BackgroundTask(os.unlink, tmp_path))

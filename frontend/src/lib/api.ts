@@ -91,6 +91,16 @@ export const getRunDetail = (runId: string) =>
 export const getHistoryStatementPdfUrl = (runId: string, companyId: string) =>
   `${API_BASE}/api/history/${runId}/statement-pdf?company_id=${encodeURIComponent(companyId)}`;
 
+export const recalculateRun = (runId: string) =>
+  request<{ run_id: string; replaced: string | null; results: AllocationResult[] }>(
+    `/api/history/${runId}/recalculate`, { method: "POST" }
+  );
+
+export const getStatementsZipUrl = (runId: string) =>
+  `${API_BASE}/api/history/${runId}/statements-zip`;
+
+export const getBackupUrl = () => `${API_BASE}/api/backup`;
+
 // Payments (ledger)
 export const getRunPayments = (runId: string) =>
   request<PaymentEntry[]>(`/api/payments/run/${runId}`);
