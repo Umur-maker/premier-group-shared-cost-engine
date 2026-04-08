@@ -1,0 +1,53 @@
+{
+  "name": "premier-cost-engine",
+  "version": "3.0.0",
+  "description": "Premier Business Center - Shared Cost Engine",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "com.premier.costengine",
+    "productName": "Premier Cost Engine",
+    "directories": {
+      "output": "../dist-electron"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "extraResources": [
+      {
+        "from": "../backend/dist/run_server",
+        "to": "backend",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "../frontend/out",
+        "to": "frontend",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "../backend/data",
+        "to": "seed-data",
+        "filter": ["companies.json", "settings.json"]
+      }
+    ],
+    "files": [
+      "main.js",
+      "preload.js",
+      "splash.html"
+    ]
+  }
+}

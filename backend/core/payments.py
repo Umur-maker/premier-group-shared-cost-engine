@@ -6,7 +6,7 @@ import threading
 import uuid
 from datetime import datetime
 
-DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
+from backend.core.config import DATA_DIR
 LEDGER_FILE = os.path.join(DATA_DIR, "payment_ledger.json")
 
 _lock = threading.Lock()
