@@ -36,6 +36,7 @@ export default function ManagerPage() {
   const [toYear, setToYear] = useState(now.getFullYear());
   const [data, setData] = useState<PeriodData | null>(null);
   const [balances, setBalances] = useState<Record<string, number>>({});
+  const [selectedCompany, setSelectedCompany] = useState<string>("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const months = monthNames(lang);
@@ -288,10 +289,11 @@ export default function ManagerPage() {
                     const companyPayments = data.payments.filter(p => p.company_id === r.company_id);
                     const paid = companyPayments.reduce((s, p) => s + p.amount, 0);
                     const bal = balances[r.company_id] || 0;
+                    const isSelected = selectedCompany === r.company_id;
 
                     return (
-                      <tr key={r.company_id}
-                        className={`${i % 2 === 0 ? "bg-white dark:bg-card-dark" : "bg-gray-50/60 dark:bg-gray-800/40"}`}>
+                      <tr key={r.company_id} onClick={() => setSelectedCompany(isSelected ? "" : r.company_id)}
+                        className={`cursor-pointer transition-colors ${isSelected ? "bg-blue-50 dark:bg-blue-900/30 ring-1 ring-blue-300 dark:ring-blue-600" : i % 2 === 0 ? "bg-white dark:bg-card-dark hover:bg-gray-50 dark:hover:bg-gray-800/60" : "bg-gray-50/60 dark:bg-gray-800/40 hover:bg-gray-100 dark:hover:bg-gray-700/60"}`}>
                         <td className="p-2.5 border-b border-gray-100 dark:border-gray-700 font-medium">{r.company_name}</td>
                         <td className="p-2.5 border-b border-gray-100 dark:border-gray-700 text-right tabular-nums">{formatRon(r.total)}</td>
                         <td className="p-2.5 border-b border-gray-100 dark:border-gray-700 text-right tabular-nums text-green-600">{formatRon(paid)}</td>
@@ -312,7 +314,79 @@ export default function ManagerPage() {
                 </tbody>
               </table>
             </div>
+            <p className="text-xs text-gray-400 mt-2 italic">{tr("manager.click_row", lang)}</p>
           </SectionCard>
+
+          {/* Company detail breakdown */}
+          {selectedCompany && (() => {
+            const r = data.results.find(x => x.company_id === selectedCompany);
+            if (!r) return null;
+            const companyPayments = data.payments.filter(p => p.company_id === selectedCompany);
+            const paid = companyPayments.reduce((s, p) => s + p.amount, 0);
+            const bal = balances[selectedCompany] || 0;
+
+            const costItems: [string, number][] = [
+              [tr("field.electricity", lang), r.electricity],
+              [tr("field.water", lang), r.water],
+              [tr("field.garbage", lang), r.garbage],
+              [tr("field.hotel_gas", lang), r.gas_hotel],
+              [tr("field.gf_gas", lang), r.gas_ground_floor],
+              [tr("field.ff_gas", lang), r.gas_first_floor],
+              [tr("field.consumables", lang), r.consumables],
+              [tr("field.printer", lang), r.printer],
+              [tr("field.internet", lang), r.internet],
+              [tr("table.maint", lang), r.maintenance],
+              [tr("table.maint_vat", lang), r.maintenance_vat],
+              [tr("table.rent", lang), r.rent],
+              [tr("table.rent_vat", lang), r.rent_vat],
+            ];
+
+            return (
+              <SectionCard title={`${tr("manager.company_detail", lang)}: ${r.company_name}`}>
+                <div className="grid grid-cols-2 gap-6">
+                  {/* Cost breakdown */}
+                  <div>
+                    <h4 className="text-xs text-gray-500 uppercase mb-2 font-semibold">{tr("manager.cost_breakdown", lang)}</h4>
+                    <div className="space-y-0">
+                      {costItems.map(([label, amount]) =>
+                        amount > 0 ? <StatRow key={label} label={label} value={amount} /> : null
+                      )}
+                      <StatRow label={tr("table.total", lang)} value={r.total} bold />
+                    </div>
+                  </div>
+
+                  {/* Payment summary */}
+                  <div>
+                    <h4 className="text-xs text-gray-500 uppercase mb-2 font-semibold">{tr("manager.collection", lang)}</h4>
+                    <div className="space-y-0">
+                      <StatRow label={tr("manager.total_billed", lang)} value={r.total} />
+                      <StatRow label={tr("manager.total_paid", lang)} value={paid} color="text-green-600" />
+                      <StatRow
+                        label={bal > 0 ? tr("manager.total_outstanding", lang) : tr("monthly.credit", lang)}
+                        value={Math.abs(bal)}
+                        bold
+                        color={bal > 0 ? "text-red-600" : bal < 0 ? "text-blue-600" : "text-green-600"}
+                      />
+                    </div>
+
+                    {companyPayments.length > 0 && (
+                      <div className="mt-4">
+                        <h4 className="text-xs text-gray-500 uppercase mb-2 font-semibold">{tr("monthly.payments", lang)}</h4>
+                        <div className="space-y-1">
+                          {companyPayments.map((p) => (
+                            <div key={p.id} className="flex justify-between text-sm border-b border-gray-100 dark:border-gray-700 py-1">
+                              <span className="text-gray-600 dark:text-gray-400">{p.date}{p.note ? ` — ${p.note}` : ""}</span>
+                              <span className="tabular-nums text-green-600 font-medium">{formatRon(p.amount)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </SectionCard>
+            );
+          })()}
         </>
       )}
 
