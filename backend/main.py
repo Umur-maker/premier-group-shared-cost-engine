@@ -67,7 +67,7 @@ def data_backup():
     from starlette.background import BackgroundTask
     from backend.core.data_manager import load_companies, load_settings
     from backend.core.history import list_runs
-    from backend.core.payments import _load_payments
+    from backend.core.payments import _load as _load_payments
 
     backup = {
         "exported_at": datetime.now().isoformat(),
