@@ -51,7 +51,7 @@ export function Sidebar() {
       </nav>
 
       <div className="px-5 pb-4 text-[10px] text-blue-300/30 font-medium">
-        v3.0
+        v3.1.1
       </div>
     </aside>
   );
