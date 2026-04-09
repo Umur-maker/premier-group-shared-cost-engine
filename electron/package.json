@@ -1,6 +1,6 @@
 {
   "name": "premier-cost-engine",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "description": "Premier Business Center - Shared Cost Engine",
   "main": "main.js",
   "scripts": {
@@ -22,8 +22,7 @@
       "icon": "icon.ico"
     },
     "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
+      "oneClick": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true
     },

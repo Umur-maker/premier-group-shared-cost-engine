@@ -189,7 +189,7 @@ function setupAutoUpdater() {
     }).then(({ response }) => {
       if (response === 0) {
         killBackend();
-        autoUpdater.quitAndInstall();
+        autoUpdater.quitAndInstall(true, true);
       }
     });
   });
