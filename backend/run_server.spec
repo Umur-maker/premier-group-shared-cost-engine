@@ -12,8 +12,8 @@ a = Analysis(
     binaries=[],
     datas=[
         ('core/logo.png', 'backend/core'),
-        ('data/companies.json', 'backend/data'),
-        ('data/settings.json', 'backend/data'),
+        ('data-seed/companies.json', 'backend/data-seed'),
+        ('data-seed/settings.json', 'backend/data-seed'),
     ],
     hiddenimports=[
         'uvicorn',

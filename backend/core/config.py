@@ -14,7 +14,8 @@ import shutil
 
 # Bundled default data (shipped with the app / in the repo)
 _BACKEND_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-_BUNDLED_DATA = os.path.join(_BACKEND_ROOT, "data")
+_SEED_DATA = os.path.join(_BACKEND_ROOT, "data-seed")
+_DEV_DATA = os.path.join(_BACKEND_ROOT, "data")
 
 
 def _resolve_data_dir() -> str:
@@ -24,9 +25,9 @@ def _resolve_data_dir() -> str:
     if env:
         return env
 
-    # 2. If bundled data dir exists and is writable (dev mode), use it directly
-    if os.path.isdir(_BUNDLED_DATA):
-        return _BUNDLED_DATA
+    # 2. If dev data dir exists (development mode), use it directly
+    if os.path.isdir(_DEV_DATA):
+        return _DEV_DATA
 
     # 3. AppData fallback (should not normally reach here)
     appdata = os.environ.get("APPDATA", os.path.expanduser("~"))
@@ -41,12 +42,15 @@ def ensure_data_dir():
     os.makedirs(DATA_DIR, exist_ok=True)
     os.makedirs(os.path.join(DATA_DIR, "history"), exist_ok=True)
 
-    # Seed default files on first run
+    # Seed default files on first run (from data-seed/)
     for filename in ["companies.json", "settings.json"]:
         target = os.path.join(DATA_DIR, filename)
-        source = os.path.join(_BUNDLED_DATA, filename)
-        if not os.path.exists(target) and os.path.exists(source):
-            shutil.copy2(source, target)
+        # Try seed data first, then dev data as fallback
+        for source_dir in [_SEED_DATA, _DEV_DATA]:
+            source = os.path.join(source_dir, filename)
+            if not os.path.exists(target) and os.path.exists(source):
+                shutil.copy2(source, target)
+                break
 
     # Seed empty history index
     history_index = os.path.join(DATA_DIR, "history", "index.json")

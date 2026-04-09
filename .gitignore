@@ -6,6 +6,7 @@ __pycache__/
 node_modules/
 .next/
 frontend/out/
+backend/data/
 backend/build/
 backend/dist/
 dist-electron/

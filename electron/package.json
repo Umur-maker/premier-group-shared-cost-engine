@@ -48,7 +48,7 @@
         ]
       },
       {
-        "from": "../backend/data",
+        "from": "../backend/data-seed",
         "to": "seed-data",
         "filter": [
           "companies.json",

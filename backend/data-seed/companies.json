@@ -1,0 +1,24 @@
+[
+  {
+    "id": "sample-company",
+    "name": "Sample Company",
+    "area_m2": 50.0,
+    "headcount_default": 3,
+    "building": "C4",
+    "floor": "ground_floor",
+    "office_no": "1",
+    "has_heating": true,
+    "electricity_eligible": true,
+    "water_eligible": true,
+    "garbage_eligible": true,
+    "active": true,
+    "contact_person": "",
+    "phone": "",
+    "email": "",
+    "beginning_date": "",
+    "expiration_date": "",
+    "notes": "Sample company — replace with real data",
+    "monthly_rent_eur": 500,
+    "maintenance_rate_eur": 50
+  }
+]
