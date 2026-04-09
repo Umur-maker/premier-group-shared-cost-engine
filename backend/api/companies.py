@@ -1,11 +1,12 @@
 """Company CRUD endpoints."""
 
+import json
 import re
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, UploadFile, File
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from backend.core.data_manager import (
-    load_companies, add_company, update_company, get_active_companies,
+    load_companies, add_company, update_company, get_active_companies, save_companies,
 )
 
 router = APIRouter(prefix="/api/companies", tags=["companies"])
@@ -125,3 +126,27 @@ def deactivate(company_id: str):
         raise HTTPException(404, f"Company '{company_id}' not found.")
     update_company(company_id, {"active": False})
     return {"status": "deactivated", "id": company_id}
+
+
+@router.post("/import")
+async def import_companies(file: UploadFile = File(...)):
+    """Import companies from a JSON file, replacing all existing companies."""
+    try:
+        content = await file.read()
+        data = json.loads(content)
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        raise HTTPException(400, "Invalid JSON file.")
+
+    if not isinstance(data, list):
+        raise HTTPException(400, "File must contain a JSON array of companies.")
+
+    required = {"id", "name", "area_m2"}
+    for i, company in enumerate(data):
+        if not isinstance(company, dict):
+            raise HTTPException(400, f"Item {i} is not a valid company object.")
+        missing = required - set(company.keys())
+        if missing:
+            raise HTTPException(400, f"Company '{company.get('name', f'#{i}')}' missing fields: {missing}")
+
+    save_companies(data)
+    return {"status": "imported", "count": len(data)}

@@ -39,6 +39,22 @@ export const updateCompany = (id: string, data: Partial<Company>) =>
     body: JSON.stringify(data),
   });
 
+export const importCompanies = async (file: File) => {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await fetch(`${API_BASE}/api/companies/import`, {
+    method: "POST",
+    body: formData,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || `API error ${res.status}`);
+  }
+  return res.json() as Promise<{ status: string; count: number }>;
+};
+
+export const exportCompaniesUrl = () => `${API_BASE}/api/companies`;
+
 export const deactivateCompany = (id: string) =>
   request<{ status: string }>(`/api/companies/${id}`, { method: "DELETE" });
 

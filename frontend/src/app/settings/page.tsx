@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getSettings, saveSettings, getBackupUrl } from "@/lib/api";
+import { useRef } from "react";
+import { getSettings, saveSettings, getBackupUrl, importCompanies, exportCompaniesUrl } from "@/lib/api";
 import { useApp } from "@/lib/AppContext";
 import { tr } from "@/lib/i18n";
 import { PageLayout, SectionCard, Button } from "@/components";
@@ -10,7 +11,8 @@ import type { Settings } from "@/types";
 const RATIO_TYPES = ["electricity", "gas", "water", "garbage", "consumables"] as const;
 
 export default function SettingsPage() {
-  const { lang, setLang, theme, setTheme } = useApp();
+  const { lang, setLang, theme, setTheme, showToast } = useApp();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [settings, setSettings] = useState<Settings | null>(null);
   const [pending, setPending] = useState<Settings | null>(null);
   const [saved, setSaved] = useState(false);
@@ -120,6 +122,50 @@ export default function SettingsPage() {
             {tr("settings.dark", lang)}
           </label>
         </div>
+      </SectionCard>
+
+      <SectionCard title={tr("settings.import_companies", lang)}>
+        <p className="text-sm text-gray-500 mb-3">{tr("settings.import_desc", lang)}</p>
+        <div className="flex gap-3">
+          <input type="file" accept=".json" ref={fileInputRef} className="hidden"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              if (!confirm(tr("settings.import_desc", lang))) {
+                if (fileInputRef.current) fileInputRef.current.value = "";
+                return;
+              }
+              try {
+                const result = await importCompanies(file);
+                showToast(tr("settings.import_success", lang).replace("{count}", String(result.count)), "success");
+              } catch (err: unknown) {
+                showToast(err instanceof Error ? err.message : "Import failed", "error");
+              }
+              if (fileInputRef.current) fileInputRef.current.value = "";
+            }} />
+          <Button variant="secondary" onClick={() => fileInputRef.current?.click()}>
+            {tr("settings.import_btn", lang)}
+          </Button>
+        </div>
+      </SectionCard>
+
+      <SectionCard title={tr("settings.export_companies", lang)}>
+        <p className="text-sm text-gray-500 mb-3">{tr("settings.export_desc", lang)}</p>
+        <Button variant="secondary" onClick={async () => {
+          try {
+            const res = await fetch(exportCompaniesUrl());
+            const data = await res.json();
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "companies.json";
+            a.click();
+            URL.revokeObjectURL(url);
+          } catch { showToast("Export failed", "error"); }
+        }}>
+          {tr("settings.export_companies", lang)}
+        </Button>
       </SectionCard>
 
       <SectionCard title={tr("settings.backup", lang)}>

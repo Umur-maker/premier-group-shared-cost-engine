@@ -69,6 +69,7 @@ a = Analysis(
         'anyio',
         'anyio._backends',
         'anyio._backends._asyncio',
+        'multipart',
     ],
     hookspath=[],
     hooksconfig={},
