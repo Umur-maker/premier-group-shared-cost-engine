@@ -9,7 +9,7 @@ import { PageLayout, SectionCard, Button, DataTable } from "@/components";
 import type { HistoryEntry, AllocationResult, Company } from "@/types";
 
 export default function HistoryPage() {
-  const { lang } = useApp();
+  const { lang, showToast } = useApp();
   const [runs, setRuns] = useState<HistoryEntry[]>([]);
   const [error, setError] = useState("");
   const [expandedRun, setExpandedRun] = useState<string | null>(null);
@@ -87,34 +87,40 @@ export default function HistoryPage() {
                     {r.company_count} {tr("history.companies_col", lang).toLowerCase()}
                   </span>
                 </div>
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-2">
                   <a href={getHistoryExcelUrl(r.id)} download>
-                    <Button variant="secondary" className="text-xs px-3 py-1">
-                      Excel
-                    </Button>
+                    <Button variant="secondary" className="text-xs px-3 py-1">Excel</Button>
                   </a>
                   <a href={getStatementsZipUrl(r.id)} download>
                     <Button variant="secondary" className="text-xs px-3 py-1">
                       {tr("history.download_all", lang)}
                     </Button>
                   </a>
-                  <Button variant="secondary" className="text-xs px-3 py-1"
-                    onClick={async () => {
-                      if (!confirm(tr("history.recalculate_confirm", lang))) return;
-                      try { await recalculateRun(r.id); await load(); } catch (e: unknown) {
-                        setError(e instanceof Error ? e.message : "Error");
-                      }
-                    }}>
-                    {tr("history.recalculate", lang)}
-                  </Button>
                   <Button variant={expandedRun === r.id ? "primary" : "secondary"} className="text-xs px-3 py-1"
                     onClick={() => toggleExpand(r.id)}>
-                    {expandedRun === r.id ? "▲ Close" : "▼ Details"}
+                    {expandedRun === r.id ? "\u25b2" : "\u25bc"} {tr("monthly.tab_detailed", lang)}
                   </Button>
-                  <button onClick={() => handleDelete(r.id)}
-                    className="text-red-500 hover:text-red-700 text-xs px-2">
-                    {tr("history.delete", lang)}
-                  </button>
+                  <div className="relative group">
+                    <Button variant="secondary" className="text-xs px-3 py-1">
+                      {tr("history.more", lang)} \u25be
+                    </Button>
+                    <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-200
+                      dark:border-gray-700 rounded-lg shadow-lg py-1 hidden group-hover:block z-10 min-w-[160px]">
+                      <button onClick={async () => {
+                          if (!confirm(tr("history.recalculate_confirm", lang))) return;
+                          try { await recalculateRun(r.id); showToast(tr("history.recalculated", lang), "success"); await load(); } catch (e: unknown) {
+                            showToast(e instanceof Error ? e.message : "Error", "error");
+                          }
+                        }}
+                        className="w-full text-left px-3 py-2 text-xs hover:bg-gray-100 dark:hover:bg-gray-700">
+                        {tr("history.recalculate", lang)}
+                      </button>
+                      <button onClick={() => handleDelete(r.id)}
+                        className="w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">
+                        {tr("history.delete", lang)}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
 

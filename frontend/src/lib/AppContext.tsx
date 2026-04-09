@@ -1,24 +1,27 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { Toast } from "@/components";
 
 interface AppState {
   lang: string;
   setLang: (l: string) => void;
   theme: "light" | "dark";
   setTheme: (t: "light" | "dark") => void;
+  showToast: (message: string, type: "success" | "error") => void;
 }
 
 const AppContext = createContext<AppState>({
   lang: "en", setLang: () => {},
   theme: "light", setTheme: () => {},
+  showToast: () => {},
 });
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLang] = useState("en");
   const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
-  // Persist to localStorage
   useEffect(() => {
     const saved = localStorage.getItem("pbc_lang");
     if (saved) setLang(saved);
@@ -36,14 +39,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("pbc_theme", t);
   };
 
-  // Apply theme class to html element
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark");
   }, [theme]);
 
+  const showToast = useCallback((message: string, type: "success" | "error") => {
+    setToast({ message, type });
+  }, []);
+
+  const clearToast = useCallback(() => setToast(null), []);
+
   return (
-    <AppContext.Provider value={{ lang, setLang: handleSetLang, theme, setTheme: handleSetTheme }}>
+    <AppContext.Provider value={{ lang, setLang: handleSetLang, theme, setTheme: handleSetTheme, showToast }}>
       {children}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={clearToast} />}
     </AppContext.Provider>
   );
 }

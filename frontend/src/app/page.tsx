@@ -32,7 +32,7 @@ const EXTERNAL_I18N = [
 type PageState = "input" | "preview" | "saved";
 
 export default function MonthlyInputPage() {
-  const { lang } = useApp();
+  const { lang, showToast } = useApp();
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [year, setYear] = useState(now.getFullYear());
@@ -86,6 +86,7 @@ export default function MonthlyInputPage() {
       const res = await saveOfficial({ month, year, language: lang, monthly_input: frozenInput });
       setRunId(res.run_id); setFilename(res.filename); setResults(res.results);
       setPageState("saved");
+      showToast(tr("monthly.status_saved", lang), "success");
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Error");
     } finally { setLoading(false); }
@@ -135,17 +136,55 @@ export default function MonthlyInputPage() {
         </div>
       </SectionCard>
 
+      {/* Welcome state for fresh install */}
+      {companies.filter(c => c.active).length === 0 && pageState === "input" && (
+        <SectionCard>
+          <div className="text-center py-6">
+            <p className="text-gray-500 text-sm">{tr("empty.welcome", lang)}</p>
+          </div>
+        </SectionCard>
+      )}
+
       {/* Input section — only visible in input state */}
-      {pageState === "input" && (
+      {pageState === "input" && companies.filter(c => c.active).length > 0 && (
         <>
           <SectionCard title={tr("monthly.costs", lang)}>
-            <div className="grid grid-cols-3 gap-4">
-              {ALL_COST_KEYS.map((k, i) => (
-                <MoneyInput key={k} label={tr(ALL_COST_I18N[i], lang)}
-                  value={raw[k] || ""} onChange={(v) => setRaw((p) => ({ ...p, [k]: v }))}
+            {/* Utility Bills */}
+            <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mb-2">
+              {tr("monthly.group_utilities", lang)}
+            </p>
+            <div className="grid grid-cols-3 gap-4 mb-5">
+              {[0, 1, 2, 3, 4, 5].map((i) => (
+                <MoneyInput key={ALL_COST_KEYS[i]} label={tr(ALL_COST_I18N[i], lang)}
+                  value={raw[ALL_COST_KEYS[i]] || ""} onChange={(v) => setRaw((p) => ({ ...p, [ALL_COST_KEYS[i]]: v }))}
                   placeholder="0" />
               ))}
             </div>
+
+            {/* Services */}
+            <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mb-2">
+              {tr("monthly.group_services", lang)}
+            </p>
+            <div className="grid grid-cols-3 gap-4 mb-5">
+              {[6, 7, 8].map((i) => (
+                <MoneyInput key={ALL_COST_KEYS[i]} label={tr(ALL_COST_I18N[i], lang)}
+                  value={raw[ALL_COST_KEYS[i]] || ""} onChange={(v) => setRaw((p) => ({ ...p, [ALL_COST_KEYS[i]]: v }))}
+                  placeholder="0" />
+              ))}
+            </div>
+
+            {/* Manager Costs */}
+            <p className="text-[10px] text-amber-600 dark:text-amber-400 uppercase tracking-wider font-semibold mb-2">
+              {tr("monthly.group_manager", lang)}
+            </p>
+            <div className="grid grid-cols-3 gap-4">
+              {[9, 10].map((i) => (
+                <MoneyInput key={ALL_COST_KEYS[i]} label={tr(ALL_COST_I18N[i], lang)}
+                  value={raw[ALL_COST_KEYS[i]] || ""} onChange={(v) => setRaw((p) => ({ ...p, [ALL_COST_KEYS[i]]: v }))}
+                  placeholder="0" />
+              ))}
+            </div>
+
             <p className="text-xs text-gray-400 mt-3">{tr("monthly.auto_costs_note", lang)}</p>
           </SectionCard>
 

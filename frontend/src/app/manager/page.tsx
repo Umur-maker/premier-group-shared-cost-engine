@@ -446,9 +446,13 @@ export default function ManagerPage() {
         </>
       )}
 
-      {!data && !loading && runs.length === 0 && (
+      {!data && !loading && (
         <SectionCard>
-          <p className="text-gray-500 text-sm">{tr("manager.no_runs", lang)}</p>
+          <div className="text-center py-6">
+            <p className="text-gray-500 text-sm">
+              {runs.length === 0 ? tr("manager.no_runs", lang) : tr("empty.dashboard_hint", lang)}
+            </p>
+          </div>
         </SectionCard>
       )}
     </PageLayout>

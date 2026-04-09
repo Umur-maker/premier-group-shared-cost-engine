@@ -254,6 +254,9 @@ export default function ReportsPage() {
             <div className="text-xs text-gray-500">
               {monthCount} {tr("manager.months_loaded", lang)} | {kpis.companyCount} {tr("companies.active_count", lang)}
             </div>
+            <Button variant="secondary" className="text-xs no-print" onClick={() => window.print()}>
+              {tr("reports.print", lang)}
+            </Button>
           </div>
 
           <div className="grid grid-cols-4 gap-4">
