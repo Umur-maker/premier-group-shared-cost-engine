@@ -10,3 +10,4 @@ backend/data/
 backend/build/
 backend/dist/
 dist-electron/
+data/
