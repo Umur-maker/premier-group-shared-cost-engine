@@ -1,6 +1,6 @@
 {
   "name": "premier-cost-engine",
-  "version": "3.2.0",
+  "version": "3.3.0",
   "description": "Premier Business Center - Shared Cost Engine",
   "main": "main.js",
   "scripts": {
@@ -19,6 +19,7 @@
     "directories": {
       "output": "../dist-electron"
     },
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
     "win": {
       "target": "nsis",
       "icon": "icon.ico"
