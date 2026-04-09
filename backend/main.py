@@ -24,14 +24,9 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-_is_electron = os.environ.get("PREMIER_ELECTRON") == "1"
-cors_origins = ["*"] if _is_electron else os.environ.get(
-    "CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000"
-).split(",")
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[o.strip() for o in cors_origins],
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
