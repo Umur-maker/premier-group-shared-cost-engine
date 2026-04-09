@@ -27,21 +27,33 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true
     },
+    "publish": {
+      "provider": "github",
+      "owner": "Umur-maker",
+      "repo": "premier-group-shared-cost-engine"
+    },
     "extraResources": [
       {
         "from": "../backend/dist/run_server",
         "to": "backend",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       },
       {
         "from": "../frontend/out",
         "to": "frontend",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       },
       {
         "from": "../backend/data",
         "to": "seed-data",
-        "filter": ["companies.json", "settings.json"]
+        "filter": [
+          "companies.json",
+          "settings.json"
+        ]
       }
     ],
     "files": [
@@ -49,5 +61,8 @@
       "preload.js",
       "splash.html"
     ]
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.3"
   }
 }
