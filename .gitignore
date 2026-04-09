@@ -11,3 +11,6 @@ backend/build/
 backend/dist/
 dist-electron/
 data/
+
+docs/
+premier-group-input/
