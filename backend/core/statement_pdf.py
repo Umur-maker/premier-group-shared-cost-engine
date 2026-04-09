@@ -25,6 +25,7 @@ CONTENT_W = PAGE_W - 50 * mm  # 25mm margins each side
 
 
 def generate_statement_pdf(filepath, company, result, month, year, monthly_input, lang="en", eur_rate=None):
+    eur_rate = eur_rate or 5.1
     doc = SimpleDocTemplate(filepath, pagesize=A4,
         leftMargin=25*mm, rightMargin=25*mm, topMargin=20*mm, bottomMargin=20*mm)
 

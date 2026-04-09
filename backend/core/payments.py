@@ -79,7 +79,8 @@ def get_running_balance(company_id, history_runs):
 
     Positive = outstanding debt, Negative = credit available.
     """
-    data = _load()
+    with _lock:
+        data = _load()
     balance = 0.0
 
     sorted_runs = sorted(history_runs, key=lambda r: (r["year"], r["month"]))

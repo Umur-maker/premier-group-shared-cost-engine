@@ -14,6 +14,12 @@ interface DataTableProps {
   keyField: string;
 }
 
+const ALIGN: Record<string, string> = {
+  left: "text-left",
+  right: "text-right",
+  center: "text-center",
+};
+
 export function DataTable({ columns, data, keyField }: DataTableProps) {
   return (
     <div className="overflow-x-auto rounded-lg border border-gray-200/80 dark:border-gray-700/60
@@ -23,7 +29,7 @@ export function DataTable({ columns, data, keyField }: DataTableProps) {
           <tr className="bg-navy text-white">
             {columns.map((col) => (
               <th key={col.key}
-                className={`px-3 py-3 text-${col.align || "left"}
+                className={`px-3 py-3 ${ALIGN[col.align || "left"]}
                   ${col.bold ? "font-bold" : "font-semibold"} text-[11px] uppercase tracking-wider`}>
                 {col.header}
               </th>
@@ -37,7 +43,7 @@ export function DataTable({ columns, data, keyField }: DataTableProps) {
                 hover:bg-blue-50/50 dark:hover:bg-navy-light/10 transition-colors duration-100`}>
               {columns.map((col) => (
                 <td key={col.key}
-                  className={`px-3 py-2.5 border-b border-gray-100/80 dark:border-gray-700/50 text-${col.align || "left"}
+                  className={`px-3 py-2.5 border-b border-gray-100/80 dark:border-gray-700/50 ${ALIGN[col.align || "left"]}
                     ${col.bold ? "font-semibold text-navy dark:text-white" : ""} tabular-nums`}>
                   {col.render ? col.render(row) : String(row[col.key] ?? "")}
                 </td>

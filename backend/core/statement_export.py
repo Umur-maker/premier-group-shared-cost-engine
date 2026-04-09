@@ -11,6 +11,7 @@ RON_FMT = '#,##0.00 "RON"'
 
 
 def generate_statement(filepath, company, result, month, year, monthly_input, lang="en", eur_rate=None):
+    eur_rate = eur_rate or 5.1
     """Generate a single-company cost sharing statement.
 
     Args:

@@ -25,11 +25,16 @@ def _resolve_data_dir() -> str:
     if env:
         return env
 
-    # 2. If dev data dir exists (development mode), use it directly
+    # 2. If running as PyInstaller bundle, always use AppData
+    if getattr(sys, "frozen", False):
+        appdata = os.environ.get("APPDATA", os.path.expanduser("~"))
+        return os.path.join(appdata, "PremierCostEngine", "data")
+
+    # 3. Development mode — use local data dir if it exists
     if os.path.isdir(_DEV_DATA):
         return _DEV_DATA
 
-    # 3. AppData fallback (should not normally reach here)
+    # 4. AppData fallback
     appdata = os.environ.get("APPDATA", os.path.expanduser("~"))
     return os.path.join(appdata, "PremierCostEngine", "data")
 

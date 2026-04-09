@@ -235,14 +235,20 @@ app.on("ready", async () => {
 
   try {
     if (isDev) {
-      // In dev, assume backend is already running
       await waitForBackend(100);
     } else {
       await waitForBackend(50);
     }
   } catch (err) {
     console.error("[Electron]", err.message);
-    // Still try to show the window
+    if (!isDev) {
+      dialog.showErrorBox(
+        "Startup Error",
+        "Backend failed to start. Port 8000 may already be in use.\n\nPlease close any other applications using port 8000 and try again."
+      );
+      app.quit();
+      return;
+    }
   }
 
   createMainWindow();
