@@ -53,11 +53,11 @@ jobs:
         working-directory: electron
         run: npm ci
 
-      - name: Build Electron app
+      - name: Build Electron app (no publish)
         working-directory: electron
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm run build:${{ matrix.platform }}
+        run: npx electron-builder --${{ matrix.platform }} --publish never
 
       # Upload artifacts
       - name: Upload build artifacts
