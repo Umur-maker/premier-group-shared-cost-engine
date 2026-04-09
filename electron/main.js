@@ -1,7 +1,8 @@
-const { app, BrowserWindow, protocol, net } = require("electron");
+const { app, BrowserWindow, protocol, net, ipcMain, dialog } = require("electron");
 const path = require("path");
 const { spawn, execSync } = require("child_process");
 const http = require("http");
+const { autoUpdater } = require("electron-updater");
 
 let mainWindow = null;
 let splashWindow = null;
@@ -143,6 +144,67 @@ function killBackend() {
   }
 }
 
+// ── AUTO-UPDATER ──
+
+function setupAutoUpdater() {
+  autoUpdater.autoDownload = false;
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  autoUpdater.on("update-available", (info) => {
+    console.log(`[Updater] Update available: v${info.version}`);
+    if (!mainWindow) return;
+
+    dialog.showMessageBox(mainWindow, {
+      type: "info",
+      title: "Update Available",
+      message: `A new version (v${info.version}) is available.`,
+      detail: "Would you like to download and install it now? Your data will not be affected.",
+      buttons: ["Update Now", "Later"],
+      defaultId: 0,
+      cancelId: 1,
+    }).then(({ response }) => {
+      if (response === 0) {
+        autoUpdater.downloadUpdate();
+        dialog.showMessageBox(mainWindow, {
+          type: "info",
+          title: "Downloading Update",
+          message: "The update is being downloaded in the background. You will be notified when it is ready.",
+          buttons: ["OK"],
+        });
+      }
+    });
+  });
+
+  autoUpdater.on("update-downloaded", () => {
+    console.log("[Updater] Update downloaded, prompting restart");
+    if (!mainWindow) return;
+
+    dialog.showMessageBox(mainWindow, {
+      type: "info",
+      title: "Update Ready",
+      message: "The update has been downloaded. The application will restart to apply the update.",
+      buttons: ["Restart Now", "Later"],
+      defaultId: 0,
+      cancelId: 1,
+    }).then(({ response }) => {
+      if (response === 0) {
+        killBackend();
+        autoUpdater.quitAndInstall();
+      }
+    });
+  });
+
+  autoUpdater.on("error", (err) => {
+    console.log("[Updater] Error:", err.message);
+    // Silent — don't bother user with update errors
+  });
+
+  // Check for updates after a short delay
+  setTimeout(() => {
+    autoUpdater.checkForUpdates().catch(() => {});
+  }, 5000);
+}
+
 // Register custom protocol for serving static frontend files
 protocol.registerSchemesAsPrivileged([
   { scheme: "app", privileges: { standard: true, secure: true, supportFetchAPI: true } },
@@ -188,6 +250,11 @@ app.on("ready", async () => {
   if (splashWindow) {
     splashWindow.close();
     splashWindow = null;
+  }
+
+  // Auto-update (only in packaged mode)
+  if (!isDev) {
+    setupAutoUpdater();
   }
 });
 
