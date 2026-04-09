@@ -15,9 +15,10 @@ const resourcesPath = isDev
   ? path.join(__dirname, "..")
   : process.resourcesPath;
 
+const backendExe = process.platform === "win32" ? "run_server.exe" : "run_server";
 const backendPath = isDev
   ? null // In dev mode, start backend manually
-  : path.join(resourcesPath, "backend", "run_server.exe");
+  : path.join(resourcesPath, "backend", backendExe);
 
 const frontendPath = isDev
   ? path.join(resourcesPath, "frontend", "out")
@@ -40,6 +41,11 @@ function startBackend() {
 
   console.log(`[Electron] Starting backend: ${backendPath}`);
   console.log(`[Electron] Data directory: ${dataDir}`);
+
+  // Ensure executable permission on macOS/Linux
+  if (process.platform !== "win32") {
+    try { require("fs").chmodSync(backendPath, 0o755); } catch {}
+  }
 
   backendProcess = spawn(backendPath, [], {
     env,
@@ -135,8 +141,11 @@ function createMainWindow() {
 function killBackend() {
   if (backendProcess) {
     try {
-      // Windows: kill the process tree
-      execSync(`taskkill /pid ${backendProcess.pid} /T /F`, { stdio: "ignore" });
+      if (process.platform === "win32") {
+        execSync(`taskkill /pid ${backendProcess.pid} /T /F`, { stdio: "ignore" });
+      } else {
+        process.kill(-backendProcess.pid, "SIGTERM");
+      }
     } catch {
       // Process may already be dead
     }

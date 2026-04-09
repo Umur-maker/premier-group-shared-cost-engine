@@ -25,8 +25,10 @@ def _resolve_data_dir() -> str:
     if env:
         return env
 
-    # 2. If running as PyInstaller bundle, always use AppData
+    # 2. If running as PyInstaller bundle, always use platform-specific app data
     if getattr(sys, "frozen", False):
+        if sys.platform == "darwin":
+            return os.path.join(os.path.expanduser("~"), "Library", "Application Support", "PremierCostEngine", "data")
         appdata = os.environ.get("APPDATA", os.path.expanduser("~"))
         return os.path.join(appdata, "PremierCostEngine", "data")
 
@@ -34,7 +36,9 @@ def _resolve_data_dir() -> str:
     if os.path.isdir(_DEV_DATA):
         return _DEV_DATA
 
-    # 4. AppData fallback
+    # 4. Platform-specific fallback
+    if sys.platform == "darwin":
+        return os.path.join(os.path.expanduser("~"), "Library", "Application Support", "PremierCostEngine", "data")
     appdata = os.environ.get("APPDATA", os.path.expanduser("~"))
     return os.path.join(appdata, "PremierCostEngine", "data")
 

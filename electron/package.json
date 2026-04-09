@@ -5,7 +5,9 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder --win"
+    "build": "electron-builder",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac"
   },
   "devDependencies": {
     "electron": "^33.0.0",
@@ -20,6 +22,11 @@
     "win": {
       "target": "nsis",
       "icon": "icon.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "icon.png",
+      "category": "public.app-category.business"
     },
     "nsis": {
       "oneClick": true,
