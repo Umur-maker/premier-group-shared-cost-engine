@@ -168,38 +168,21 @@ def allocate_costs(companies, ratios, monthly_input, settings=None, headcount_ov
 
     # ── NEW COST CATEGORIES ──
 
-    # Consumables (weighted, monthly input) — prefer per-company flag, fallback to settings
+    # Consumables (weighted) — uses per-company checkbox
     consumables_amount = monthly_input.get("consumables_total", 0)
-    if any("consumables_eligible" in c for c in active):
-        consumables_eligible = [c for c in active if c.get("consumables_eligible", False)]
-    else:
-        consumables_eligible = _filter_eligible(active, cats.get("consumables", {"eligible": "all"}))
+    consumables_eligible = [c for c in active if c.get("consumables_eligible", False)]
     cons_ratios = ratios.get("consumables", {"sqm_weight": 50, "headcount_weight": 50})
     consumables_shares = _distribute(consumables_amount, consumables_eligible,
         cons_ratios["sqm_weight"], cons_ratios["headcount_weight"], overrides)
 
-    # Printer (equal split) — prefer per-company flag, fallback to settings
+    # Printer (equal split) — uses per-company checkbox
     printer_amount = monthly_input.get("printer_total", 0)
-    if any("printer_eligible" in c for c in active):
-        printer_eligible = [c for c in active if c.get("printer_eligible", False)]
-    else:
-        printer_config = cats.get("printer", {
-            "eligible": "custom",
-            "include_companies": ["premier-capital", "premier-vision", "paul-george-cata"]
-        })
-        printer_eligible = _filter_eligible(active, printer_config)
+    printer_eligible = [c for c in active if c.get("printer_eligible", False)]
     printer_shares = _equal_split(printer_amount, printer_eligible)
 
-    # Internet (equal split) — prefer per-company flag, fallback to settings
+    # Internet (equal split) — uses per-company checkbox
     internet_amount = monthly_input.get("internet_total", 0)
-    if any("internet_eligible" in c for c in active):
-        internet_eligible = [c for c in active if c.get("internet_eligible", False)]
-    else:
-        internet_config = cats.get("internet", {
-            "eligible": "custom",
-            "include_companies": ["premier-capital", "premier-rise", "premier-vision", "paul-george-cata"]
-        })
-        internet_eligible = _filter_eligible(active, internet_config)
+    internet_eligible = [c for c in active if c.get("internet_eligible", False)]
     internet_shares = _equal_split(internet_amount, internet_eligible)
 
     # Maintenance (fixed EUR per company → RON + 21% VAT)

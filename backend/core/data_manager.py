@@ -11,7 +11,14 @@ _lock = threading.Lock()
 
 def load_companies():
     with open(COMPANIES_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
+        companies = json.load(f)
+    # Migrate: ensure new eligibility fields exist (default False) so engine
+    # never falls back to hardcoded settings.
+    for c in companies:
+        c.setdefault("consumables_eligible", False)
+        c.setdefault("printer_eligible", False)
+        c.setdefault("internet_eligible", False)
+    return companies
 
 
 def _atomic_write(filepath, data):
