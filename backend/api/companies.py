@@ -32,6 +32,8 @@ class CompanyCreate(BaseModel):
     beginning_date: str = ""
     expiration_date: str = ""
     notes: str = ""
+    monthly_rent_eur: float = 0
+    maintenance_rate_eur: float = 0
 
 
 class CompanyUpdate(BaseModel):
@@ -55,6 +57,8 @@ class CompanyUpdate(BaseModel):
     beginning_date: Optional[str] = None
     expiration_date: Optional[str] = None
     notes: Optional[str] = None
+    monthly_rent_eur: Optional[float] = None
+    maintenance_rate_eur: Optional[float] = None
 
 
 @router.get("")
@@ -100,6 +104,8 @@ def create_company(body: CompanyCreate):
         "beginning_date": body.beginning_date,
         "expiration_date": body.expiration_date,
         "notes": body.notes,
+        "monthly_rent_eur": body.monthly_rent_eur,
+        "maintenance_rate_eur": body.maintenance_rate_eur,
     }
     try:
         add_company(new_company)
