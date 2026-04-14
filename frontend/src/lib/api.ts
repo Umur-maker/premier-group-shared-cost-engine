@@ -117,6 +117,14 @@ export const getStatementsZipUrl = (runId: string) =>
 
 export const getBackupUrl = () => `${API_BASE}/api/backup`;
 
+export const listBackups = () =>
+  request<{ backups: { id: string; timestamp: string; companies_count: number }[] }>("/api/backups");
+
+export const restoreBackup = (backupId: string) =>
+  request<{ status: string; backup_id: string }>(`/api/backups/${encodeURIComponent(backupId)}/restore`, {
+    method: "POST",
+  });
+
 // Payments (ledger)
 export const getRunPayments = (runId: string) =>
   request<PaymentEntry[]>(`/api/payments/run/${runId}`);

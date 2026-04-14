@@ -20,7 +20,7 @@ async def lifespan(application: FastAPI):
 
 app = FastAPI(
     title="Premier Business Center - Shared Cost Engine",
-    version="3.6.1",
+    version="3.7.0",
     lifespan=lifespan,
 )
 
@@ -49,6 +49,63 @@ def get_translations(lang: str):
     if lang not in TRANSLATIONS:
         lang = "en"
     return {"translations": TRANSLATIONS[lang], "months": MONTH_NAMES[lang]}
+
+
+@app.get("/api/backups")
+def list_backups():
+    """List available automatic backups."""
+    from backend.core.config import BACKUP_DIR
+    if not os.path.isdir(BACKUP_DIR):
+        return {"backups": []}
+    entries = sorted(
+        [d for d in os.listdir(BACKUP_DIR) if d.startswith("backup_")],
+        reverse=True,
+    )
+    result = []
+    for entry in entries:
+        companies_file = os.path.join(BACKUP_DIR, entry, "companies.json")
+        count = 0
+        if os.path.exists(companies_file):
+            try:
+                import json
+                with open(companies_file, "r", encoding="utf-8") as f:
+                    count = len(json.load(f))
+            except Exception:
+                count = -1
+        # Parse timestamp from folder name: backup_YYYYMMDD_HHMMSS
+        ts = entry.replace("backup_", "")
+        result.append({"id": entry, "timestamp": ts, "companies_count": count})
+    return {"backups": result}
+
+
+@app.post("/api/backups/{backup_id}/restore")
+def restore_backup(backup_id: str):
+    """Restore data from a specific backup."""
+    from backend.core.config import BACKUP_DIR, DATA_DIR
+    import shutil
+    from fastapi import HTTPException
+
+    if ".." in backup_id or "/" in backup_id or "\\" in backup_id:
+        raise HTTPException(400, "Invalid backup ID.")
+
+    backup_path = os.path.join(BACKUP_DIR, backup_id)
+    if not os.path.isdir(backup_path):
+        raise HTTPException(404, f"Backup '{backup_id}' not found.")
+
+    # Restore by copying files from backup into DATA_DIR
+    try:
+        for name in os.listdir(backup_path):
+            src = os.path.join(backup_path, name)
+            dst = os.path.join(DATA_DIR, name)
+            if os.path.isdir(src):
+                if os.path.isdir(dst):
+                    shutil.rmtree(dst)
+                shutil.copytree(src, dst)
+            else:
+                shutil.copy2(src, dst)
+    except Exception as e:
+        raise HTTPException(500, f"Restore failed: {e}")
+    return {"status": "restored", "backup_id": backup_id}
 
 
 @app.get("/api/backup")

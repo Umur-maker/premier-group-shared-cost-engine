@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRef } from "react";
-import { getSettings, saveSettings, getBackupUrl, importCompanies, exportCompaniesUrl } from "@/lib/api";
+import { getSettings, saveSettings, getBackupUrl, importCompanies, exportCompaniesUrl, listBackups, restoreBackup } from "@/lib/api";
 import { useApp } from "@/lib/AppContext";
 import { tr } from "@/lib/i18n";
 import { PageLayout, SectionCard, Button } from "@/components";
@@ -14,6 +14,7 @@ export default function SettingsPage() {
   const { lang, setLang, theme, setTheme, showToast } = useApp();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dataDir, setDataDir] = useState<string>("");
+  const [backups, setBackups] = useState<{ id: string; timestamp: string; companies_count: number }[]>([]);
 
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -21,7 +22,16 @@ export default function SettingsPage() {
     if (api?.getDataDir) {
       api.getDataDir().then(setDataDir);
     }
+    listBackups().then((res) => setBackups(res.backups || [])).catch(() => {});
   }, []);
+
+  const formatTimestamp = (ts: string) => {
+    // "YYYYMMDD_HHMMSS" → "YYYY-MM-DD HH:MM:SS"
+    if (ts.length !== 15 || !ts.includes("_")) return ts;
+    const d = ts.slice(0, 8);
+    const t = ts.slice(9);
+    return `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)} ${t.slice(0, 2)}:${t.slice(2, 4)}:${t.slice(4, 6)}`;
+  };
   const [settings, setSettings] = useState<Settings | null>(null);
   const [pending, setPending] = useState<Settings | null>(null);
   const [saved, setSaved] = useState(false);
@@ -211,6 +221,43 @@ export default function SettingsPage() {
         <a href={getBackupUrl()} download>
           <Button variant="secondary">{tr("settings.backup", lang)}</Button>
         </a>
+      </SectionCard>
+
+      <SectionCard title={tr("settings.auto_backups", lang)}>
+        <p className="text-sm text-gray-500 mb-3">{tr("settings.auto_backups_desc", lang)}</p>
+        {backups.length === 0 ? (
+          <p className="text-sm text-gray-400 italic">{tr("settings.no_backups", lang)}</p>
+        ) : (
+          <div className="max-h-64 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg">
+            {backups.map((b, i) => (
+              <div key={b.id}
+                className={`flex items-center justify-between px-3 py-2 text-sm
+                  ${i % 2 === 0 ? "bg-white dark:bg-card-dark" : "bg-gray-50/60 dark:bg-gray-800/40"}`}>
+                <div>
+                  <span className="font-mono text-xs text-gray-600 dark:text-gray-400">
+                    {formatTimestamp(b.timestamp)}
+                  </span>
+                  <span className="ml-3 text-xs text-gray-400">
+                    {b.companies_count} {tr("settings.backup_companies", lang)}
+                  </span>
+                </div>
+                <Button variant="secondary" className="text-xs px-3 py-1"
+                  onClick={async () => {
+                    if (!confirm(tr("settings.restore_confirm", lang))) return;
+                    try {
+                      await restoreBackup(b.id);
+                      showToast(tr("settings.restore_success", lang), "success");
+                      setTimeout(() => window.location.reload(), 1500);
+                    } catch (err: unknown) {
+                      showToast(err instanceof Error ? err.message : "Restore failed", "error");
+                    }
+                  }}>
+                  {tr("settings.restore_backup", lang)}
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
       </SectionCard>
     </PageLayout>
   );
