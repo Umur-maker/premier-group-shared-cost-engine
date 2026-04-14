@@ -1,6 +1,6 @@
 {
   "name": "premier-cost-engine",
-  "version": "3.9.1",
+  "version": "3.9.2",
   "description": "Premier Business Center - Shared Cost Engine",
   "main": "main.js",
   "scripts": {
@@ -27,7 +27,22 @@
     "mac": {
       "target": "dmg",
       "icon": "icon.png",
-      "category": "public.app-category.business"
+      "category": "public.app-category.business",
+      "identity": null,
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false
+    },
+    "dmg": {
+      "writeUpdateInfo": true,
+      "contents": [
+        { "x": 130, "y": 200, "type": "file" },
+        { "x": 410, "y": 200, "type": "link", "path": "/Applications" },
+        { "x": 270, "y": 380, "type": "file", "path": "../mac-fix-permissions.command" }
+      ],
+      "window": {
+        "width": 600,
+        "height": 500
+      }
     },
     "nsis": {
       "oneClick": true,

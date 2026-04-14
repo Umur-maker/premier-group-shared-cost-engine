@@ -48,6 +48,11 @@ jobs:
         working-directory: backend
         run: python -m PyInstaller run_server.spec --noconfirm
 
+      # Make Mac fix-permissions script executable (Mac builds only)
+      - name: Make mac script executable
+        if: matrix.platform == 'mac'
+        run: chmod +x mac-fix-permissions.command
+
       # Build Electron installer
       - name: Install Electron dependencies
         working-directory: electron
