@@ -188,6 +188,10 @@ def save_official(body: CalculateRequest):
         body.month, body.year, body.language, mi,
         settings["ratios"], companies, results, tmp_path
     )
+    # Preserve payment history when a month is re-saved
+    if old_run_id and old_run_id != entry["id"]:
+        from backend.core.payments import reassign_payments_run
+        reassign_payments_run(old_run_id, entry["id"])
 
     try:
         os.unlink(tmp_path)

@@ -105,10 +105,18 @@ def allocate_costs(companies, ratios, monthly_input, settings=None, headcount_ov
     Returns:
         list of dicts, one per active company, with per-expense and total amounts.
     """
-    active = [c for c in companies if c["active"]]
+    active = [c for c in companies if c.get("active", False)]
     overrides = headcount_overrides or {}
     cats = (settings or {}).get("cost_categories", {})
     eur_rate = (settings or {}).get("eur_ron_rate", 5.1)
+    if not eur_rate or eur_rate <= 0:
+        eur_rate = 5.1
+    # Defensive: ensure all ratio keys exist with safe defaults
+    DEFAULT_RATIO = {"sqm_weight": 50, "headcount_weight": 50}
+    ratios = ratios or {}
+    for k in ("electricity", "gas", "water", "garbage", "consumables"):
+        if k not in ratios:
+            ratios[k] = DEFAULT_RATIO.copy()
 
     def _ext(key, legacy_key=None):
         val = monthly_input.get(key, 0)
@@ -234,8 +242,14 @@ def allocate_costs(companies, ratios, monthly_input, settings=None, headcount_ov
 
     # ── HOTEL SUBLET POST-PROCESSING ──
     sublet = (settings or {}).get("hotel_sublet", {})
-    if sublet.get("active") and sublet.get("percentage", 0) > 0:
-        pct = sublet["percentage"] / 100.0
+    sublet_pct_raw = sublet.get("percentage", 0)
+    # Clamp percentage to safe range [0, 100] to prevent negative customer charges
+    if sublet_pct_raw < 0:
+        sublet_pct_raw = 0
+    if sublet_pct_raw > 100:
+        sublet_pct_raw = 100
+    if sublet.get("active") and sublet_pct_raw > 0:
+        pct = sublet_pct_raw / 100.0
         applies_to = sublet.get("applies_to", [])
 
         # Find hotel result

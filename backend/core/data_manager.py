@@ -40,9 +40,35 @@ def save_companies(companies):
         _atomic_write(COMPANIES_FILE, companies)
 
 
+_SETTINGS_DEFAULTS = {
+    "ratios": {
+        "electricity": {"sqm_weight": 50, "headcount_weight": 50},
+        "gas": {"sqm_weight": 80, "headcount_weight": 20},
+        "water": {"sqm_weight": 30, "headcount_weight": 70},
+        "garbage": {"sqm_weight": 25, "headcount_weight": 75},
+        "consumables": {"sqm_weight": 50, "headcount_weight": 50},
+    },
+    "eur_ron_rate": 5.1,
+    "cost_categories": {},
+    "hotel_sublet": {"active": False, "name": "", "percentage": 0, "applies_to": []},
+}
+
+
 def load_settings():
-    with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
+    try:
+        with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
+            settings = json.load(f)
+        if not isinstance(settings, dict):
+            return _SETTINGS_DEFAULTS.copy()
+        # Fill in missing keys with defaults
+        for key, default_val in _SETTINGS_DEFAULTS.items():
+            settings.setdefault(key, default_val)
+        # Ensure all required ratio types exist
+        for ratio_key, ratio_default in _SETTINGS_DEFAULTS["ratios"].items():
+            settings["ratios"].setdefault(ratio_key, ratio_default)
+        return settings
+    except (json.JSONDecodeError, FileNotFoundError, OSError):
+        return _SETTINGS_DEFAULTS.copy()
 
 
 def save_settings(settings):

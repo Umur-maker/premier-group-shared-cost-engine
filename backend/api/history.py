@@ -45,7 +45,10 @@ def remove_run(run_id: str):
     if not any(r["id"] == run_id for r in runs):
         raise HTTPException(404, f"Run '{run_id}' not found.")
     delete_run(run_id)
-    return {"status": "deleted", "id": run_id}
+    # Cascade: remove orphaned payments
+    from backend.core.payments import delete_payments_for_run
+    deleted_payments = delete_payments_for_run(run_id)
+    return {"status": "deleted", "id": run_id, "payments_removed": deleted_payments}
 
 
 @router.get("/{run_id}/excel")
@@ -138,6 +141,11 @@ def recalculate_run(run_id: str):
         entry["month"], entry["year"], lang, mi,
         settings["ratios"], companies, results, tmp_path
     )
+    # Preserve payment history: move payments from old run_id to new run_id
+    if old_id and old_id != new_entry["id"]:
+        from backend.core.payments import reassign_payments_run
+        reassign_payments_run(old_id, new_entry["id"])
+
     try:
         os.unlink(tmp_path)
     except OSError:

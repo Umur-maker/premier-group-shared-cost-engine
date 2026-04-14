@@ -52,6 +52,31 @@ def delete_payment(payment_id):
         _save(data)
 
 
+def delete_payments_for_run(run_id):
+    """Remove all payments associated with a run (when run is deleted)."""
+    with _lock:
+        data = _load()
+        before = len(data["entries"])
+        data["entries"] = [e for e in data["entries"] if e["run_id"] != run_id]
+        _save(data)
+        return before - len(data["entries"])
+
+
+def reassign_payments_run(old_run_id, new_run_id):
+    """Move payments from one run_id to another (used when re-saving same month)."""
+    if old_run_id == new_run_id:
+        return 0
+    with _lock:
+        data = _load()
+        count = 0
+        for e in data["entries"]:
+            if e["run_id"] == old_run_id:
+                e["run_id"] = new_run_id
+                count += 1
+        _save(data)
+        return count
+
+
 def get_payments_for_run(run_id):
     """Get all payment entries for a specific run."""
     data = _load()

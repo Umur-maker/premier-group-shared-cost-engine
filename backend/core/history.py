@@ -19,10 +19,23 @@ def _ensure_dir():
 
 def _load_index():
     _ensure_dir()
-    if os.path.exists(HISTORY_INDEX):
+    if not os.path.exists(HISTORY_INDEX):
+        return []
+    try:
         with open(HISTORY_INDEX, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return []
+            data = json.load(f)
+        if not isinstance(data, list):
+            return []
+        return data
+    except (json.JSONDecodeError, OSError) as e:
+        # Corrupted index — back it up and start fresh to avoid data loss
+        try:
+            backup = HISTORY_INDEX + ".corrupted_" + str(int(__import__("time").time()))
+            os.rename(HISTORY_INDEX, backup)
+            print(f"[history] Corrupted index backed up to {backup}: {e}")
+        except OSError:
+            pass
+        return []
 
 
 def _save_index(entries):
