@@ -10,6 +10,9 @@ export interface Company {
   electricity_eligible: boolean;
   water_eligible: boolean;
   garbage_eligible: boolean;
+  consumables_eligible?: boolean;
+  printer_eligible?: boolean;
+  internet_eligible?: boolean;
   active: boolean;
   contact_person: string;
   phone: string;

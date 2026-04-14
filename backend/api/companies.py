@@ -22,6 +22,9 @@ class CompanyCreate(BaseModel):
     electricity_eligible: bool = True
     water_eligible: bool = True
     garbage_eligible: bool = True
+    consumables_eligible: bool = False
+    printer_eligible: bool = False
+    internet_eligible: bool = False
     office_no: str = ""
     contact_person: str = ""
     phone: str = ""
@@ -41,6 +44,9 @@ class CompanyUpdate(BaseModel):
     electricity_eligible: Optional[bool] = None
     water_eligible: Optional[bool] = None
     garbage_eligible: Optional[bool] = None
+    consumables_eligible: Optional[bool] = None
+    printer_eligible: Optional[bool] = None
+    internet_eligible: Optional[bool] = None
     active: Optional[bool] = None
     office_no: Optional[str] = None
     contact_person: Optional[str] = None
@@ -83,6 +89,9 @@ def create_company(body: CompanyCreate):
         "electricity_eligible": body.electricity_eligible,
         "water_eligible": body.water_eligible,
         "garbage_eligible": body.garbage_eligible,
+        "consumables_eligible": body.consumables_eligible,
+        "printer_eligible": body.printer_eligible,
+        "internet_eligible": body.internet_eligible,
         "active": True,
         "office_no": body.office_no,
         "contact_person": body.contact_person,

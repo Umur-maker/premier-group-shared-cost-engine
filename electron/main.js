@@ -24,7 +24,22 @@ const frontendPath = isDev
   ? path.join(resourcesPath, "frontend", "out")
   : path.join(resourcesPath, "frontend");
 
-const dataDir = path.join(app.getPath("userData"), "data");
+const fs = require("fs");
+
+function getDataDir() {
+  const configFile = path.join(app.getPath("userData"), "data-config.json");
+  try {
+    if (fs.existsSync(configFile)) {
+      const cfg = JSON.parse(fs.readFileSync(configFile, "utf-8"));
+      if (cfg.dataDir && fs.existsSync(cfg.dataDir)) {
+        return cfg.dataDir;
+      }
+    }
+  } catch {}
+  return path.join(app.getPath("userData"), "data");
+}
+
+const dataDir = getDataDir();
 
 function startBackend() {
   if (isDev) {
@@ -270,6 +285,26 @@ app.on("ready", async () => {
   // Auto-update (only in packaged mode)
   if (!isDev) {
     setupAutoUpdater();
+  }
+});
+
+ipcMain.handle("get-data-dir", () => dataDir);
+
+ipcMain.handle("select-data-dir", async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ["openDirectory"],
+    title: "Select shared data folder",
+  });
+  return result.canceled ? null : result.filePaths[0];
+});
+
+ipcMain.handle("set-data-dir", async (_event, newPath) => {
+  const configFile = path.join(app.getPath("userData"), "data-config.json");
+  try {
+    fs.writeFileSync(configFile, JSON.stringify({ dataDir: newPath }, null, 2));
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
   }
 });
 

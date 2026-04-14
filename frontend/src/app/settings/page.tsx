@@ -13,6 +13,15 @@ const RATIO_TYPES = ["electricity", "gas", "water", "garbage", "consumables"] as
 export default function SettingsPage() {
   const { lang, setLang, theme, setTheme, showToast } = useApp();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [dataDir, setDataDir] = useState<string>("");
+
+  useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const api = (globalThis as any).window?.electronAPI;
+    if (api?.getDataDir) {
+      api.getDataDir().then(setDataDir);
+    }
+  }, []);
   const [settings, setSettings] = useState<Settings | null>(null);
   const [pending, setPending] = useState<Settings | null>(null);
   const [saved, setSaved] = useState(false);
@@ -167,6 +176,35 @@ export default function SettingsPage() {
           {tr("settings.export_companies", lang)}
         </Button>
       </SectionCard>
+
+      {dataDir && (
+        <SectionCard title={tr("settings.data_location", lang)}>
+          <p className="text-sm text-gray-500 mb-3">{tr("settings.data_location_desc", lang)}</p>
+          <div className="flex flex-col gap-2">
+            <div className="text-xs text-gray-600 dark:text-gray-400">
+              <span className="font-semibold">{tr("settings.current_path", lang)}:</span>
+              <span className="ml-2 font-mono break-all">{dataDir}</span>
+            </div>
+            <div>
+              <Button variant="secondary" onClick={async () => {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const api = (globalThis as any).window?.electronAPI;
+                if (!api) return;
+                const selected = await api.selectDataDir();
+                if (!selected) return;
+                const result = await api.setDataDir(selected);
+                if (result.success) {
+                  showToast(tr("settings.restart_required", lang), "success");
+                } else {
+                  showToast(result.error || "Failed", "error");
+                }
+              }}>
+                {tr("settings.change_location", lang)}
+              </Button>
+            </div>
+          </div>
+        </SectionCard>
+      )}
 
       <SectionCard title={tr("settings.backup", lang)}>
         <p className="text-sm text-gray-500 mb-3">{tr("settings.backup_desc", lang)}</p>

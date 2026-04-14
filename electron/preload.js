@@ -1,2 +1,7 @@
-// Minimal preload script for security isolation
-// No Node APIs are exposed to the renderer
+const { contextBridge, ipcRenderer } = require("electron");
+
+contextBridge.exposeInMainWorld("electronAPI", {
+  getDataDir: () => ipcRenderer.invoke("get-data-dir"),
+  selectDataDir: () => ipcRenderer.invoke("select-data-dir"),
+  setDataDir: (newPath) => ipcRenderer.invoke("set-data-dir", newPath),
+});
