@@ -24,7 +24,7 @@ PAGE_W = A4[0]
 CONTENT_W = PAGE_W - 50 * mm  # 25mm margins each side
 
 
-def generate_statement_pdf(filepath, company, result, month, year, monthly_input, lang="en", eur_rate=None):
+def generate_statement_pdf(filepath, company, result, month, year, monthly_input, lang="en", eur_rate=None, sublet_info=None):
     eur_rate = eur_rate or 5.1
     doc = SimpleDocTemplate(filepath, pagesize=A4,
         leftMargin=25*mm, rightMargin=25*mm, topMargin=20*mm, bottomMargin=20*mm)
@@ -219,6 +219,26 @@ def generate_statement_pdf(filepath, company, result, month, year, monthly_input
     }
     note = _notes.get(lang, _notes["en"])
     elements.append(Paragraph(note, s_note))
+
+    # ── SUBLET DISCLOSURE (only for hotel) ──
+    if company.get("id") == "hotel" and sublet_info and sublet_info.get("active"):
+        sublet_name = sublet_info.get("name", "Sublet")
+        pct = sublet_info.get("percentage", 0)
+        applies = sublet_info.get("applies_to", [])
+        applies_labels = []
+        for k in applies:
+            if k == "electricity": applies_labels.append({"en": "electricity", "ro": "electricitate", "tr": "elektrik"}.get(lang, "electricity"))
+            elif k == "water": applies_labels.append({"en": "water", "ro": "apa", "tr": "su"}.get(lang, "water"))
+            elif k == "garbage": applies_labels.append({"en": "garbage", "ro": "gunoi", "tr": "\u00e7\u00f6p"}.get(lang, "garbage"))
+            elif k == "gas_hotel": applies_labels.append({"en": "gas", "ro": "gaz", "tr": "do\u011falgaz"}.get(lang, "gas"))
+        applies_text = ", ".join(applies_labels)
+        sublet_notes = {
+            "en": f"Note on sublet arrangement: {pct}% of your {applies_text} costs have been allocated to the sublet tenant ({sublet_name}) per the sublet agreement. Your statement reflects your {100-pct}% share.",
+            "ro": f"Nota privind subinchirierea: {pct}% din costurile dvs. de {applies_text} au fost alocate catre subchirias ({sublet_name}) conform acordului de subinchiriere. Extrasul reflecta cota dvs. de {100-pct}%.",
+            "tr": f"Alt kiralama notu: {applies_text} maliyetlerinizin %{pct}'i alt kiralama s\u00f6zle\u015fmesi gere\u011fi alt kirac\u0131ya ({sublet_name}) da\u011f\u0131t\u0131lm\u0131\u015ft\u0131r. Ekstre %{100-pct}'lik pay\u0131n\u0131z\u0131 yans\u0131t\u0131r.",
+        }
+        sublet_text = sublet_notes.get(lang, sublet_notes["en"])
+        elements.append(Paragraph(sublet_text, s_note))
 
     doc.build(elements)
     return filepath

@@ -86,9 +86,17 @@ export interface AllocationResult {
   total: number;
 }
 
+export interface AllocationWarning {
+  field: string;
+  label: string;
+  amount: number;
+  message: string;
+}
+
 export interface CalculateResponse {
   results: AllocationResult[];
   filename: string;
+  warnings?: AllocationWarning[];
 }
 
 export interface SaveResponse {

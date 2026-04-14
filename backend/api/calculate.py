@@ -53,8 +53,72 @@ def _validate_period(month: int, year: int):
         raise HTTPException(400, "Year must be between 2020 and 2100.")
 
 
-def _run_allocation(body: CalculateRequest):
-    """Shared allocation logic for preview and save."""
+def _compute_warnings(companies, mi):
+    """Detect cost amounts with no eligible companies — money would be lost."""
+    active = [c for c in companies if c.get("active")]
+    warnings = []
+    checks = [
+        ("consumables_total", "consumables_eligible", "Consumables"),
+        ("printer_total", "printer_eligible", "Printer"),
+        ("internet_total", "internet_eligible", "Internet"),
+    ]
+    for amount_key, flag_key, label in checks:
+        amount = mi.get(amount_key, 0) or 0
+        if amount > 0:
+            eligible = [c for c in active if c.get(flag_key, False)]
+            if len(eligible) == 0:
+                warnings.append({
+                    "field": amount_key,
+                    "label": label,
+                    "amount": amount,
+                    "message": f"{label}: {amount:.2f} RON entered but NO companies have {label} eligibility. This money would not be allocated to anyone. Tick at least one company in Companies section.",
+                })
+    # Utility cost eligibility checks
+    util_checks = [
+        ("electricity_total", "electricity_eligible", "Electricity"),
+        ("water_total", "water_eligible", "Water"),
+        ("garbage_total", "garbage_eligible", "Garbage"),
+    ]
+    for amount_key, flag_key, label in util_checks:
+        amount = mi.get(amount_key, 0) or 0
+        ext = mi.get("external_" + amount_key.replace("_total", ""), 0) or 0
+        net = amount - ext
+        if net > 0:
+            eligible = [c for c in active if c.get(flag_key, False)]
+            if len(eligible) == 0:
+                warnings.append({
+                    "field": amount_key,
+                    "label": label,
+                    "amount": net,
+                    "message": f"{label}: {net:.2f} RON net but NO companies have {label} eligibility.",
+                })
+    # Gas per floor: only warn if amount > 0 but no companies on that floor with heating
+    gas_checks = [
+        ("hotel_gas_total", "external_hotel_gas", "hotel", "Hotel Gas"),
+        ("ground_floor_gas_total", "external_gf_gas", "ground_floor", "Ground Floor Gas"),
+        ("first_floor_gas_total", "external_ff_gas", "first_floor", "First Floor Gas"),
+    ]
+    for amount_key, ext_key, floor, label in gas_checks:
+        amount = mi.get(amount_key, 0) or 0
+        ext = mi.get(ext_key, 0) or 0
+        net = amount - ext
+        if net > 0:
+            eligible = [c for c in active if c.get("floor") == floor and c.get("has_heating")]
+            if len(eligible) == 0:
+                warnings.append({
+                    "field": amount_key,
+                    "label": label,
+                    "amount": net,
+                    "message": f"{label}: {net:.2f} RON entered but no companies on {floor.replace('_', ' ')} have heating.",
+                })
+    return warnings
+
+
+def _run_allocation(body: CalculateRequest, strict: bool = False):
+    """Shared allocation logic for preview and save.
+
+    strict: if True, raises 400 if any amount would be lost (no eligible companies).
+    """
     _validate_period(body.month, body.year)
     if body.language not in ("en", "ro", "tr"):
         raise HTTPException(400, "Language must be 'en', 'ro', or 'tr'.")
@@ -75,6 +139,11 @@ def _run_allocation(body: CalculateRequest):
         if mi[ext_key] > mi[total_key]:
             raise HTTPException(400, f"{label}: external usage ({mi[ext_key]}) exceeds total ({mi[total_key]}).")
 
+    warnings = _compute_warnings(companies, mi)
+    if strict and warnings:
+        msg = "Cannot save: money would be lost. " + " ".join(w["message"] for w in warnings)
+        raise HTTPException(400, msg)
+
     try:
         results = allocate_costs(companies, settings["ratios"], mi, settings=settings)
     except ValueError as e:
@@ -83,7 +152,7 @@ def _run_allocation(body: CalculateRequest):
     if not results:
         raise HTTPException(400, "No active companies found.")
 
-    return companies, settings, mi, results
+    return companies, settings, mi, results, warnings
 
 
 # ── Preview only (no save) ──
@@ -91,12 +160,13 @@ def _run_allocation(body: CalculateRequest):
 @router.post("")
 def calculate_preview(body: CalculateRequest):
     """Calculate allocation preview — nothing saved to history."""
-    companies, settings, mi, results = _run_allocation(body)
+    companies, settings, mi, results, warnings = _run_allocation(body, strict=False)
     mn = month_name(body.month, body.language)
     filename = f"Premier_BC_{body.year}_{body.month:02d}_{mn}.xlsx"
     return {
         "results": results,
         "filename": filename,
+        "warnings": warnings,
     }
 
 
@@ -104,8 +174,8 @@ def calculate_preview(body: CalculateRequest):
 
 @router.post("/save")
 def save_official(body: CalculateRequest):
-    """Save calculation as official report. Replaces existing if any."""
-    companies, settings, mi, results = _run_allocation(body)
+    """Save calculation as official report. Blocks save if money would be lost."""
+    companies, settings, mi, results, warnings = _run_allocation(body, strict=True)
 
     active = [c for c in companies if c["active"]]
     mn = month_name(body.month, body.language)
@@ -196,7 +266,7 @@ def company_statement_pdf(body: StatementRequest):
     filename = f"Statement_{safe_name(company['name'])}_{body.year}_{body.month:02d}.pdf"
     tmp_path = os.path.join(tempfile.gettempdir(), filename)
     settings = load_settings()
-    generate_statement_pdf(tmp_path, company, result, body.month, body.year, mi, body.language, eur_rate=settings.get("eur_ron_rate"))
+    generate_statement_pdf(tmp_path, company, result, body.month, body.year, mi, body.language, eur_rate=settings.get("eur_ron_rate"), sublet_info=settings.get("hotel_sublet"))
     return FileResponse(tmp_path, media_type="application/pdf",
         filename=filename, background=BackgroundTask(os.unlink, tmp_path))
 
@@ -214,7 +284,7 @@ def company_agreement(company_id: str, language: str = "en"):
         raise HTTPException(404, f"Active company '{company_id}' not found.")
     filename = f"Agreement_{safe_name(company['name'])}.pdf"
     tmp_path = os.path.join(tempfile.gettempdir(), filename)
-    generate_agreement_pdf(tmp_path, company, settings, language)
+    generate_agreement_pdf(tmp_path, company, settings, language, all_companies=companies)
     return FileResponse(tmp_path, media_type="application/pdf",
         filename=filename, background=BackgroundTask(os.unlink, tmp_path))
 

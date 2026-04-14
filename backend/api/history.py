@@ -99,6 +99,7 @@ def history_statement_pdf(run_id: str, company_id: str = Query(...)):
         entry["month"], entry["year"],
         entry.get("monthly_input", {}), lang,
         eur_rate=entry.get("ratios", {}).get("eur_ron_rate") or settings.get("eur_ron_rate"),
+        sublet_info=settings.get("hotel_sublet"),
     )
 
     return FileResponse(tmp_path, media_type="application/pdf",
@@ -178,6 +179,7 @@ def download_all_statements(run_id: str):
                 entry["month"], entry["year"],
                 entry.get("monthly_input", {}), lang,
                 eur_rate=eur_rate,
+                sublet_info=settings.get("hotel_sublet"),
             )
             zf.write(pdf_path, pdf_name)
             try:

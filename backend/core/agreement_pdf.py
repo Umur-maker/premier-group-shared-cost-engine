@@ -24,8 +24,18 @@ PAGE_W = A4[0]
 CONTENT_W = PAGE_W - 50 * mm
 
 
-def generate_agreement_pdf(filepath, company, settings, lang="en"):
+def generate_agreement_pdf(filepath, company, settings, lang="en", all_companies=None):
     """Generate a cost sharing agreement PDF for a specific company."""
+    # Collect eligible company names dynamically (if provided)
+    def _names_for(flag):
+        if not all_companies:
+            return "eligible companies"
+        names = [c["name"] for c in all_companies if c.get("active") and c.get(flag)]
+        return ", ".join(names) if names else "-"
+
+    printer_names = _names_for("printer_eligible")
+    internet_names = _names_for("internet_eligible")
+    consumables_names = _names_for("consumables_eligible")
     doc = SimpleDocTemplate(filepath, pagesize=A4,
         leftMargin=25*mm, rightMargin=25*mm, topMargin=20*mm, bottomMargin=25*mm)
 
@@ -194,45 +204,57 @@ def generate_agreement_pdf(filepath, company, settings, lang="en"):
     # ── COST CATEGORIES ──
     eur_rate = settings.get("eur_ron_rate", 5.1)
 
+    # Hotel sublet info
+    sublet = settings.get("hotel_sublet", {})
+    sublet_active = sublet.get("active", False)
+    sublet_name = sublet.get("name", "")
+    sublet_pct = sublet.get("percentage", 0)
+
     if is_en:
         elements.append(Paragraph("3. Cost Categories", s_h2))
         categories_text = [
             "Electricity, Water, Garbage - shared among all eligible companies by weighted formula",
             "Gas - split per floor (ground floor / first floor / hotel) by weighted formula",
-            "Consumables (tea, coffee, water) - shared among eligible companies",
-            "Printer - equally shared among Premier Capital, Premier Vision, Paul George Cata",
-            "Internet - equally shared among Premier Capital, Premier Rise, Premier Vision, Paul George Cata",
+            f"Consumables (tea, coffee, water) - shared among: {consumables_names}",
+            f"Printer - equally shared among: {printer_names}",
+            f"Internet - equally shared among: {internet_names}",
             f"Maintenance - fixed EUR amount per company, converted at EUR/RON rate ({eur_rate})",
             f"Rent - fixed EUR amount per company, converted at EUR/RON rate ({eur_rate})",
             "21% VAT is applied on top of Maintenance and Rent amounts",
             "External usage amounts are deducted from invoice totals before allocation",
         ]
+        if sublet_active:
+            categories_text.append(f"Hotel Sublet: {sublet_pct}% of hotel's utility costs are allocated to {sublet_name} per sublet agreement")
     elif is_tr:
         elements.append(Paragraph("3. Gider Kategorileri", s_h2))
         categories_text = [
             "Elektrik, Su, \u00c7\u00f6p - t\u00fcm uygun firmalar aras\u0131nda a\u011f\u0131rl\u0131kl\u0131 form\u00fclle payla\u015f\u0131l\u0131r",
             "Do\u011falgaz - kat baz\u0131nda b\u00f6l\u00fcn\u00fcr (zemin kat / 1. kat / otel)",
-            "Sarf Malzeme (\u00e7ay, kahve, su) - uygun firmalar aras\u0131nda payla\u015f\u0131l\u0131r",
-            "Yaz\u0131c\u0131 - Premier Capital, Premier Vision, Paul George Cata aras\u0131nda e\u015fit payla\u015f\u0131l\u0131r",
-            "\u0130nternet - Premier Capital, Premier Rise, Premier Vision, Paul George Cata aras\u0131nda e\u015fit payla\u015f\u0131l\u0131r",
+            f"Sarf Malzeme (\u00e7ay, kahve, su) - payla\u015f\u0131l\u0131r: {consumables_names}",
+            f"Yaz\u0131c\u0131 - e\u015fit payla\u015f\u0131l\u0131r: {printer_names}",
+            f"\u0130nternet - e\u015fit payla\u015f\u0131l\u0131r: {internet_names}",
             f"Bak\u0131m - firma ba\u015f\u0131na sabit EUR tutar\u0131, EUR/RON kuru ({eur_rate}) ile \u00e7evrilir",
             f"Kira - firma ba\u015f\u0131na sabit EUR tutar\u0131, EUR/RON kuru ({eur_rate}) ile \u00e7evrilir",
             "Bak\u0131m ve Kira tutarlar\u0131 \u00fczerine %21 KDV uygulan\u0131r",
             "Harici kullan\u0131m tutarlar\u0131 da\u011f\u0131t\u0131m \u00f6ncesi fatura toplamlar\u0131ndan d\u00fc\u015f\u00fcl\u00fcr",
         ]
+        if sublet_active:
+            categories_text.append(f"Otel Alt Kiralama: Otelin fatura maliyetlerinin %{sublet_pct}'i alt kiralama s\u00f6zle\u015fmesi gere\u011fi {sublet_name}'a aktar\u0131l\u0131r")
     else:
         elements.append(Paragraph("3. Categorii de Costuri", s_h2))
         categories_text = [
             "Electricitate, Apa, Gunoi - impartite intre toate companiile eligibile prin formula ponderata",
             "Gaz - impartit pe etaj (parter / etaj 1 / hotel) prin formula ponderata",
-            "Consumabile (ceai, cafea, apa) - impartite intre companiile eligibile",
-            "Imprimanta - impartita egal intre Premier Capital, Premier Vision, Paul George Cata",
-            "Internet - impartit egal intre Premier Capital, Premier Rise, Premier Vision, Paul George Cata",
+            f"Consumabile (ceai, cafea, apa) - impartite intre: {consumables_names}",
+            f"Imprimanta - impartita egal intre: {printer_names}",
+            f"Internet - impartit egal intre: {internet_names}",
             f"Intretinere - suma fixa EUR per companie, convertita la cursul EUR/RON ({eur_rate})",
             f"Chirie - suma fixa EUR per companie, convertita la cursul EUR/RON ({eur_rate})",
             "TVA 21% se aplica pe sumele de Intretinere si Chirie",
             "Sumele de consum extern sunt deduse din totalul facturilor inainte de alocare",
         ]
+        if sublet_active:
+            categories_text.append(f"Subinchiriere Hotel: {sublet_pct}% din costurile utilitatilor hotelului sunt alocate catre {sublet_name} conform acordului de subinchiriere")
 
     for item in categories_text:
         elements.append(Paragraph(f"\u2022  {item}", s_body))

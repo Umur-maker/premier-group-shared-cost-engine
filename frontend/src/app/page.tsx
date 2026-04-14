@@ -6,7 +6,7 @@ import { formatRon, parseRonInput } from "@/lib/formatting";
 import { useApp } from "@/lib/AppContext";
 import { tr, monthNames } from "@/lib/i18n";
 import { PageLayout, SectionCard, MoneyInput, DataTable, Button, ExportPanel } from "@/components";
-import type { MonthlyInput, AllocationResult, Company } from "@/types";
+import type { MonthlyInput, AllocationResult, Company, AllocationWarning } from "@/types";
 
 const ALL_COST_KEYS: (keyof MonthlyInput)[] = [
   "electricity_total", "water_total", "garbage_total",
@@ -46,6 +46,7 @@ export default function MonthlyInputPage() {
   const [frozenInput, setFrozenInput] = useState<MonthlyInput | null>(null);
   const [pageState, setPageState] = useState<PageState>("input");
   const [previewTab, setPreviewTab] = useState("summary");
+  const [warnings, setWarnings] = useState<AllocationWarning[]>([]);
 
   useEffect(() => {
     getCompanies().then(setCompanies).catch(() => setError(tr("error.backend_down", lang)));
@@ -59,11 +60,12 @@ export default function MonthlyInputPage() {
 
   // Step 1: Preview
   const handlePreview = async () => {
-    setError(""); setResults(null); setLoading(true);
+    setError(""); setResults(null); setWarnings([]); setLoading(true);
     try {
       const mi = buildInput();
       const res = await calculatePreview({ month, year, language: lang, monthly_input: mi });
       setResults(res.results); setFilename(res.filename); setFrozenInput(mi);
+      setWarnings(res.warnings || []);
       setPageState("preview");
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Error");
@@ -223,12 +225,34 @@ export default function MonthlyInputPage() {
                 <span className="text-sm text-gray-500">{months[month - 1]} {year}</span>
               </div>
               {pageState === "preview" && (
-                <Button onClick={handleSave} disabled={loading}>
+                <Button onClick={handleSave} disabled={loading || warnings.length > 0}
+                  title={warnings.length > 0 ? warnings[0].message : ""}>
                   {loading ? "..." : tr("monthly.save_official", lang)}
                 </Button>
               )}
             </div>
           </SectionCard>
+
+          {/* Warnings */}
+          {warnings.length > 0 && (
+            <SectionCard>
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-lg p-4">
+                <h3 className="font-bold text-red-700 dark:text-red-400 text-sm mb-2">
+                  {tr("monthly.warnings_title", lang)}
+                </h3>
+                <ul className="space-y-1">
+                  {warnings.map((w, i) => (
+                    <li key={i} className="text-sm text-red-700 dark:text-red-300">
+                      {w.message}
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-xs text-red-600 dark:text-red-400 mt-3 italic">
+                  {tr("monthly.warnings_block_save", lang)}
+                </p>
+              </div>
+            </SectionCard>
+          )}
 
           {/* Preview tabs */}
           <SectionCard>

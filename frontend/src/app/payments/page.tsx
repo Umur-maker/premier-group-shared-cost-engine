@@ -91,16 +91,22 @@ export default function PaymentsPage() {
           {/* Balance overview */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {activeWithDue.map(r => {
+              // Payments for THIS run only
               const companyPayments = payments.filter(p => p.company_id === r.company_id);
-              const paid = companyPayments.reduce((s, p) => s + p.amount, 0);
-              const bal = balances[r.company_id] || 0;
+              const paidThisMonth = companyPayments.reduce((s, p) => s + p.amount, 0);
+              const thisMonthBal = r.total - paidThisMonth;
+              // Running balance across ALL months (from backend)
+              const runningBal = balances[r.company_id] || 0;
               return (
                 <SectionCard key={r.company_id} className="!p-3">
                   <div className="text-xs font-medium truncate mb-1">{r.company_name}</div>
                   <div className="text-xs text-gray-500">{tr("monthly.amount_due", lang)}: {formatRon(r.total)}</div>
-                  <div className="text-xs text-green-600">{tr("manager.paid", lang)}: {formatRon(paid)}</div>
-                  <div className={`text-sm font-semibold mt-1 ${bal > 0 ? "text-red-600" : bal < 0 ? "text-blue-600" : "text-green-600"}`}>
-                    {bal > 0 ? formatRon(bal) : bal < 0 ? `${tr("monthly.credit", lang)}: ${formatRon(Math.abs(bal))}` : tr("manager.paid", lang)}
+                  <div className="text-xs text-green-600">{tr("manager.paid", lang)}: {formatRon(paidThisMonth)}</div>
+                  <div className={`text-xs font-medium mt-1 ${thisMonthBal > 0 ? "text-orange-600" : thisMonthBal < 0 ? "text-blue-600" : "text-green-600"}`}>
+                    {tr("payments.this_month", lang)}: {thisMonthBal > 0 ? formatRon(thisMonthBal) : thisMonthBal < 0 ? `-${formatRon(Math.abs(thisMonthBal))}` : formatRon(0)}
+                  </div>
+                  <div className={`text-sm font-bold mt-1 pt-1 border-t border-gray-200 dark:border-gray-700 ${runningBal > 0 ? "text-red-600" : runningBal < 0 ? "text-blue-600" : "text-green-600"}`}>
+                    {tr("payments.running_total", lang)}: {runningBal > 0 ? formatRon(runningBal) : runningBal < 0 ? `${tr("monthly.credit", lang)}: ${formatRon(Math.abs(runningBal))}` : tr("manager.paid", lang)}
                   </div>
                 </SectionCard>
               );
