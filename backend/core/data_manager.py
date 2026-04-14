@@ -12,12 +12,19 @@ _lock = threading.Lock()
 def load_companies():
     with open(COMPANIES_FILE, "r", encoding="utf-8") as f:
         companies = json.load(f)
-    # Migrate: ensure new eligibility fields exist (default False) so engine
-    # never falls back to hardcoded settings.
+    # Migrate: ensure ALL eligibility fields exist with sensible defaults.
+    # Utility eligibility defaults to True (matches historical engine behavior),
+    # service eligibility defaults to False (these are opt-in per company).
     for c in companies:
+        c.setdefault("electricity_eligible", True)
+        c.setdefault("water_eligible", True)
+        c.setdefault("garbage_eligible", True)
+        c.setdefault("has_heating", False)
         c.setdefault("consumables_eligible", False)
         c.setdefault("printer_eligible", False)
         c.setdefault("internet_eligible", False)
+        c.setdefault("monthly_rent_eur", 0)
+        c.setdefault("maintenance_rate_eur", 0)
     return companies
 
 

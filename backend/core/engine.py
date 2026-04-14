@@ -263,9 +263,10 @@ def allocate_costs(companies, ratios, monthly_input, settings=None, headcount_ov
                     sublet_entry[result_key] = 0.0
 
             sublet_entry["total"] = round(sublet_total, 2)
-            # Recalculate hotel total
+            # Recalculate hotel total — MUST exclude "total" itself or it doubles
             hotel_result["total"] = round(sum(
-                v for k, v in hotel_result.items() if k not in ("company_id", "company_name")
+                v for k, v in hotel_result.items()
+                if k not in ("company_id", "company_name", "total")
             ), 2)
             results.append(sublet_entry)
 

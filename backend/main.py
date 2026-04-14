@@ -20,7 +20,7 @@ async def lifespan(application: FastAPI):
 
 app = FastAPI(
     title="Premier Business Center - Shared Cost Engine",
-    version="3.8.0",
+    version="3.8.1",
     lifespan=lifespan,
 )
 
