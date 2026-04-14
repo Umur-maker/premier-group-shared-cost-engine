@@ -165,8 +165,13 @@ export default function ManagerPage() {
     );
     const totalCosts = utilityCosts + serviceCosts;
 
-    // PROFIT/LOSS
+    // CASH FLOW (money in vs money out, including pass-through)
     const netResult = totalRevenue - totalCosts;
+
+    // OPERATIONAL PROFIT (true profit for Premier Capital)
+    // = Revenue we keep (Maintenance + Rent, NET of VAT) - Real costs (Cleaning + Cameras)
+    // Utilities are pass-through (revenue = cost), VAT goes to state.
+    const operationalProfit = (maintenanceIncome + rentIncome) - serviceCosts;
 
     // COLLECTION
     const totalBilled = totalRevenue;
@@ -177,7 +182,7 @@ export default function ManagerPage() {
     return {
       utilityIncome, maintenanceIncome, rentIncome, vatCollected, totalRevenue,
       utilityCosts, serviceCosts, totalCosts,
-      netResult,
+      netResult, operationalProfit,
       totalBilled, totalPaid, totalOutstanding, totalCredit,
     };
   };
@@ -226,25 +231,47 @@ export default function ManagerPage() {
             {data.monthCount} {tr("manager.months_loaded", lang)}
           </div>
 
-          {/* Top-level KPI cards */}
+          {/* Top-level KPI cards — TRUE PROFIT highlighted */}
           <div className="grid grid-cols-4 gap-4">
-            <SectionCard>
-              <p className="text-xs text-gray-500 uppercase">{tr("manager.total_revenue", lang)}</p>
-              <p className="text-2xl font-bold text-navy dark:text-white mt-1">{formatRon(fin.totalRevenue)}</p>
-            </SectionCard>
-            <SectionCard>
-              <p className="text-xs text-gray-500 uppercase">{tr("manager.total_costs", lang)}</p>
-              <p className="text-2xl font-bold text-gray-700 dark:text-gray-300 mt-1">{formatRon(fin.totalCosts)}</p>
-            </SectionCard>
-            <SectionCard>
-              <p className="text-xs text-gray-500 uppercase">{tr("manager.net_result", lang)}</p>
-              <p className={`text-2xl font-bold mt-1 ${fin.netResult >= 0 ? "text-green-600" : "text-red-600"}`}>
-                {fin.netResult >= 0 ? "+" : ""}{formatRon(fin.netResult)}
+            <SectionCard className="ring-2 ring-green-500/30 dark:ring-green-400/40">
+              <p className="text-xs text-gray-500 uppercase font-semibold">{tr("manager.operational_profit", lang)}</p>
+              <p className={`text-2xl font-bold mt-1 ${fin.operationalProfit >= 0 ? "text-green-600" : "text-red-600"}`}>
+                {fin.operationalProfit >= 0 ? "+" : ""}{formatRon(fin.operationalProfit)}
               </p>
+              <p className="text-[10px] text-gray-400 mt-0.5">{tr("manager.operational_profit_formula", lang)}</p>
+            </SectionCard>
+            <SectionCard>
+              <p className="text-xs text-gray-500 uppercase">{tr("manager.maintenance_income", lang)} + {tr("manager.rent_income", lang)}</p>
+              <p className="text-xl font-bold text-navy dark:text-white mt-1">{formatRon(fin.maintenanceIncome + fin.rentIncome)}</p>
+              <p className="text-[10px] text-gray-400 mt-0.5">{tr("manager.real_revenue_note", lang)}</p>
+            </SectionCard>
+            <SectionCard>
+              <p className="text-xs text-gray-500 uppercase">{tr("manager.service_costs", lang)}</p>
+              <p className="text-xl font-bold text-red-600 mt-1">{formatRon(fin.serviceCosts)}</p>
+              <p className="text-[10px] text-gray-400 mt-0.5">{tr("manager.real_costs_note", lang)}</p>
             </SectionCard>
             <SectionCard>
               <p className="text-xs text-gray-500 uppercase">{tr("manager.total_outstanding", lang)}</p>
-              <p className="text-2xl font-bold text-red-600 mt-1">{formatRon(fin.totalOutstanding)}</p>
+              <p className="text-xl font-bold text-red-600 mt-1">{formatRon(fin.totalOutstanding)}</p>
+            </SectionCard>
+          </div>
+
+          {/* Cash flow context (less prominent) */}
+          <div className="grid grid-cols-3 gap-4">
+            <SectionCard>
+              <p className="text-[10px] text-gray-500 uppercase tracking-wider">{tr("manager.cash_in", lang)}</p>
+              <p className="text-base font-semibold text-gray-700 dark:text-gray-300 mt-1">{formatRon(fin.totalRevenue)}</p>
+              <p className="text-[10px] text-gray-400">{tr("manager.includes_passthrough", lang)}</p>
+            </SectionCard>
+            <SectionCard>
+              <p className="text-[10px] text-gray-500 uppercase tracking-wider">{tr("manager.cash_out", lang)}</p>
+              <p className="text-base font-semibold text-gray-700 dark:text-gray-300 mt-1">{formatRon(fin.totalCosts)}</p>
+              <p className="text-[10px] text-gray-400">{tr("manager.includes_passthrough", lang)}</p>
+            </SectionCard>
+            <SectionCard>
+              <p className="text-[10px] text-gray-500 uppercase tracking-wider">{tr("manager.vat_to_state", lang)}</p>
+              <p className="text-base font-semibold text-amber-600 mt-1">{formatRon(fin.vatCollected)}</p>
+              <p className="text-[10px] text-gray-400">{tr("manager.vat_to_state_note", lang)}</p>
             </SectionCard>
           </div>
 
@@ -253,22 +280,24 @@ export default function ManagerPage() {
             {/* Revenue breakdown */}
             <SectionCard title={tr("manager.revenue", lang)}>
               <div className="space-y-0">
-                <StatRow label={tr("manager.utility_income", lang)} value={fin.utilityIncome} />
-                <StatRow label={tr("manager.maintenance_income", lang)} value={fin.maintenanceIncome} />
-                <StatRow label={tr("manager.rent_income", lang)} value={fin.rentIncome} />
-                <StatRow label={tr("manager.vat_collected", lang)} value={fin.vatCollected} />
+                <StatRow label={tr("manager.utility_income", lang) + " (" + tr("manager.passthrough_short", lang) + ")"} value={fin.utilityIncome} />
+                <StatRow label={tr("manager.maintenance_income", lang) + " \u2605"} value={fin.maintenanceIncome} color="text-green-600" />
+                <StatRow label={tr("manager.rent_income", lang) + " \u2605"} value={fin.rentIncome} color="text-green-600" />
+                <StatRow label={tr("manager.vat_to_state", lang)} value={fin.vatCollected} color="text-amber-600" />
                 <StatRow label={tr("manager.total_revenue", lang)} value={fin.totalRevenue} bold />
               </div>
+              <p className="text-[10px] text-gray-400 mt-2 italic">\u2605 = {tr("manager.real_revenue_note", lang)}</p>
             </SectionCard>
 
             {/* Costs breakdown */}
             <SectionCard title={tr("manager.costs", lang)}>
               <div className="space-y-0">
-                <StatRow label={tr("manager.utility_costs", lang)} value={fin.utilityCosts} />
-                <StatRow label={tr("manager.service_costs", lang)} value={fin.serviceCosts} />
+                <StatRow label={tr("manager.utility_costs", lang) + " (" + tr("manager.passthrough_short", lang) + ")"} value={fin.utilityCosts} />
+                <StatRow label={tr("manager.service_costs", lang) + " \u2605"} value={fin.serviceCosts} color="text-red-600" />
                 <StatRow label={tr("manager.total_costs", lang)} value={fin.totalCosts} bold />
               </div>
-              <p className="text-xs text-gray-400 mt-3 italic">{tr("manager.passthrough_note", lang)}</p>
+              <p className="text-[10px] text-gray-400 mt-2 italic">\u2605 = {tr("manager.real_costs_note", lang)}</p>
+              <p className="text-xs text-gray-400 mt-1 italic">{tr("manager.passthrough_note", lang)}</p>
             </SectionCard>
           </div>
 

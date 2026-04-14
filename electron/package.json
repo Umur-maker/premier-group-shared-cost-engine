@@ -1,6 +1,6 @@
 {
   "name": "premier-cost-engine",
-  "version": "3.8.1",
+  "version": "3.9.0",
   "description": "Premier Business Center - Shared Cost Engine",
   "main": "main.js",
   "scripts": {
