@@ -1,0 +1,41 @@
+{
+  "ratios": {
+    "electricity": {"sqm_weight": 50, "headcount_weight": 50},
+    "gas": {"sqm_weight": 80, "headcount_weight": 20},
+    "water": {"sqm_weight": 30, "headcount_weight": 70},
+    "garbage": {"sqm_weight": 25, "headcount_weight": 75},
+    "consumables": {"sqm_weight": 50, "headcount_weight": 50}
+  },
+  "eur_ron_rate": 5.1,
+  "cost_categories": {
+    "consumables": {
+      "amount_type": "input",
+      "allocation": "weighted",
+      "ratio_key": "consumables",
+      "eligible": "custom",
+      "include_companies": ["premier-capital", "premier-rise", "premier-vision", "paul-george-cata"]
+    },
+    "printer": {
+      "amount_type": "input",
+      "allocation": "equal",
+      "eligible": "custom",
+      "include_companies": ["premier-capital", "premier-vision", "paul-george-cata"]
+    },
+    "internet": {
+      "amount_type": "input",
+      "allocation": "equal",
+      "eligible": "custom",
+      "include_companies": ["premier-capital", "premier-rise", "premier-vision", "paul-george-cata"]
+    }
+  },
+  "hotel_sublet": {
+    "active": true,
+    "name": "Simona Baciu",
+    "apartment": "No. 8",
+    "percentage": 10,
+    "applies_to": ["electricity", "water", "garbage", "gas_hotel"],
+    "contact_person": "Simona Baciu",
+    "phone": "",
+    "email": ""
+  }
+}
