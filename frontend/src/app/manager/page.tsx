@@ -142,19 +142,45 @@ export default function ManagerPage() {
     if (!data) return null;
     const { results, inputs } = data;
 
-    // REVENUE: what companies are billed (use || 0 for old runs missing fields)
-    const utilityIncome = results.reduce(
-      (s, r) => s + (r.electricity || 0) + (r.water || 0) + (r.garbage || 0) + (r.gas_hotel || 0) + (r.gas_ground_floor || 0) + (r.gas_first_floor || 0) + (r.consumables || 0) + (r.printer || 0) + (r.internet || 0), 0
-    );
-    const maintenanceIncome = results.reduce((s, r) => s + (r.maintenance || 0), 0);
-    const rentIncome = results.reduce((s, r) => s + (r.rent || 0), 0);
+    // === REVENUE (money coming in to Premier) ===
+    // 1. Amounts billed to companies (NET of VAT — VAT goes to state)
+    const billedGross = results.reduce((s, r) => s + (r.total || 0), 0);
     const vatCollected = results.reduce((s, r) => s + (r.maintenance_vat || 0) + (r.rent_vat || 0), 0);
-    const totalRevenue = results.reduce((s, r) => s + (r.total || 0), 0);
+    const billedToCompanies = billedGross - vatCollected;
 
-    // COSTS: what Premier actually pays (from monthly_input)
-    const utilityCosts = inputs.reduce(
+    // 2. External usage amounts (other parties that share the meters)
+    const externalUsage = inputs.reduce(
+      (s, mi) => s + (mi.external_electricity || 0) + (mi.external_water || 0) + (mi.external_garbage || 0) +
+        (mi.external_hotel_gas || 0) + (mi.external_gf_gas || 0) + (mi.external_ff_gas || 0),
+      0
+    );
+
+    const totalRevenue = billedToCompanies + externalUsage;
+
+    // === COSTS (money going out from Premier) ===
+    // ALL 11 monthly input fields are Premier's costs — Premier pays every invoice.
+    const totalCosts = inputs.reduce(
       (s, mi) =>
         s + (mi.electricity_total || 0) + (mi.water_total || 0) + (mi.garbage_total || 0) +
+        (mi.hotel_gas_total || 0) + (mi.ground_floor_gas_total || 0) + (mi.first_floor_gas_total || 0) +
+        (mi.consumables_total || 0) + (mi.printer_total || 0) + (mi.internet_total || 0) +
+        (mi.cleaning_cost || 0) + (mi.security_cameras_cost || 0),
+      0
+    );
+
+    // === TRUE PROFIT ===
+    const truePrifit = totalRevenue - totalCosts;
+
+    // Breakdown by category (for the detailed panels)
+    const maintenanceIncome = results.reduce((s, r) => s + (r.maintenance || 0), 0);
+    const rentIncome = results.reduce((s, r) => s + (r.rent || 0), 0);
+    const utilityIncome = results.reduce(
+      (s, r) => s + (r.electricity || 0) + (r.water || 0) + (r.garbage || 0) +
+        (r.gas_hotel || 0) + (r.gas_ground_floor || 0) + (r.gas_first_floor || 0) +
+        (r.consumables || 0) + (r.printer || 0) + (r.internet || 0), 0
+    );
+    const utilityCosts = inputs.reduce(
+      (s, mi) => s + (mi.electricity_total || 0) + (mi.water_total || 0) + (mi.garbage_total || 0) +
         (mi.hotel_gas_total || 0) + (mi.ground_floor_gas_total || 0) + (mi.first_floor_gas_total || 0) +
         (mi.consumables_total || 0) + (mi.printer_total || 0) + (mi.internet_total || 0),
       0
@@ -163,24 +189,18 @@ export default function ManagerPage() {
       (s, mi) => s + (mi.cleaning_cost || 0) + (mi.security_cameras_cost || 0),
       0
     );
-    const totalCosts = utilityCosts + serviceCosts;
-
-    // CASH FLOW (money in vs money out, including pass-through)
-    const netResult = totalRevenue - totalCosts;
-
-    // OPERATIONAL PROFIT (true profit for Premier Capital)
-    // = Revenue we keep (Maintenance + Rent, NET of VAT) - Real costs (Cleaning + Cameras)
-    // Utilities are pass-through (revenue = cost), VAT goes to state.
-    const operationalProfit = (maintenanceIncome + rentIncome) - serviceCosts;
+    const netResult = truePrifit;
+    const operationalProfit = truePrifit;
 
     // COLLECTION
-    const totalBilled = totalRevenue;
+    const totalBilled = billedGross;
     const totalPaid = data.payments.reduce((s, p) => s + p.amount, 0);
     const totalOutstanding = Object.values(balances).reduce((s, b) => s + Math.max(0, b), 0);
     const totalCredit = Object.values(balances).reduce((s, b) => s + Math.min(0, b), 0);
 
     return {
       utilityIncome, maintenanceIncome, rentIncome, vatCollected, totalRevenue,
+      externalUsage, billedToCompanies,
       utilityCosts, serviceCosts, totalCosts,
       netResult, operationalProfit,
       totalBilled, totalPaid, totalOutstanding, totalCredit,
@@ -233,22 +253,22 @@ export default function ManagerPage() {
 
           {/* Top-level KPI cards — TRUE PROFIT highlighted */}
           <div className="grid grid-cols-4 gap-4">
-            <SectionCard className="ring-2 ring-green-500/30 dark:ring-green-400/40">
-              <p className="text-xs text-gray-500 uppercase font-semibold">{tr("manager.operational_profit", lang)}</p>
-              <p className={`text-2xl font-bold mt-1 ${fin.operationalProfit >= 0 ? "text-green-600" : "text-red-600"}`}>
-                {fin.operationalProfit >= 0 ? "+" : ""}{formatRon(fin.operationalProfit)}
+            <SectionCard className="ring-2 ring-green-500/40 dark:ring-green-400/50">
+              <p className="text-xs text-gray-500 uppercase font-semibold">{tr("manager.true_profit", lang)}</p>
+              <p className={`text-2xl font-bold mt-1 ${fin.totalRevenue - fin.totalCosts >= 0 ? "text-green-600" : "text-red-600"}`}>
+                {fin.totalRevenue - fin.totalCosts >= 0 ? "+" : ""}{formatRon(fin.totalRevenue - fin.totalCosts)}
               </p>
-              <p className="text-[10px] text-gray-400 mt-0.5">{tr("manager.operational_profit_formula", lang)}</p>
+              <p className="text-[10px] text-gray-400 mt-0.5">{tr("manager.true_profit_formula", lang)}</p>
             </SectionCard>
             <SectionCard>
-              <p className="text-xs text-gray-500 uppercase">{tr("manager.maintenance_income", lang)} + {tr("manager.rent_income", lang)}</p>
-              <p className="text-xl font-bold text-navy dark:text-white mt-1">{formatRon(fin.maintenanceIncome + fin.rentIncome)}</p>
-              <p className="text-[10px] text-gray-400 mt-0.5">{tr("manager.real_revenue_note", lang)}</p>
+              <p className="text-xs text-gray-500 uppercase">{tr("manager.total_revenue", lang)}</p>
+              <p className="text-xl font-bold text-green-600 mt-1">{formatRon(fin.totalRevenue)}</p>
+              <p className="text-[10px] text-gray-400 mt-0.5">{tr("manager.revenue_note", lang)}</p>
             </SectionCard>
             <SectionCard>
-              <p className="text-xs text-gray-500 uppercase">{tr("manager.service_costs", lang)}</p>
-              <p className="text-xl font-bold text-red-600 mt-1">{formatRon(fin.serviceCosts)}</p>
-              <p className="text-[10px] text-gray-400 mt-0.5">{tr("manager.real_costs_note", lang)}</p>
+              <p className="text-xs text-gray-500 uppercase">{tr("manager.total_costs", lang)}</p>
+              <p className="text-xl font-bold text-red-600 mt-1">{formatRon(fin.totalCosts)}</p>
+              <p className="text-[10px] text-gray-400 mt-0.5">{tr("manager.costs_note", lang)}</p>
             </SectionCard>
             <SectionCard>
               <p className="text-xs text-gray-500 uppercase">{tr("manager.total_outstanding", lang)}</p>
@@ -256,48 +276,34 @@ export default function ManagerPage() {
             </SectionCard>
           </div>
 
-          {/* Cash flow context (less prominent) */}
-          <div className="grid grid-cols-3 gap-4">
-            <SectionCard>
-              <p className="text-[10px] text-gray-500 uppercase tracking-wider">{tr("manager.cash_in", lang)}</p>
-              <p className="text-base font-semibold text-gray-700 dark:text-gray-300 mt-1">{formatRon(fin.totalRevenue)}</p>
-              <p className="text-[10px] text-gray-400">{tr("manager.includes_passthrough", lang)}</p>
-            </SectionCard>
-            <SectionCard>
-              <p className="text-[10px] text-gray-500 uppercase tracking-wider">{tr("manager.cash_out", lang)}</p>
-              <p className="text-base font-semibold text-gray-700 dark:text-gray-300 mt-1">{formatRon(fin.totalCosts)}</p>
-              <p className="text-[10px] text-gray-400">{tr("manager.includes_passthrough", lang)}</p>
-            </SectionCard>
-            <SectionCard>
-              <p className="text-[10px] text-gray-500 uppercase tracking-wider">{tr("manager.vat_to_state", lang)}</p>
-              <p className="text-base font-semibold text-amber-600 mt-1">{formatRon(fin.vatCollected)}</p>
-              <p className="text-[10px] text-gray-400">{tr("manager.vat_to_state_note", lang)}</p>
-            </SectionCard>
-          </div>
-
-          {/* Revenue + Costs side by side */}
+          {/* Revenue + Costs side by side — detailed breakdown */}
           <div className="grid grid-cols-2 gap-4">
-            {/* Revenue breakdown */}
+            {/* Revenue breakdown — ALL revenue lines */}
             <SectionCard title={tr("manager.revenue", lang)}>
               <div className="space-y-0">
-                <StatRow label={tr("manager.utility_income", lang) + " (" + tr("manager.passthrough_short", lang) + ")"} value={fin.utilityIncome} />
-                <StatRow label={tr("manager.maintenance_income", lang) + " \u2605"} value={fin.maintenanceIncome} color="text-green-600" />
-                <StatRow label={tr("manager.rent_income", lang) + " \u2605"} value={fin.rentIncome} color="text-green-600" />
-                <StatRow label={tr("manager.vat_to_state", lang)} value={fin.vatCollected} color="text-amber-600" />
+                <StatRow label={tr("manager.billed_companies_net", lang)} value={fin.billedToCompanies} color="text-green-600" />
+                <StatRow label={tr("manager.external_usage_received", lang)} value={fin.externalUsage} color="text-green-600" />
                 <StatRow label={tr("manager.total_revenue", lang)} value={fin.totalRevenue} bold />
               </div>
-              <p className="text-[10px] text-gray-400 mt-2 italic">\u2605 = {tr("manager.real_revenue_note", lang)}</p>
+              <div className="mt-3 pt-2 border-t border-gray-200 dark:border-gray-700">
+                <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">{tr("manager.for_info", lang)}</p>
+                <div className="text-[11px] text-gray-500 dark:text-gray-400 space-y-0.5">
+                  <div className="flex justify-between"><span>{tr("manager.utility_income", lang)}:</span><span className="tabular-nums">{formatRon(fin.utilityIncome)}</span></div>
+                  <div className="flex justify-between"><span>{tr("manager.maintenance_income", lang)}:</span><span className="tabular-nums">{formatRon(fin.maintenanceIncome)}</span></div>
+                  <div className="flex justify-between"><span>{tr("manager.rent_income", lang)}:</span><span className="tabular-nums">{formatRon(fin.rentIncome)}</span></div>
+                  <div className="flex justify-between"><span>{tr("manager.vat_to_state", lang)}:</span><span className="tabular-nums text-amber-600">{formatRon(fin.vatCollected)}</span></div>
+                </div>
+              </div>
             </SectionCard>
 
-            {/* Costs breakdown */}
+            {/* Costs breakdown — ALL 11 invoice fields */}
             <SectionCard title={tr("manager.costs", lang)}>
               <div className="space-y-0">
-                <StatRow label={tr("manager.utility_costs", lang) + " (" + tr("manager.passthrough_short", lang) + ")"} value={fin.utilityCosts} />
-                <StatRow label={tr("manager.service_costs", lang) + " \u2605"} value={fin.serviceCosts} color="text-red-600" />
+                <StatRow label={tr("manager.utility_costs", lang)} value={fin.utilityCosts} color="text-red-600" />
+                <StatRow label={tr("manager.service_costs", lang)} value={fin.serviceCosts} color="text-red-600" />
                 <StatRow label={tr("manager.total_costs", lang)} value={fin.totalCosts} bold />
               </div>
-              <p className="text-[10px] text-gray-400 mt-2 italic">\u2605 = {tr("manager.real_costs_note", lang)}</p>
-              <p className="text-xs text-gray-400 mt-1 italic">{tr("manager.passthrough_note", lang)}</p>
+              <p className="text-xs text-gray-400 mt-3 italic">{tr("manager.costs_explained", lang)}</p>
             </SectionCard>
           </div>
 
