@@ -77,7 +77,7 @@ export function Sidebar() {
       </nav>
 
       <div className="px-5 pb-4 text-[10px] text-blue-300/30 font-medium">
-        v3.9.2
+        v3.9.3
       </div>
     </aside>
   );

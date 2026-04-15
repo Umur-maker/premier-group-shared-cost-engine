@@ -19,7 +19,7 @@ const EMPTY: Partial<Company> = {
 };
 
 export default function CompaniesPage() {
-  const { lang } = useApp();
+  const { lang, showToast } = useApp();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [error, setError] = useState("");
   const [showAdd, setShowAdd] = useState(false);
@@ -39,8 +39,14 @@ export default function CompaniesPage() {
     setError("");
     try {
       await createCompany(form);
+      const name = form.name || "";
       setForm({ ...EMPTY }); setShowAdd(false); await load();
-    } catch (e: unknown) { setError(e instanceof Error ? e.message : "Error"); }
+      showToast(tr("companies.added_ok", lang).replace("{name}", name), "success");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Error";
+      showToast(msg, "error");
+      setError(msg);
+    }
   };
 
   const startEdit = (c: Company) => { setEditId(c.id); setForm({ ...c }); };
@@ -50,8 +56,14 @@ export default function CompaniesPage() {
     setError("");
     try {
       await updateCompany(editId, form);
+      const name = form.name || "";
       setEditId(null); await load();
-    } catch (e: unknown) { setError(e instanceof Error ? e.message : "Error"); }
+      showToast(tr("companies.saved_ok", lang).replace("{name}", name), "success");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Error";
+      showToast(msg, "error");
+      setError(msg);
+    }
   };
 
   const inputCls = "w-full border dark:border-gray-600 rounded px-2 py-1.5 text-sm bg-white dark:bg-gray-700";
