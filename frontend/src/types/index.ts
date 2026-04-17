@@ -30,17 +30,10 @@ export interface RatioWeight {
   headcount_weight: number;
 }
 
-export interface MeetingRoomConfig {
-  active: boolean;
-  area_m2: number;
-  floor: string;
-}
-
 export interface Settings {
   ratios: Record<string, RatioWeight>;
   eur_ron_rate: number;
   cost_categories: Record<string, CostCategory>;
-  meeting_room?: MeetingRoomConfig;
 }
 
 export interface CostCategory {

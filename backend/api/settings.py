@@ -39,24 +39,6 @@ def update_settings(body: SettingsUpdate):
     return {"status": "saved", "ratios": settings["ratios"]}
 
 
-class MeetingRoomUpdate(BaseModel):
-    active: bool
-    area_m2: float
-    floor: str = "first_floor"
-
-
-@router.put("/meeting-room")
-def update_meeting_room(body: MeetingRoomUpdate):
-    if body.area_m2 < 0:
-        raise HTTPException(400, "Area must be >= 0")
-    if body.floor not in ("ground_floor", "first_floor", "hotel"):
-        raise HTTPException(400, "Floor must be ground_floor, first_floor, or hotel")
-    settings = load_settings()
-    settings["meeting_room"] = body.model_dump()
-    save_settings(settings)
-    return {"status": "saved", "meeting_room": settings["meeting_room"]}
-
-
 class EurRateUpdate(BaseModel):
     eur_ron_rate: float
 
