@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Dict
+from typing import Dict, Optional
 from backend.core.data_manager import load_settings, save_settings
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
@@ -37,3 +37,35 @@ def update_settings(body: SettingsUpdate):
     settings["ratios"] = {k: v.model_dump() for k, v in body.ratios.items()}
     save_settings(settings)
     return {"status": "saved", "ratios": settings["ratios"]}
+
+
+class MeetingRoomUpdate(BaseModel):
+    active: bool
+    area_m2: float
+    floor: str = "first_floor"
+
+
+@router.put("/meeting-room")
+def update_meeting_room(body: MeetingRoomUpdate):
+    if body.area_m2 < 0:
+        raise HTTPException(400, "Area must be >= 0")
+    if body.floor not in ("ground_floor", "first_floor", "hotel"):
+        raise HTTPException(400, "Floor must be ground_floor, first_floor, or hotel")
+    settings = load_settings()
+    settings["meeting_room"] = body.model_dump()
+    save_settings(settings)
+    return {"status": "saved", "meeting_room": settings["meeting_room"]}
+
+
+class EurRateUpdate(BaseModel):
+    eur_ron_rate: float
+
+
+@router.put("/eur-rate")
+def update_eur_rate(body: EurRateUpdate):
+    if body.eur_ron_rate <= 0:
+        raise HTTPException(400, "EUR/RON rate must be > 0")
+    settings = load_settings()
+    settings["eur_ron_rate"] = body.eur_ron_rate
+    save_settings(settings)
+    return {"status": "saved", "eur_ron_rate": settings["eur_ron_rate"]}

@@ -13,6 +13,7 @@ export interface Company {
   consumables_eligible?: boolean;
   printer_eligible?: boolean;
   internet_eligible?: boolean;
+  meeting_room_user?: boolean;
   active: boolean;
   contact_person: string;
   phone: string;
@@ -29,10 +30,17 @@ export interface RatioWeight {
   headcount_weight: number;
 }
 
+export interface MeetingRoomConfig {
+  active: boolean;
+  area_m2: number;
+  floor: string;
+}
+
 export interface Settings {
   ratios: Record<string, RatioWeight>;
   eur_ron_rate: number;
   cost_categories: Record<string, CostCategory>;
+  meeting_room?: MeetingRoomConfig;
 }
 
 export interface CostCategory {

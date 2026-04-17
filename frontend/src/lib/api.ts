@@ -67,6 +67,12 @@ export const saveSettings = (data: Partial<Settings>) =>
     body: JSON.stringify(data),
   });
 
+export const saveMeetingRoom = (data: { active: boolean; area_m2: number; floor: string }) =>
+  request<{ status: string }>("/api/settings/meeting-room", {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+
 // Calculate — preview only (no save)
 export const calculatePreview = (data: {
   month: number; year: number; language: string; monthly_input: MonthlyInput;

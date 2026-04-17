@@ -13,7 +13,7 @@ const FLOORS = ["ground_floor", "first_floor", "hotel"];
 const EMPTY: Partial<Company> = {
   name: "", area_m2: 0, headcount_default: 1, building: "C4", floor: "ground_floor",
   has_heating: true, electricity_eligible: true, water_eligible: true, garbage_eligible: true,
-  consumables_eligible: false, printer_eligible: false, internet_eligible: false,
+  consumables_eligible: false, printer_eligible: false, internet_eligible: false, meeting_room_user: false,
   office_no: "", contact_person: "", phone: "", email: "",
   beginning_date: "", expiration_date: "", notes: "", monthly_rent_eur: 0, maintenance_rate_eur: 2,
 };
@@ -113,7 +113,7 @@ export default function CompaniesPage() {
         {([["has_heating", "companies.heating"], ["electricity_eligible", "field.electricity"],
            ["water_eligible", "field.water"], ["garbage_eligible", "field.garbage"],
            ["consumables_eligible", "field.consumables"], ["printer_eligible", "field.printer"],
-           ["internet_eligible", "field.internet"]] as const).map(([key, label]) => (
+           ["internet_eligible", "field.internet"], ["meeting_room_user", "companies.meeting_room"]] as const).map(([key, label]) => (
           <label key={key} className="flex items-center gap-1.5 text-sm">
             <input type="checkbox" checked={!!form[key as keyof Company]}
               onChange={(e) => f(key as keyof Company, e.target.checked)} />

@@ -25,6 +25,7 @@ class CompanyCreate(BaseModel):
     consumables_eligible: bool = False
     printer_eligible: bool = False
     internet_eligible: bool = False
+    meeting_room_user: bool = False
     office_no: str = ""
     contact_person: str = ""
     phone: str = ""
@@ -49,6 +50,7 @@ class CompanyUpdate(BaseModel):
     consumables_eligible: Optional[bool] = None
     printer_eligible: Optional[bool] = None
     internet_eligible: Optional[bool] = None
+    meeting_room_user: Optional[bool] = None
     active: Optional[bool] = None
     office_no: Optional[str] = None
     contact_person: Optional[str] = None
@@ -96,6 +98,7 @@ def create_company(body: CompanyCreate):
         "consumables_eligible": body.consumables_eligible,
         "printer_eligible": body.printer_eligible,
         "internet_eligible": body.internet_eligible,
+        "meeting_room_user": body.meeting_room_user,
         "active": True,
         "office_no": body.office_no,
         "contact_person": body.contact_person,

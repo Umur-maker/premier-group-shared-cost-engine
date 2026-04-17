@@ -23,6 +23,7 @@ def load_companies():
         c.setdefault("consumables_eligible", False)
         c.setdefault("printer_eligible", False)
         c.setdefault("internet_eligible", False)
+        c.setdefault("meeting_room_user", False)
         c.setdefault("monthly_rent_eur", 0)
         c.setdefault("maintenance_rate_eur", 0)
     return companies
@@ -51,6 +52,7 @@ _SETTINGS_DEFAULTS = {
     "eur_ron_rate": 5.1,
     "cost_categories": {},
     "hotel_sublet": {"active": False, "name": "", "percentage": 0, "applies_to": []},
+    "meeting_room": {"active": False, "area_m2": 0, "floor": "first_floor"},
 }
 
 
