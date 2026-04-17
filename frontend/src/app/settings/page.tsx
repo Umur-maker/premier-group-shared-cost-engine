@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRef } from "react";
-import { getSettings, saveSettings, getBackupUrl, importCompanies, exportCompaniesUrl, listBackups, restoreBackup, saveMeetingRoom } from "@/lib/api";
+import { getSettings, saveSettings, getBackupUrl, importCompanies, exportCompaniesUrl, listBackups, restoreBackup } from "@/lib/api";
 import { useApp } from "@/lib/AppContext";
 import { tr } from "@/lib/i18n";
 import { PageLayout, SectionCard, Button } from "@/components";
@@ -107,46 +107,6 @@ export default function SettingsPage() {
             onChange={(e) => setFinancial("eur_ron_rate", +e.target.value)}
             className="w-48 border dark:border-gray-600 rounded px-3 py-1.5 text-sm bg-white dark:bg-gray-700" />
           <p className="text-xs text-gray-400 mt-2">{tr("settings.eur_rate_note", lang)}</p>
-        </div>
-      </SectionCard>
-
-      {/* Meeting Room Settings */}
-      <SectionCard title={tr("settings.meeting_room", lang)}>
-        <p className="text-xs text-gray-400 mb-4">{tr("settings.meeting_room_desc", lang)}</p>
-        <div className="space-y-3">
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={!!pending.meeting_room?.active}
-              onChange={(e) => setPending(p => p ? {
-                ...p,
-                meeting_room: { active: e.target.checked, area_m2: p.meeting_room?.area_m2 || 0, floor: p.meeting_room?.floor || "first_floor" },
-              } : p)} />
-            {tr("settings.meeting_room_active", lang)}
-          </label>
-          <div>
-            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
-              {tr("settings.meeting_room_area", lang)}
-            </label>
-            <input type="number" step="0.01" min="0"
-              value={pending.meeting_room?.area_m2 || 0}
-              disabled={!pending.meeting_room?.active}
-              onChange={(e) => setPending(p => p ? {
-                ...p,
-                meeting_room: { active: p.meeting_room?.active || false, area_m2: +e.target.value, floor: p.meeting_room?.floor || "first_floor" },
-              } : p)}
-              className="w-48 border dark:border-gray-600 rounded px-3 py-1.5 text-sm bg-white dark:bg-gray-700 disabled:opacity-50" />
-          </div>
-          <Button variant="secondary" onClick={async () => {
-            const mr = pending.meeting_room || { active: false, area_m2: 0, floor: "first_floor" };
-            try {
-              await saveMeetingRoom({ active: mr.active, area_m2: mr.area_m2, floor: mr.floor });
-              setSettings(s => s ? { ...s, meeting_room: mr } : s);
-              showToast(tr("settings.meeting_room_saved", lang), "success");
-            } catch (e: unknown) {
-              showToast(e instanceof Error ? e.message : "Error", "error");
-            }
-          }}>
-            {tr("settings.save", lang)}
-          </Button>
         </div>
       </SectionCard>
 

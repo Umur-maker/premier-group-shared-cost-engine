@@ -168,26 +168,24 @@ def allocate_costs(companies, ratios, monthly_input, settings=None, headcount_ov
         ratios["gas"]["sqm_weight"], ratios["gas"]["headcount_weight"], overrides)
 
     # Gas First Floor (with optional meeting room split)
+    # Meeting room is hardcoded at MEETING_ROOM_M2 m². Auto-activates when at least
+    # one first-floor company has meeting_room_user = True.
+    MEETING_ROOM_M2 = 45.0
     ff_gas_eligible = [c for c in active if c["floor"] == "first_floor" and c.get("has_heating", False)]
     ff_gas_amount = _net_amount(
         monthly_input.get("first_floor_gas_total", 0), _ext("external_ff_gas"))
 
-    meeting = (settings or {}).get("meeting_room", {})
-    meeting_active = meeting.get("active", False)
-    meeting_m2 = float(meeting.get("area_m2", 0) or 0)
-    meeting_floor = meeting.get("floor", "first_floor")
+    user_companies = [c for c in ff_gas_eligible if c.get("meeting_room_user", False)]
 
-    if meeting_active and meeting_m2 > 0 and meeting_floor == "first_floor" and ff_gas_amount > 0:
-        # Identify meeting room user companies (per-company checkbox)
-        user_companies = [c for c in ff_gas_eligible if c.get("meeting_room_user", False)]
+    if user_companies and ff_gas_amount > 0:
         user_persons = sum(overrides.get(c["id"], c["headcount_default"]) for c in user_companies)
         floor_m2 = sum(c["area_m2"] for c in ff_gas_eligible)
         floor_persons = sum(overrides.get(c["id"], c["headcount_default"]) for c in ff_gas_eligible)
 
-        # Calculate meeting room's share of net gas using gas weights
+        # Meeting room's share of net gas, using gas weights
         sqm_w = ratios["gas"]["sqm_weight"] / 100.0
         hc_w = ratios["gas"]["headcount_weight"] / 100.0
-        m2_ratio = meeting_m2 / (floor_m2 + meeting_m2) if (floor_m2 + meeting_m2) > 0 else 0
+        m2_ratio = MEETING_ROOM_M2 / (floor_m2 + MEETING_ROOM_M2) if (floor_m2 + MEETING_ROOM_M2) > 0 else 0
         person_ratio = (user_persons / floor_persons) if floor_persons > 0 else 0
         meeting_share = round(ff_gas_amount * (sqm_w * m2_ratio + hc_w * person_ratio), 2)
 
@@ -197,13 +195,13 @@ def allocate_costs(companies, ratios, monthly_input, settings=None, headcount_ov
             ratios["gas"]["sqm_weight"], ratios["gas"]["headcount_weight"], overrides)
 
         # Step 2: Distribute meeting room share to user companies only, add to their shares
-        if user_companies and meeting_share > 0:
+        if meeting_share > 0:
             meeting_user_shares = _distribute(meeting_share, user_companies,
                 ratios["gas"]["sqm_weight"], ratios["gas"]["headcount_weight"], overrides)
             for cid, amt in meeting_user_shares.items():
                 ff_gas_shares[cid] = round(ff_gas_shares.get(cid, 0) + amt, 2)
     else:
-        # No meeting room — standard distribution
+        # No meeting room user companies — standard distribution
         ff_gas_shares = _distribute(ff_gas_amount, ff_gas_eligible,
             ratios["gas"]["sqm_weight"], ratios["gas"]["headcount_weight"], overrides)
 
