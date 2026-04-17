@@ -54,7 +54,16 @@ export default function MonthlyInputPage() {
 
   const buildInput = (): MonthlyInput => {
     const mi: Record<string, number> = {};
-    for (const k of [...ALL_COST_KEYS, ...EXTERNAL_KEYS]) mi[k] = parseRonInput(raw[k] || "");
+    const allKeys = [...ALL_COST_KEYS, ...EXTERNAL_KEYS];
+    const allLabels = [...ALL_COST_I18N, ...EXTERNAL_I18N];
+    for (let i = 0; i < allKeys.length; i++) {
+      const k = allKeys[i];
+      try {
+        mi[k] = parseRonInput(raw[k] || "");
+      } catch {
+        throw new Error(`${tr(allLabels[i], lang)}: ${tr("error.invalid_amount", lang)}`);
+      }
+    }
     return mi as unknown as MonthlyInput;
   };
 

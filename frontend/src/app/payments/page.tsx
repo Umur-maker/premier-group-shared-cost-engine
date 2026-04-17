@@ -38,6 +38,16 @@ export default function PaymentsPage() {
     } catch (e: unknown) { setError(e instanceof Error ? e.message : "Error"); }
   };
 
+  const handleReviewPayment = () => {
+    setError("");
+    try {
+      parseRonInput(newPayment.amount);
+      setShowConfirm(true);
+    } catch {
+      setError(tr("error.invalid_amount", lang));
+    }
+  };
+
   const handleAddPayment = async () => {
     if (!selectedRun || !newPayment.companyId || !newPayment.amount) return;
     try {
@@ -181,7 +191,7 @@ export default function PaymentsPage() {
                     placeholder="banka, nakit..." className="border dark:border-gray-600 rounded px-2 py-1.5 text-sm w-36 bg-white dark:bg-gray-700" />
                 </div>
                 <Button disabled={!newPayment.companyId || !newPayment.amount}
-                  onClick={() => setShowConfirm(true)}>
+                  onClick={handleReviewPayment}>
                   {tr("monthly.review_payment", lang)}
                 </Button>
               </div>

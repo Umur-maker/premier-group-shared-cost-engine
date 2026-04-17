@@ -99,7 +99,11 @@ def save_or_replace_run(month, year, language, monthly_input, ratios, companies,
             old_run_id = old_entry["id"]
             old_excel = os.path.join(HISTORY_DIR, old_entry["excel_file"])
             if os.path.exists(old_excel):
-                os.remove(old_excel)
+                try:
+                    os.remove(old_excel)
+                except OSError as e:
+                    # File may be locked by Excel.exe/OneDrive — orphan it rather than blocking save
+                    print(f"[history] Could not remove old excel {old_excel}: {e}")
             entries = [e for e in entries if e["id"] != old_run_id]
 
         run_id = f"{year}_{month:02d}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"

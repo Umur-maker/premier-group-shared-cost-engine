@@ -67,7 +67,12 @@ export default function SettingsPage() {
       await saveSettings(pending);
       setSettings(pending);
       setSaved(true);
-    } catch (e: unknown) { setError(e instanceof Error ? e.message : "Error"); }
+      showToast(tr("settings.saved", lang), "success");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Error";
+      setError(msg);
+      showToast(msg, "error");
+    }
   };
 
   return (

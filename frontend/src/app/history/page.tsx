@@ -40,8 +40,9 @@ export default function HistoryPage() {
       const detail = await getRunDetail(id);
       setRunDetail({ results: detail.results, companies: detail.companies });
       setExpandedRun(id); setSelectedCompany(""); setPreviewTab("summary");
-    } catch {
+    } catch (e: unknown) {
       setRunDetail(null); setExpandedRun(id);
+      showToast(e instanceof Error ? e.message : tr("error.backend_down", lang), "error");
     }
   };
 

@@ -12,7 +12,7 @@ from backend.core.statement_export import generate_statement
 from backend.core.statement_pdf import generate_statement_pdf
 from backend.core.data_manager import load_companies, load_settings
 from backend.core.history import save_or_replace_run, find_run_for_month, get_excel_path, list_runs
-from backend.core.translations import month_name
+from backend.core.translations import month_name, t as tr
 from backend.core.safe_filename import safe_name
 
 router = APIRouter(prefix="/api/calculate", tags=["calculate"])
@@ -128,16 +128,17 @@ def _run_allocation(body: CalculateRequest, strict: bool = False):
     mi = body.monthly_input.model_dump()
 
     checks = [
-        ("electricity_total", "external_electricity", "Electricity"),
-        ("water_total", "external_water", "Water"),
-        ("garbage_total", "external_garbage", "Garbage"),
-        ("hotel_gas_total", "external_hotel_gas", "Hotel Gas"),
-        ("ground_floor_gas_total", "external_gf_gas", "Ground Floor Gas"),
-        ("first_floor_gas_total", "external_ff_gas", "First Floor Gas"),
+        ("electricity_total", "external_electricity", "electricity"),
+        ("water_total", "external_water", "water"),
+        ("garbage_total", "external_garbage", "garbage"),
+        ("hotel_gas_total", "external_hotel_gas", "hotel_gas"),
+        ("ground_floor_gas_total", "external_gf_gas", "ground_floor_gas"),
+        ("first_floor_gas_total", "external_ff_gas", "first_floor_gas"),
     ]
-    for total_key, ext_key, label in checks:
+    for total_key, ext_key, label_key in checks:
         if mi[ext_key] > mi[total_key]:
-            raise HTTPException(400, f"{label}: external usage ({mi[ext_key]}) exceeds total ({mi[total_key]}).")
+            raise HTTPException(400, tr("external_exceeds", body.language,
+                field=tr(label_key, body.language), ext=mi[ext_key], total=mi[total_key]))
 
     warnings = _compute_warnings(companies, mi)
     if strict and warnings:
@@ -180,23 +181,33 @@ def save_official(body: CalculateRequest):
     active = [c for c in companies if c["active"]]
     mn = month_name(body.month, body.language)
     filename = f"Premier_BC_{body.year}_{body.month:02d}_{mn}.xlsx"
-    tmp_path = os.path.join(tempfile.gettempdir(), filename)
+    # Unique tmp filename — avoids collision if a previous tmp file is still locked
+    fd, tmp_path = tempfile.mkstemp(suffix=".xlsx", prefix=f"premier_{body.year}_{body.month:02d}_")
+    os.close(fd)
     mi["_eur_rate"] = settings.get("eur_ron_rate", 5.1)
-    generate_excel(tmp_path, results, mi, settings["ratios"], active, body.language)
-
-    entry, old_run_id = save_or_replace_run(
-        body.month, body.year, body.language, mi,
-        settings["ratios"], companies, results, tmp_path
-    )
-    # Preserve payment history when a month is re-saved
-    if old_run_id and old_run_id != entry["id"]:
-        from backend.core.payments import reassign_payments_run
-        reassign_payments_run(old_run_id, entry["id"])
 
     try:
-        os.unlink(tmp_path)
-    except OSError:
-        pass
+        generate_excel(tmp_path, results, mi, settings["ratios"], active, body.language)
+
+        entry, old_run_id = save_or_replace_run(
+            body.month, body.year, body.language, mi,
+            settings["ratios"], companies, results, tmp_path
+        )
+        # Preserve payment history when a month is re-saved
+        if old_run_id and old_run_id != entry["id"]:
+            from backend.core.payments import reassign_payments_run
+            reassign_payments_run(old_run_id, entry["id"])
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(500, f"Save failed: {e}")
+    finally:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
 
     return {
         "run_id": entry["id"],
